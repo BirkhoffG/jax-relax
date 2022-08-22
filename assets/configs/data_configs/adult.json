@@ -1,0 +1,17 @@
+{
+    "data_dir": "assets/data/s_adult.csv",
+    "data_name": "adult",
+    "batch_size": 128,
+    "continous_cols": [
+        "age",
+        "hours_per_week"
+    ],
+    "discret_cols": [
+        "workclass",
+        "education",
+        "marital_status",
+        "occupation",
+        "race",
+        "gender"
+    ]
+}

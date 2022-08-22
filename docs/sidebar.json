@@ -1,0 +1,15 @@
+{
+  "cfnet": {
+    "Overview": "/",
+    "Utils": "utils.html",
+    "Interfaces": "inferfaces.html",
+    "Data Module": "datasets.html",
+    "Neural Networks": "nets.html",
+    "Training Module": "training_module.html",
+    "Training": "learning.html",
+    "Experiment Logger": "logger.html",
+    "Checkpoint Manager": "ckpt_manager.html",
+    "Vanilla CF": "methods.vanilla.html",
+    "Evaluate": "evaluate.html"
+  }
+}

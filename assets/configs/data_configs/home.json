@@ -1,0 +1,32 @@
+{
+    "data_dir": "assets/data/s_home.csv",
+    "lr": 0.005,
+    "batch_size": 128,
+    "continous_cols": [
+        "ExternalRiskEstimate",
+        "MSinceOldestTradeOpen",
+        "MSinceMostRecentTradeOpen",
+        "AverageMInFile",
+        "NumSatisfactoryTrades",
+        "NumTrades60Ever2DerogPubRec",
+        "NumTrades90Ever2DerogPubRec",
+        "PercentTradesNeverDelq",
+        "MSinceMostRecentDelq",
+        "NumTotalTrades",
+        "NumTradesOpeninLast12M",
+        "PercentInstallTrades",
+        "MSinceMostRecentInqexcl7days",
+        "NumInqLast6M",
+        "NumInqLast6Mexcl7days",
+        "NetFractionRevolvingBurden",
+        "NetFractionInstallBurden",
+        "NumRevolvingTradesWBalance",
+        "NumInstallTradesWBalance",
+        "NumBank2NatlTradesWHighUtilization",
+        "PercentTradesWBalance"
+    ],
+    "discret_cols": [
+        "MaxDelq2PublicRecLast12M",
+        "MaxDelqEver"
+    ]
+}

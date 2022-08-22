@@ -1,0 +1,49 @@
+{
+    "data_dir": "data/extra/s_german_credit.csv",
+    "lr": 0.01,
+    "batch_size": 128,
+    "lambda_1": 1.0,
+    "lambda_2": 0.01,
+    "lambda_3": 1.0,
+    "threshold": 1.0,
+    "continous_cols": [
+        "duration",
+        "credit_amount",
+        "installment_rate",
+        "residence",
+        "age",
+        "credits",
+        "num_people_liable"
+    ],
+    "discret_cols": [
+        "status",
+        "history",
+        "purpose",
+        "savings",
+        "employment",
+        "sex",
+        "other_debtors",
+        "property",
+        "other_plan",
+        "housing",
+        "job",
+        "telephone",
+        "foreign_worker"
+    ],
+    "encoder_dims": [
+        61,
+        50,
+        10
+    ],
+    "decoder_dims": [
+        10,
+        10
+    ],
+    "explainer_dims": [
+        10,
+        50
+    ],
+    "loss_1": "mse",
+    "loss_2": "mse",
+    "loss_3": "mse"
+}

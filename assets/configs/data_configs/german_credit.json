@@ -1,0 +1,28 @@
+{
+    "data_dir": "data/extra/s_german_credit.csv",
+    "batch_size": 128,
+    "continous_cols": [
+        "duration",
+        "credit_amount",
+        "installment_rate",
+        "residence",
+        "age",
+        "credits",
+        "num_people_liable"
+    ],
+    "discret_cols": [
+        "status",
+        "history",
+        "purpose",
+        "savings",
+        "employment",
+        "sex",
+        "other_debtors",
+        "property",
+        "other_plan",
+        "housing",
+        "job",
+        "telephone",
+        "foreign_worker"
+    ]
+}

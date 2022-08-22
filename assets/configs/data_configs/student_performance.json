@@ -1,0 +1,24 @@
+{
+    "data_dir": "data/extra/s_student_performance.csv",
+    "batch_size": 128,
+    "continous_cols": [
+        "failures",
+        "age"
+    ],
+    "discret_cols": [
+        "G2",
+        "G1",
+        "higher",
+        "school",
+        "goout",
+        "Mjob",
+        "Fjob",
+        "health",
+        "freetime",
+        "absences",
+        "Walc",
+        "famrel",
+        "Medu",
+        "Fedu"
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "max_epochs": 500,
+    "gradient_clip_val": 0.5,
+    "gpus": 1,
+    "track_grad_norm": 2
+}

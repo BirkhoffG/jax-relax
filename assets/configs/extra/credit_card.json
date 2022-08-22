@@ -1,0 +1,52 @@
+{
+    "data_dir": "data/extra/s_credit_cart.csv",
+    "lr": 0.0001,
+    "batch_size": 1024,
+    "lambda_1": 1.0,
+    "lambda_2": 0.01,
+    "lambda_3": 1.0,
+    "threshold": 1.0,
+    "continous_cols": [
+        "LIMIT_BAL",
+        "AGE",
+        "PAY_0",
+        "PAY_2",
+        "PAY_3",
+        "PAY_4",
+        "PAY_5",
+        "PAY_6",
+        "BILL_AMT1",
+        "BILL_AMT2",
+        "BILL_AMT3",
+        "BILL_AMT4",
+        "BILL_AMT5",
+        "BILL_AMT6",
+        "PAY_AMT1",
+        "PAY_AMT2",
+        "PAY_AMT3",
+        "PAY_AMT4",
+        "PAY_AMT5",
+        "PAY_AMT6"
+    ],
+    "discret_cols": [
+        "SEX",
+        "EDUCATION",
+        "MARRIAGE"
+    ],
+    "encoder_dims": [
+        33,
+        50,
+        10
+    ],
+    "decoder_dims": [
+        10,
+        10
+    ],
+    "explainer_dims": [
+        10,
+        50
+    ],
+    "loss_1": "mse",
+    "loss_2": "mse",
+    "loss_3": "mse"
+}

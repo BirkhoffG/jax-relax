@@ -1,0 +1,41 @@
+{
+    "data_dir": "data/extra/s_heart.csv",
+    "lr": 0.01,
+    "batch_size": 128,
+    "lambda_1": 1.0,
+    "lambda_2": 0.01,
+    "lambda_3": 1.0,
+    "threshold": 1.0,
+    "continous_cols": [
+        "age",
+        "creatinine_phosphokinase",
+        "ejection_fraction",
+        "platelets",
+        "serum_creatinine",
+        "serum_sodium",
+        "time"
+    ],
+    "discret_cols": [
+        "anaemia",
+        "diabetes",
+        "high_blood_pressure",
+        "sex",
+        "smoking"
+    ],
+    "encoder_dims": [
+        17,
+        50,
+        10
+    ],
+    "decoder_dims": [
+        10,
+        10
+    ],
+    "explainer_dims": [
+        10,
+        50
+    ],
+    "loss_1": "mse",
+    "loss_2": "mse",
+    "loss_3": "mse"
+}

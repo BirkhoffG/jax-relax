@@ -1,0 +1,7 @@
+{
+    "max_epochs": 1000,
+    "gradient_clip_val": 0.5,
+    "gpus": 1,
+    "track_grad_norm": 2,
+    "deterministic": true
+}

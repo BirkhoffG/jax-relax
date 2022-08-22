@@ -1,0 +1,52 @@
+{
+    "data_dir": "assets/data/s_home.csv",
+    "lr": 0.005,
+    "batch_size": 128,
+    "lambda_1": 1.0,
+    "lambda_2": 0.1,
+    "lambda_3": 0.5,
+    "threshold": 1,
+    "continous_cols": [
+        "ExternalRiskEstimate",
+        "MSinceOldestTradeOpen",
+        "MSinceMostRecentTradeOpen",
+        "AverageMInFile",
+        "NumSatisfactoryTrades",
+        "NumTrades60Ever2DerogPubRec",
+        "NumTrades90Ever2DerogPubRec",
+        "PercentTradesNeverDelq",
+        "MSinceMostRecentDelq",
+        "NumTotalTrades",
+        "NumTradesOpeninLast12M",
+        "PercentInstallTrades",
+        "MSinceMostRecentInqexcl7days",
+        "NumInqLast6M",
+        "NumInqLast6Mexcl7days",
+        "NetFractionRevolvingBurden",
+        "NetFractionInstallBurden",
+        "NumRevolvingTradesWBalance",
+        "NumInstallTradesWBalance",
+        "NumBank2NatlTradesWHighUtilization",
+        "PercentTradesWBalance"
+    ],
+    "discret_cols": [
+        "MaxDelq2PublicRecLast12M",
+        "MaxDelqEver"
+    ],
+    "encoder_dims": [
+        35,
+        100,
+        10
+    ],
+    "decoder_dims": [
+        10,
+        10
+    ],
+    "explainer_dims": [
+        10,
+        100
+    ],
+    "loss_1": "mse",
+    "loss_2": "mse",
+    "loss_3": "mse"
+}

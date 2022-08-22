@@ -1,0 +1,58 @@
+{
+    "data_dir": "data/extra/s_breast_cancer.csv",
+    "lr": 0.001,
+    "batch_size": 128,
+    "lambda_1": 1.0,
+    "lambda_2": 0.01,
+    "lambda_3": 0.2,
+    "threshold": 1.0,
+    "continous_cols": [
+        "X_1",
+        "X_2",
+        "X_3",
+        "X_4",
+        "X_5",
+        "X_6",
+        "X_7",
+        "X_8",
+        "X_9",
+        "X_10",
+        "X_11",
+        "X_12",
+        "X_13",
+        "X_14",
+        "X_15",
+        "X_16",
+        "X_17",
+        "X_18",
+        "X_19",
+        "X_20",
+        "X_21",
+        "X_22",
+        "X_23",
+        "X_24",
+        "X_25",
+        "X_26",
+        "X_27",
+        "X_28",
+        "X_29",
+        "X_30"
+    ],
+    "discret_cols": [],
+    "encoder_dims": [
+        30,
+        50,
+        10
+    ],
+    "decoder_dims": [
+        10,
+        10
+    ],
+    "explainer_dims": [
+        10,
+        50
+    ],
+    "loss_1": "mse",
+    "loss_2": "mse",
+    "loss_3": "mse"
+}

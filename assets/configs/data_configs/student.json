@@ -1,0 +1,39 @@
+{
+    "data_dir": "assets/data/s_student.csv",
+    "batch_size": 128,
+    "continous_cols": [
+        "num_of_prev_attempts",
+        "weight",
+        "weighted_score",
+        "forumng_click",
+        "homepage_click",
+        "oucontent_click",
+        "resource_click",
+        "subpage_click",
+        "url_click",
+        "dataplus_click",
+        "glossary_click",
+        "oucollaborate_click",
+        "quiz_click",
+        "ouelluminate_click",
+        "sharedsubpage_click",
+        "questionnaire_click",
+        "page_click",
+        "externalquiz_click",
+        "ouwiki_click",
+        "dualpane_click",
+        "folder_click",
+        "repeatactivity_click",
+        "htmlactivity_click"
+    ],
+    "discret_cols": [
+        "code_module",
+        "gender",
+        "region",
+        "highest_education",
+        "imd_band",
+        "age_band",
+        "studied_credits",
+        "disability"
+    ]
+}

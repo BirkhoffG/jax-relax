@@ -1,0 +1,32 @@
+{
+    "data_dir": "assets/data/dummy_data.csv",
+    "lr": 0.0003,
+    "batch_size": 128,
+    "lambda_1": 1.0,
+    "lambda_2": 0.01,
+    "lambda_3": 1.0,
+    "threshold": 1.0,
+    "continous_cols": [
+        "x1",
+        "x2",
+        "x3",
+        "x4"
+    ],
+    "discret_cols": [],
+    "encoder_dims": [
+        4,
+        100,
+        10
+    ],
+    "decoder_dims": [
+        10,
+        10
+    ],
+    "explainer_dims": [
+        10,
+        10
+    ],
+    "loss_1": "mse",
+    "loss_2": "mse",
+    "loss_3": "mse"
+}
