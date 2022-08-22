@@ -25,39 +25,41 @@ class VanillaCF(LocalCFExplanationModule):
     name = "VanillaCF"
 
     def __init__(self,
-                 pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray],
-                 configs: Union[Dict[str, Any], VanillaCFConfig],
-                 data_module: Optional[TabularDataModule] = None):
-        self.pred_fn = pred_fn
+        configs: Union[Dict[str, Any], VanillaCFConfig],
+        data_module: Optional[TabularDataModule] = None
+    ):
         self.configs = validate_configs(configs, VanillaCFConfig)
         if data_module:
             self.update_cat_info(data_module)
 
     def _loss_fn_1(self,
-                   cf_y: jnp.ndarray,
-                   y_prime: jnp.ndarray) -> jnp.ndarray:
+        cf_y: jnp.ndarray,
+        y_prime: jnp.ndarray
+    ) -> jnp.ndarray:
         return jnp.mean(binary_cross_entropy(y_pred=cf_y, y=y_prime))
 
     def _loss_fn_2(self,
-                   x: jnp.ndarray,
-                   cf: jnp.ndarray,) -> jnp.ndarray:
+        x: jnp.ndarray,
+        cf: jnp.ndarray
+    ) -> jnp.ndarray:
         return jnp.mean(optax.l2_loss(cf, x))
 
     def generate_cf(self,
-                    x: jnp.ndarray) -> jnp.ndarray:
-
-        pred_fn = self.pred_fn
-
-        def loss_fn(cf: jnp.ndarray,
-                    x: jnp.ndarray,
-                    pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray]) -> jnp.ndarray:
+        x: jnp.ndarray, # `x` shape: (k,), where `k` is the number of features
+        pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray]
+    ) -> jnp.DeviceArray:
+        def loss_fn(
+            cf: jnp.ndarray, x: jnp.ndarray, pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray]
+        ) -> jnp.DeviceArray:
             y_pred = pred_fn(x)
             y_prime = 1. - y_pred
             cf_y = pred_fn(cf)
             return self._loss_fn_1(cf_y, y_prime) + 0.5 * self._loss_fn_2(x, cf)
 
         @jax.jit
-        def gen_cf_step(x: jnp.ndarray, cf: jnp.ndarray, opt_state: optax.OptState):
+        def gen_cf_step(
+            x: jnp.DeviceArray, cf: jnp.DeviceArray, opt_state: optax.OptState
+        ) -> Tuple[jnp.DeviceArray, optax.OptState]:
             cf_grads = jax.grad(loss_fn)(cf, x, pred_fn)
             cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
             cf = cat_normalize(
@@ -77,8 +79,10 @@ class VanillaCF(LocalCFExplanationModule):
 
     @check_cat_info
     def generate_cfs(self,
-                      X: jnp.array,
-                      is_parallel: bool = False) -> jnp.ndarray:
-        def _generate_cf(x: jnp.ndarray) -> jnp.ndarray:
-            return self.generate_cf(x)
-        return jax.vmap(_generate_cf)(X) if not is_parallel else jax.pmap(_generate_cf)(X)
+        X: jnp.DeviceArray, # `x` shape: (b, k), where `b` is batch size, `k` is the number of features
+        pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray],
+        is_parallel: bool = False
+    ) -> jnp.DeviceArray:
+        def _generate_cf(x: jnp.DeviceArray, pred_fn) -> jnp.ndarray:
+            return self.generate_cf(x, pred_fn)
+        return jax.vmap(_generate_cf)(X, pred_fn) if not is_parallel else jax.pmap(_generate_cf)(X, pred_fn)

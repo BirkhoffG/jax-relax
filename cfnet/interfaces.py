@@ -21,7 +21,10 @@ class BaseCFExplanationModule(ABC):
     def generate_cfs(
         self,
         X: chex.ArrayBatched,
-        pred_fn: Optional[Callable] = None) -> chex.ArrayBatched:
+        pred_fn: Optional[Callable] = None,
+        params: Optional[hk.Params] = None,
+        rng_key: Optional[random.PRNGKey] = None
+    ) -> chex.ArrayBatched:
         pass
 
     def update_cat_info(self, data_module: TabularDataModule):
