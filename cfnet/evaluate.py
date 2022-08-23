@@ -33,8 +33,10 @@ def generate_cf_results(
     # validate arguments
     if (pred_fn is None) and (params is None) and (rng_key is None):
         raise ValueError("A valid `pred_fn: Callable[jnp.DeviceArray], jnp.DeviceArray]` or `params: hk.Params` needs to be passed.")
-
+    # prepare
     X, y = dm.test_dataset[:]
+    cf_module.update_cat_info(dm)
+    # generate cfs
     current_time = time.time()
     if pred_fn:
         cfs = cf_module.generate_cfs(X, pred_fn)

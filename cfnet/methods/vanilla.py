@@ -83,6 +83,6 @@ class VanillaCF(LocalCFExplanationModule):
         pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray],
         is_parallel: bool = False
     ) -> jnp.DeviceArray:
-        def _generate_cf(x: jnp.DeviceArray, pred_fn) -> jnp.ndarray:
+        def _generate_cf(x: jnp.DeviceArray) -> jnp.ndarray:
             return self.generate_cf(x, pred_fn)
-        return jax.vmap(_generate_cf)(X, pred_fn) if not is_parallel else jax.pmap(_generate_cf)(X, pred_fn)
+        return jax.vmap(_generate_cf)(X) if not is_parallel else jax.pmap(_generate_cf)(X)
