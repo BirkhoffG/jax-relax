@@ -17,7 +17,7 @@ m_configs = {
     "dropout_rate": 0.3
 }
 t_configs = {
-    'n_epochs': 20,
+    'n_epochs': 2,
     'monitor_metrics': 'val/val_loss',
     'logger_name': 'pred'
 }
@@ -31,16 +31,15 @@ if __name__ == "__main__":
 
     data_configs = load_configs('assets/configs/data_configs/adult.json')
     dm = TabularDataModule(data_configs)
+    cf_exp = VanillaCF(cf_configs)
 
     params, opt_state = train_model(
         training_module, dm, t_configs
     )
     pred_fn = lambda x: training_module.forward(params, random.PRNGKey(0), x, is_training=False)
-
-    cf_exp = VanillaCF(pred_fn, cf_configs)
         
     print("Start generating cf...")
-    cf_results = generate_cf_results_local_exp(cf_exp, dm)
+    cf_results = generate_cf_results_local_exp(cf_exp, dm, pred_fn)
     print("DONE!")
 
     print(benchmark_cfs([cf_results]))
