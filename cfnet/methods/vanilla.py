@@ -9,7 +9,6 @@ from ..datasets import TabularDataModule
 from ..training_module import grad_update, cat_normalize
 from ..utils import check_cat_info, validate_configs
 
-
 # Cell
 def binary_cross_entropy(y_pred: chex.Array, y: chex.Array) -> chex.Array:
     return -(y * jnp.log(y_pred) + (1 - y) * jnp.log(1 - y_pred))
@@ -18,7 +17,6 @@ def binary_cross_entropy(y_pred: chex.Array, y: chex.Array) -> chex.Array:
 class VanillaCFConfig(BaseParser):
     n_steps: int = 1000
     lr: float = 0.001
-
 
 # Cell
 class VanillaCF(LocalCFExplanationModule):
