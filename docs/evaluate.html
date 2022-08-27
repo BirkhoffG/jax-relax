@@ -46,6 +46,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h2 id="CFExplanationResults" class="doc_header"><code>class</code> <code>CFExplanationResults</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L17" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CFExplanationResults</code>(<strong><code>cf_name</code></strong>:<code>str</code>, <strong><code>dataset_name</code></strong>:<code>str</code>, <strong><code>X</code></strong>:<code>DeviceArrayBase</code>, <strong><code>y</code></strong>:<code>DeviceArrayBase</code>, <strong><code>cfs</code></strong>:<code>DeviceArrayBase</code>, <strong><code>total_time</code></strong>:<code>float</code>, <strong><code>pred_fn</code></strong>:<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>])</p>
 </blockquote>
@@ -137,6 +138,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h4 id="generate_cf_results" class="doc_header"><code>generate_cf_results</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L27" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#BaseCFExplanationModule"><code>BaseCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>pred_fn</code></strong>:<code>Optional</code>[<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>]]=<em><code>None</code></em>, <strong><code>params</code></strong>:<code>Optional</code>[<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>]]=<em><code>None</code></em>, <strong><code>rng_key</code></strong>:<code>Optional</code>[<code>PRNGKey</code>]=<em><code>None</code></em>)</p>
 </blockquote>
@@ -209,6 +211,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h4 id="generate_cf_results_local_exp" class="doc_header"><code>generate_cf_results_local_exp</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L56" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results_local_exp</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#LocalCFExplanationModule"><code>LocalCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>pred_fn</code></strong>:<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>])</p>
 </blockquote>
@@ -231,6 +234,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output">
 
 <div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -305,6 +309,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h4 id="compute_predictive_acc" class="doc_header"><code>compute_predictive_acc</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L72" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_predictive_acc</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
 </blockquote>
@@ -327,6 +332,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output">
 
 <div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -353,6 +359,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h4 id="compute_proximity" class="doc_header"><code>compute_proximity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L85" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_proximity</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
 </blockquote>
@@ -375,6 +382,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output">
 
 <div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -415,6 +423,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h4 id="evaluate_cfs" class="doc_header"><code>evaluate_cfs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L102" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>evaluate_cfs</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>, <strong><code>metrics</code></strong>:<code>Optional</code>[<code>List</code>[<code>str</code>]]=<em><code>None</code></em>, <strong><code>return_dict</code></strong>:<code>bool</code>=<em><code>True</code></em>, <strong><code>return_df</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
 </blockquote>
@@ -444,6 +453,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="output">
 
 <div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -487,31 +497,31 @@ nb_path: "nbs/06_evaluate.ipynb"
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">data_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;data_dir&quot;</span><span class="p">:</span> <span class="s2">&quot;assets/data/s_adult.csv&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;data_name&quot;</span><span class="p">:</span> <span class="s2">&quot;adult&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
-    <span class="s1">&#39;sample_frac&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="s2">&quot;continous_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;age&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;hours_per_week&quot;</span>
+    <span class="s2">"data_dir"</span><span class="p">:</span> <span class="s2">"assets/data/s_adult.csv"</span><span class="p">,</span>
+    <span class="s2">"data_name"</span><span class="p">:</span> <span class="s2">"adult"</span><span class="p">,</span>
+    <span class="s2">"batch_size"</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="s1">'sample_frac'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">"continous_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"age"</span><span class="p">,</span>
+        <span class="s2">"hours_per_week"</span>
     <span class="p">],</span>
-    <span class="s2">&quot;discret_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;workclass&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;education&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;marital_status&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;occupation&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;race&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;gender&quot;</span>
+    <span class="s2">"discret_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"workclass"</span><span class="p">,</span>
+        <span class="s2">"education"</span><span class="p">,</span>
+        <span class="s2">"marital_status"</span><span class="p">,</span>
+        <span class="s2">"occupation"</span><span class="p">,</span>
+        <span class="s2">"race"</span><span class="p">,</span>
+        <span class="s2">"gender"</span>
     <span class="p">],</span>
 <span class="p">}</span>
 <span class="n">m_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
-    <span class="s2">&quot;dropout_rate&quot;</span><span class="p">:</span> <span class="mf">0.3</span>
+    <span class="s2">"sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+    <span class="s2">"dropout_rate"</span><span class="p">:</span> <span class="mf">0.3</span>
 <span class="p">}</span>
 <span class="n">t_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_epochs&#39;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-    <span class="s1">&#39;monitor_metrics&#39;</span><span class="p">:</span> <span class="s1">&#39;val/val_loss&#39;</span>
+    <span class="s1">'n_epochs'</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="s1">'monitor_metrics'</span><span class="p">:</span> <span class="s1">'val/val_loss'</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -571,7 +581,7 @@ Epoch 19: 100%|██████████| 10/10 [00:00&lt;00:00, 62.79batch
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cf_exp</span> <span class="o">=</span> <span class="n">VanillaCF</span><span class="p">({</span> <span class="s2">&quot;n_steps&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;pred_fn&#39;</span><span class="p">:</span> <span class="n">pred_fn</span> <span class="p">})</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">cf_exp</span> <span class="o">=</span> <span class="n">VanillaCF</span><span class="p">({</span> <span class="s2">"n_steps"</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">'pred_fn'</span><span class="p">:</span> <span class="n">pred_fn</span> <span class="p">})</span>
 <span class="n">cf_res</span> <span class="o">=</span> <span class="n">generate_cf_results_local_exp</span><span class="p">(</span><span class="n">cf_exp</span><span class="p">,</span> <span class="n">dm</span><span class="p">)</span>
 </pre></div>
 
@@ -707,18 +717,18 @@ Epoch 19: 100%|██████████| 10/10 [00:00&lt;00:00, 62.79batch
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">m_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;enc_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">10</span><span class="p">],</span>
-    <span class="s2">&quot;dec_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">],</span>
-    <span class="s2">&quot;exp_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
-    <span class="s2">&quot;dropout_rate&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>    
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_1&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_3&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_2&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+    <span class="s2">"enc_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">10</span><span class="p">],</span>
+    <span class="s2">"dec_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">],</span>
+    <span class="s2">"exp_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="s2">"dropout_rate"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>    
+    <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+    <span class="s2">"lambda_1"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">"lambda_3"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">"lambda_2"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
 <span class="p">}</span>
 <span class="n">t_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_epochs&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-    <span class="s1">&#39;monitor_metrics&#39;</span><span class="p">:</span> <span class="s1">&#39;val/val_loss&#39;</span>
+    <span class="s1">'n_epochs'</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="s1">'monitor_metrics'</span><span class="p">:</span> <span class="s1">'val/val_loss'</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -850,5 +860,5 @@ Epoch 19: 100%|██████████| 10/10 [00:00&lt;00:00, 62.79batch
     {% endraw %}
 
 </div>
- 
+
 

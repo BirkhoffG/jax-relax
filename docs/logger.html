@@ -46,6 +46,7 @@ nb_path: "nbs/04a_logger.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h2 id="TensorboardLogger" class="doc_header"><code>class</code> <code>TensorboardLogger</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/logger.py#L11" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>TensorboardLogger</code>(<strong><code>log_dir</code></strong>:<code>Union</code>[<code>str</code>, <code>Path</code>], <strong><code>name</code></strong>:<code>str</code>, <strong><code>on_step</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
 </blockquote>
@@ -74,15 +75,15 @@ nb_path: "nbs/04a_logger.ipynb"
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">TensorboardLogger</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;debug&#39;</span><span class="p">)</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">save_hyperparams</span><span class="p">({</span><span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">})</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">&#39;train/train_loss_1&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">&#39;train/train_loss_1&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">})</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">&#39;train/train_loss_1&#39;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">})</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">logger</span> <span class="o">=</span> <span class="n">TensorboardLogger</span><span class="p">(</span><span class="s1">'log'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'debug'</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">save_hyperparams</span><span class="p">({</span><span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">})</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">'train/train_loss_1'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">'epoch'</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">'train/train_loss_1'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">})</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">'train/train_loss_1'</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">})</span>
 
-<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">&#39;train/train_loss_1&#39;</span><span class="p">:</span> <span class="mf">0.07</span><span class="p">,</span> <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">&#39;train/train_loss_1&#39;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="p">})</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">&#39;train/train_loss_1&#39;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s1">&#39;epoch&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">'train/train_loss_1'</span><span class="p">:</span> <span class="mf">0.07</span><span class="p">,</span> <span class="s1">'epoch'</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">'train/train_loss_1'</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="p">})</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">({</span><span class="s1">'train/train_loss_1'</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s1">'epoch'</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
 
 <span class="n">logger</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
@@ -95,5 +96,5 @@ nb_path: "nbs/04a_logger.ipynb"
     {% endraw %}
 
 </div>
- 
+
 

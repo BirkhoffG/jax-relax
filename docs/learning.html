@@ -46,6 +46,7 @@ nb_path: "nbs/04_learning.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h4 id="train_model_with_states" class="doc_header"><code>train_model_with_states</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/train.py#L27" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>train_model_with_states</code>(<strong><code>training_module</code></strong>:<a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a>, <strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>opt_state</code></strong>:<code>Union</code>[<code>ndarray</code>, <code>typing.Iterable[ForwardRef('ArrayTree')]</code>, <code>typing.Mapping[typing.Any, ForwardRef('ArrayTree')]</code>], <strong><code>data_module</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>t_configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <a href="/cfnet/learning.html#TrainingConfigs"><code>TrainingConfigs</code></a>])</p>
 </blockquote>
@@ -75,6 +76,7 @@ nb_path: "nbs/04_learning.ipynb"
 <div class="output">
 
 <div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -115,32 +117,32 @@ nb_path: "nbs/04_learning.ipynb"
 <span class="kn">from</span> <span class="nn">cfnet.training_module</span> <span class="kn">import</span> <span class="n">PredictiveTrainingModule</span>
 
 <span class="n">data_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;data_dir&quot;</span><span class="p">:</span> <span class="s2">&quot;assets/data/s_adult.csv&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;data_name&quot;</span><span class="p">:</span> <span class="s2">&quot;adult&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
-    <span class="s1">&#39;sample_frac&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="s2">&quot;continous_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;age&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;hours_per_week&quot;</span>
+    <span class="s2">"data_dir"</span><span class="p">:</span> <span class="s2">"assets/data/s_adult.csv"</span><span class="p">,</span>
+    <span class="s2">"data_name"</span><span class="p">:</span> <span class="s2">"adult"</span><span class="p">,</span>
+    <span class="s2">"batch_size"</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="s1">'sample_frac'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">"continous_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"age"</span><span class="p">,</span>
+        <span class="s2">"hours_per_week"</span>
     <span class="p">],</span>
-    <span class="s2">&quot;discret_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;workclass&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;education&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;marital_status&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;occupation&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;race&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;gender&quot;</span>
+    <span class="s2">"discret_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"workclass"</span><span class="p">,</span>
+        <span class="s2">"education"</span><span class="p">,</span>
+        <span class="s2">"marital_status"</span><span class="p">,</span>
+        <span class="s2">"occupation"</span><span class="p">,</span>
+        <span class="s2">"race"</span><span class="p">,</span>
+        <span class="s2">"gender"</span>
     <span class="p">],</span>
 <span class="p">}</span>
 <span class="c1"># dm = </span>
 <span class="n">m_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
-    <span class="s2">&quot;dropout_rate&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+    <span class="s2">"sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="s2">"dropout_rate"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>
+    <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
 <span class="p">}</span>
 <span class="n">t_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_epochs&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-    <span class="s1">&#39;monitor_metrics&#39;</span><span class="p">:</span> <span class="s1">&#39;val/val_loss&#39;</span>
+    <span class="s1">'n_epochs'</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="s1">'monitor_metrics'</span><span class="p">:</span> <span class="s1">'val/val_loss'</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -338,5 +340,5 @@ ValueError: &#34;PredictiveTrainingModuleConfigs&#34; object has no field &#34;_
     {% endraw %}
 
 </div>
- 
+
 

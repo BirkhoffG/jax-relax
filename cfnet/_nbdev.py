@@ -4,6 +4,7 @@ __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
 index = {"validate_configs": "00_utils.ipynb",
          "load_json": "00_utils.ipynb",
+         "add_to_class": "00_utils.ipynb",
          "cat_normalize": "00_utils.ipynb",
          "binary_cross_entropy": "00_utils.ipynb",
          "accuracy": "00_utils.ipynb",

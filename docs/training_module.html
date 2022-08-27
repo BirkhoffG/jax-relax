@@ -46,8 +46,9 @@ nb_path: "nbs/03_training_module.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="make_model" class="doc_header"><code>make_model</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L73" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>make_model</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>], <strong><code>model</code></strong>:<code>Module</code>)</p>
+<h4 id="make_model" class="doc_header"><code>make_model</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L79" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>make_model</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>], <strong><code>model</code></strong>:<code>Module</code>)</p>
 </blockquote>
 
 </div>
@@ -70,39 +71,9 @@ nb_path: "nbs/03_training_module.ipynb"
 <div class="output_area">
 
 
-<div class="output_markdown rendered_html output_subarea ">
-<h4 id="init_net_opt" class="doc_header"><code>init_net_opt</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L86" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>init_net_opt</code>(<strong><code>net</code></strong>:<code>Transformed</code>, <strong><code>opt</code></strong>:<code>GradientTransformation</code>, <strong><code>X</code></strong>:<code>DeviceArrayBase</code>, <strong><code>key</code></strong>:<code>PRNGKey</code>)</p>
-</blockquote>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="grad_update" class="doc_header"><code>grad_update</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L98" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>grad_update</code>(<strong><code>grads</code></strong>:<code>Dict</code>[<code>str</code>, <code>ndarray</code>], <strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>opt_state</code></strong>:<code>Union</code>[<code>ndarray</code>, <code>typing.Iterable[ForwardRef('ArrayTree')]</code>, <code>typing.Mapping[typing.Any, ForwardRef('ArrayTree')]</code>], <strong><code>opt</code></strong>:<code>GradientTransformation</code>)</p>
+<h4 id="init_net_opt" class="doc_header"><code>init_net_opt</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L92" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>init_net_opt</code>(<strong><code>net</code></strong>:<code>Transformed</code>, <strong><code>opt</code></strong>:<code>GradientTransformation</code>, <strong><code>X</code></strong>:<code>DeviceArrayBase</code>, <strong><code>key</code></strong>:<code>PRNGKey</code>)</p>
 </blockquote>
 
 </div>
@@ -130,6 +101,39 @@ nb_path: "nbs/03_training_module.ipynb"
 <div class="output">
 
 <div class="output_area">
+
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="grad_update" class="doc_header"><code>grad_update</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L104" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>grad_update</code>(<strong><code>grads</code></strong>:<code>Dict</code>[<code>str</code>, <code>ndarray</code>], <strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>opt_state</code></strong>:<code>Union</code>[<code>ndarray</code>, <code>typing.Iterable[ForwardRef('ArrayTree')]</code>, <code>typing.Mapping[typing.Any, ForwardRef('ArrayTree')]</code>], <strong><code>opt</code></strong>:<code>GradientTransformation</code>)</p>
+</blockquote>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -165,6 +169,7 @@ inheritance.</p>
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h2 id="PredictiveTrainingModuleConfigs" class="doc_header"><code>class</code> <code>PredictiveTrainingModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L61" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PredictiveTrainingModuleConfigs</code>(<strong><code>lr</code></strong>:<code>float</code>) :: <code>BaseModel</code></p>
 </blockquote>
@@ -194,6 +199,7 @@ inheritance.</p>
 <div class="output">
 
 <div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -229,6 +235,7 @@ inheritance.</p>
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h4 id="partition_trainable_params" class="doc_header"><code>partition_trainable_params</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L118" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>partition_trainable_params</code>(<strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>trainable_name</code></strong>:<code>str</code>)</p>
 </blockquote>
@@ -260,6 +267,7 @@ inheritance.</p>
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
 <h2 id="CounterNetTrainingModuleConfigs" class="doc_header"><code>class</code> <code>CounterNetTrainingModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L124" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CounterNetTrainingModuleConfigs</code>(<strong><code>lr</code></strong>:<code>float</code>, <strong><code>lambda_1</code></strong>:<code>float</code>, <strong><code>lambda_2</code></strong>:<code>float</code>, <strong><code>lambda_3</code></strong>:<code>float</code>) :: <code>BaseModel</code></p>
 </blockquote>
@@ -289,6 +297,7 @@ inheritance.</p>
 <div class="output">
 
 <div class="output_area">
+
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -374,38 +383,38 @@ inheritance.</p>
 <span class="kn">from</span> <span class="nn">cfnet.datasets</span> <span class="kn">import</span> <span class="n">TabularDataModule</span>
 
 <span class="n">data_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;data_dir&quot;</span><span class="p">:</span> <span class="s2">&quot;assets/data/s_adult.csv&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;data_name&quot;</span><span class="p">:</span> <span class="s2">&quot;adult&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
-    <span class="c1"># &#39;sample_frac&#39;: 0.1,</span>
-    <span class="s2">&quot;continous_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;age&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;hours_per_week&quot;</span>
+    <span class="s2">"data_dir"</span><span class="p">:</span> <span class="s2">"assets/data/s_adult.csv"</span><span class="p">,</span>
+    <span class="s2">"data_name"</span><span class="p">:</span> <span class="s2">"adult"</span><span class="p">,</span>
+    <span class="s2">"batch_size"</span><span class="p">:</span> <span class="mi">128</span><span class="p">,</span>
+    <span class="c1"># 'sample_frac': 0.1,</span>
+    <span class="s2">"continous_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"age"</span><span class="p">,</span>
+        <span class="s2">"hours_per_week"</span>
     <span class="p">],</span>
-    <span class="s2">&quot;discret_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;workclass&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;education&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;marital_status&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;occupation&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;race&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;gender&quot;</span>
+    <span class="s2">"discret_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"workclass"</span><span class="p">,</span>
+        <span class="s2">"education"</span><span class="p">,</span>
+        <span class="s2">"marital_status"</span><span class="p">,</span>
+        <span class="s2">"occupation"</span><span class="p">,</span>
+        <span class="s2">"race"</span><span class="p">,</span>
+        <span class="s2">"gender"</span>
     <span class="p">],</span>
 <span class="p">}</span>
 <span class="c1"># dm = </span>
 <span class="n">m_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;enc_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">10</span><span class="p">],</span>
-    <span class="s2">&quot;dec_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">],</span>
-    <span class="s2">&quot;exp_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
-    <span class="s2">&quot;dropout_rate&quot;</span><span class="p">:</span> <span class="mf">0.3</span>
+    <span class="s2">"enc_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span><span class="mi">10</span><span class="p">],</span>
+    <span class="s2">"dec_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">],</span>
+    <span class="s2">"exp_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="s2">"dropout_rate"</span><span class="p">:</span> <span class="mf">0.3</span>
 <span class="p">}</span>
 
 <span class="n">t_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;epochs&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_1&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_3&quot;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="s2">&quot;lambda_2&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
-    <span class="s1">&#39;monitor_metrics&#39;</span><span class="p">:</span> <span class="s1">&#39;val/val_loss&#39;</span>
+    <span class="s1">'epochs'</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+    <span class="s2">"lambda_1"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">"lambda_3"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">"lambda_2"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span>
+    <span class="s1">'monitor_metrics'</span><span class="p">:</span> <span class="s1">'val/val_loss'</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -484,7 +493,7 @@ inheritance.</p>
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">params</span><span class="p">,</span> <span class="n">opts</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span>
     <span class="n">CounterNetTrainingModule</span><span class="p">(</span><span class="n">m_configs</span><span class="p">,</span> <span class="n">t_configs</span><span class="p">),</span>
     <span class="n">TabularDataModule</span><span class="p">(</span><span class="n">data_configs</span><span class="p">),</span>
-    <span class="n">TensorboardLogger</span><span class="p">(</span><span class="s1">&#39;log/&#39;</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;cfnet&#39;</span><span class="p">),</span>
+    <span class="n">TensorboardLogger</span><span class="p">(</span><span class="s1">'log/'</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'cfnet'</span><span class="p">),</span>
     <span class="n">t_configs</span>
 <span class="p">)</span>
 </pre></div>
@@ -557,7 +566,7 @@ inheritance.</p>
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">partition_trainable_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">trainable_name</span><span class="o">=</span><span class="s1">&#39;counter_net_model/Explainer&#39;</span><span class="p">)</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">partition_trainable_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">trainable_name</span><span class="o">=</span><span class="s1">'counter_net_model/Explainer'</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -1251,5 +1260,5 @@ inheritance.</p>
     {% endraw %}
 
 </div>
- 
+
 
