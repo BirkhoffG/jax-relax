@@ -17,7 +17,7 @@ m_configs = {
     "dropout_rate": 0.3
 }
 t_configs = {
-    'n_epochs': 2,
+    'n_epochs': 10,
     'monitor_metrics': 'val/val_loss',
     'logger_name': 'pred'
 }

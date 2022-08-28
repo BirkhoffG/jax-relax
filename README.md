@@ -1,4 +1,4 @@
-# CFNET
+# CFNet: An Algorithmic Recourse Library in Jax
 > A fast and scalable library for counterfactual explanations in Jax.
 
 
@@ -42,7 +42,7 @@ Then, you should install the right GPU or TPU version of Jax by following steps 
 
 ## A Minimum Example
 
-```python
+```
 #hide_output
 from cfnet.utils import load_json
 from cfnet.datasets import TabularDataModule
