@@ -112,16 +112,70 @@ pip install -e cfnet
 <span class="c1"># define CF Explanation Module</span>
 <span class="n">pred_fn</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">training_module</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span>
     <span class="n">params</span><span class="p">,</span> <span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">x</span><span class="p">,</span> <span class="n">is_training</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">cf_exp</span> <span class="o">=</span> <span class="n">VanillaCF</span><span class="p">(</span><span class="n">pred_fn</span><span class="p">,</span> <span class="n">cf_configs</span><span class="p">)</span>
+<span class="n">cf_exp</span> <span class="o">=</span> <span class="n">VanillaCF</span><span class="p">(</span><span class="n">cf_configs</span><span class="p">)</span>
 
 <span class="c1"># generate cf explanations</span>
-<span class="n">cf_results</span> <span class="o">=</span> <span class="n">generate_cf_results_local_exp</span><span class="p">(</span><span class="n">cf_exp</span><span class="p">,</span> <span class="n">dm</span><span class="p">)</span>
+<span class="n">cf_results</span> <span class="o">=</span> <span class="n">generate_cf_results_local_exp</span><span class="p">(</span><span class="n">cf_exp</span><span class="p">,</span> <span class="n">dm</span><span class="p">,</span> <span class="n">pred_fn</span><span class="p">)</span>
 
 <span class="c1"># benchmark different cf explanation methods</span>
 <span class="n">benchmark_cfs</span><span class="p">([</span><span class="n">cf_results</span><span class="p">])</span>
 </pre></div>
 
     </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>Epoch 9: 100%|██████████| 191/191 [00:02&lt;00:00, 76.28batch/s, train/train_loss_1=0.0548]
+100%|██████████| 1000/1000 [00:06&lt;00:00, 142.99it/s]
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea output_execute_result"><div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>acc</th>
+      <th>validity</th>
+      <th>proximity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>VanillaCF</th>
+      <td>0.825943</td>
+      <td>0.894116</td>
+      <td>7.257979</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+
+</div>
+
 </div>
 </div>
 
