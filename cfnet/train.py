@@ -7,6 +7,7 @@ from .import_essentials import *
 from .datasets import TabularDataModule
 from .training_module import BaseTrainingModule
 from .logger import TensorboardLogger
+from .utils import validate_configs
 from ._ckpt_manager import CheckpointManager
 
 # Internal Cell
@@ -22,19 +23,15 @@ class TrainingConfigs(BaseParser):
     @property
     def PRNGSequence(self): return hk.PRNGSequence(self.seed)
 
-# Internal Cell
-def _validate_training_configs(t_configs: Union[Dict[str, Any], TrainingConfigs]) -> TrainingConfigs:
-    if not isinstance(t_configs, TrainingConfigs):
-        t_configs = TrainingConfigs(**t_configs)
-    return t_configs
-
 # Cell
-def train_model_with_states(training_module: BaseTrainingModule,
-                            params: hk.Params,
-                            opt_state: optax.OptState,
-                            data_module: TabularDataModule,
-                            t_configs: Union[Dict[str, Any], TrainingConfigs]) -> Tuple[hk.Params, optax.OptState]:
-    t_configs = _validate_training_configs(t_configs)
+def train_model_with_states(
+    training_module: BaseTrainingModule,
+    params: hk.Params,
+    opt_state: optax.OptState,
+    data_module: TabularDataModule,
+    t_configs: Union[Dict[str, Any], TrainingConfigs]
+) -> Tuple[hk.Params, optax.OptState]:
+    t_configs = validate_configs(t_configs, TrainingConfigs)
     keys = t_configs.PRNGSequence
     # define logger
     logger = TensorboardLogger(
@@ -83,10 +80,12 @@ def train_model_with_states(training_module: BaseTrainingModule,
     return params, opt_state
 
 # Cell
-def train_model(training_module: BaseTrainingModule,
-                data_module: TabularDataModule,
-                t_configs: Union[Dict[str, Any], TrainingConfigs]) -> Tuple[hk.Params, optax.OptState]:
-    t_configs = _validate_training_configs(t_configs)
+def train_model(
+    training_module: BaseTrainingModule,
+    data_module: TabularDataModule,
+    t_configs: Union[Dict[str, Any], TrainingConfigs]
+) -> Tuple[hk.Params, optax.OptState]:
+    t_configs = validate_configs(t_configs, TrainingConfigs)
     keys = t_configs.PRNGSequence
     params, opt_state = training_module.init_net_opt(data_module, next(keys))
     return train_model_with_states(

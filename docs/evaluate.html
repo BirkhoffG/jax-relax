@@ -47,7 +47,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="CFExplanationResults" class="doc_header"><code>class</code> <code>CFExplanationResults</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L16" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CFExplanationResults</code>(<strong><code>cf_name</code></strong>:<code>str</code>, <strong><code>dataset_name</code></strong>:<code>str</code>, <strong><code>X</code></strong>:<code>DeviceArrayBase</code>, <strong><code>y</code></strong>:<code>DeviceArrayBase</code>, <strong><code>cfs</code></strong>:<code>DeviceArrayBase</code>, <strong><code>total_time</code></strong>:<code>float</code>, <strong><code>pred_fn</code></strong>:<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>])</p>
+<h2 id="CFExplanationResults" class="doc_header"><code>class</code> <code>CFExplanationResults</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L17" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CFExplanationResults</code>(<strong><code>cf_name</code></strong>:<code>str</code>, <strong><code>dataset_name</code></strong>:<code>str</code>, <strong><code>X</code></strong>:<code>DeviceArrayBase</code>, <strong><code>y</code></strong>:<code>DeviceArrayBase</code>, <strong><code>cfs</code></strong>:<code>DeviceArrayBase</code>, <strong><code>total_time</code></strong>:<code>float</code>, <strong><code>pred_fn</code></strong>:<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>])</p>
 </blockquote>
 <p>CFExplanationResults(cf_name: str, dataset_name: str, X: jaxlib.xla_extension.DeviceArrayBase, y: jaxlib.xla_extension.DeviceArrayBase, cfs: jaxlib.xla_extension.DeviceArrayBase, total_time: float, pred_fn: Callable[[jaxlib.xla_extension.DeviceArrayBase], jaxlib.xla_extension.DeviceArrayBase])</p>
 <table>
@@ -138,7 +138,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="generate_cf_results" class="doc_header"><code>generate_cf_results</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L26" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#BaseCFExplanationModule"><code>BaseCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>pred_fn</code></strong>:<code>Optional</code>[<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>]]=<em><code>None</code></em>, <strong><code>params</code></strong>:<code>Optional</code>[<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>]]=<em><code>None</code></em>, <strong><code>rng_key</code></strong>:<code>Optional</code>[<code>PRNGKey</code>]=<em><code>None</code></em>)</p>
+<h4 id="generate_cf_results" class="doc_header"><code>generate_cf_results</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L27" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#BaseCFExplanationModule"><code>BaseCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>pred_fn</code></strong>:<code>Optional</code>[<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>]]=<em><code>None</code></em>, <strong><code>params</code></strong>:<code>Optional</code>[<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>]]=<em><code>None</code></em>, <strong><code>rng_key</code></strong>:<code>Optional</code>[<code>PRNGKey</code>]=<em><code>None</code></em>)</p>
 </blockquote>
 <table>
 <thead><tr>
@@ -210,7 +210,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="generate_cf_results_local_exp" class="doc_header"><code>generate_cf_results_local_exp</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L55" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results_local_exp</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#LocalCFExplanationModule"><code>LocalCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>pred_fn</code></strong>:<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>])</p>
+<h4 id="generate_cf_results_local_exp" class="doc_header"><code>generate_cf_results_local_exp</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L56" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results_local_exp</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#LocalCFExplanationModule"><code>LocalCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>pred_fn</code></strong>:<code>Callable</code>[<code>DeviceArrayBase</code>, <code>DeviceArrayBase</code>])</p>
 </blockquote>
 
 </div>
@@ -234,7 +234,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="generate_cf_results_cfnet" class="doc_header"><code>generate_cf_results_cfnet</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L62" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results_cfnet</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#LocalCFExplanationModule"><code>LocalCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>params</code></strong>:<code>Optional</code>[<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>]]=<em><code>None</code></em>, <strong><code>rng_key</code></strong>:<code>Optional</code>[<code>PRNGKey</code>]=<em><code>None</code></em>)</p>
+<h4 id="generate_cf_results_cfnet" class="doc_header"><code>generate_cf_results_cfnet</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L63" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>generate_cf_results_cfnet</code>(<strong><code>cf_module</code></strong>:<a href="/cfnet/inferfaces.html#LocalCFExplanationModule"><code>LocalCFExplanationModule</code></a>, <strong><code>dm</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>params</code></strong>:<code>Optional</code>[<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>]]=<em><code>None</code></em>, <strong><code>rng_key</code></strong>:<code>Optional</code>[<code>PRNGKey</code>]=<em><code>None</code></em>)</p>
 </blockquote>
 <table>
 <thead><tr>
@@ -299,13 +299,6 @@ nb_path: "nbs/06_evaluate.ipynb"
     
 <div class="cell border-box-sizing code_cell rendered">
 
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
 <div class="output_wrapper">
 <div class="output">
 
@@ -313,7 +306,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="compute_predictive_acc" class="doc_header"><code>compute_predictive_acc</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L75" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_predictive_acc</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
+<h4 id="compute_predictive_acc" class="doc_header"><code>compute_predictive_acc</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L72" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_predictive_acc</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
 </blockquote>
 
 </div>
@@ -337,7 +330,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="compute_validity" class="doc_header"><code>compute_validity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L81" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_validity</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
+<h4 id="compute_validity" class="doc_header"><code>compute_validity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L78" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_validity</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
 </blockquote>
 
 </div>
@@ -361,7 +354,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="compute_proximity" class="doc_header"><code>compute_proximity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L88" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_proximity</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
+<h4 id="compute_proximity" class="doc_header"><code>compute_proximity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L85" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>compute_proximity</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
 </blockquote>
 
 </div>
@@ -385,7 +378,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="get_runtime" class="doc_header"><code>get_runtime</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L91" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_runtime</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
+<h4 id="get_runtime" class="doc_header"><code>get_runtime</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L88" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>get_runtime</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>)</p>
 </blockquote>
 
 </div>
@@ -423,7 +416,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="evaluate_cfs" class="doc_header"><code>evaluate_cfs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L105" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>evaluate_cfs</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>, <strong><code>metrics</code></strong>:<code>Optional</code>[<code>List</code>[<code>str</code>]]=<em><code>None</code></em>, <strong><code>return_dict</code></strong>:<code>bool</code>=<em><code>True</code></em>, <strong><code>return_df</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
+<h4 id="evaluate_cfs" class="doc_header"><code>evaluate_cfs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L102" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>evaluate_cfs</code>(<strong><code>cf_results</code></strong>:<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>, <strong><code>metrics</code></strong>:<code>Optional</code>[<code>List</code>[<code>str</code>]]=<em><code>None</code></em>, <strong><code>return_dict</code></strong>:<code>bool</code>=<em><code>True</code></em>, <strong><code>return_df</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
 </blockquote>
 
 </div>
@@ -454,7 +447,7 @@ nb_path: "nbs/06_evaluate.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="benchmark_cfs" class="doc_header"><code>benchmark_cfs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L125" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>benchmark_cfs</code>(<strong><code>cf_results_list</code></strong>:<code>Iterable</code>[<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>], <strong><code>metrics</code></strong>:<code>Optional</code>[<code>List</code>[<code>str</code>]]=<em><code>None</code></em>)</p>
+<h4 id="benchmark_cfs" class="doc_header"><code>benchmark_cfs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/evaluate.py#L122" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>benchmark_cfs</code>(<strong><code>cf_results_list</code></strong>:<code>Iterable</code>[<a href="/cfnet/evaluate.html#CFExplanationResults"><code>CFExplanationResults</code></a>], <strong><code>metrics</code></strong>:<code>Optional</code>[<code>List</code>[<code>str</code>]]=<em><code>None</code></em>)</p>
 </blockquote>
 
 </div>
