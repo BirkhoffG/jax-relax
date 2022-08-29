@@ -47,7 +47,7 @@ nb_path: "nbs/03_training_module.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="make_model" class="doc_header"><code>make_model</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L18" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>make_model</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>], <strong><code>model</code></strong>:<code>Module</code>)</p>
+<h4 id="make_model" class="doc_header"><code>make_model</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L73" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>make_model</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>], <strong><code>model</code></strong>:<code>Module</code>)</p>
 </blockquote>
 
 </div>
@@ -71,38 +71,7 @@ nb_path: "nbs/03_training_module.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="init_net_opt" class="doc_header"><code>init_net_opt</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L29" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>init_net_opt</code>(<strong><code>net</code></strong>:<code>Transformed</code>, <strong><code>opt</code></strong>:<code>GradientTransformation</code>, <strong><code>data_module</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>key</code></strong>:<code>PRNGKey</code>)</p>
-</blockquote>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-<div class="output_markdown rendered_html output_subarea ">
-<h4 id="grad_update" class="doc_header"><code>grad_update</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L40" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>grad_update</code>(<strong><code>grads</code></strong>:<code>Dict</code>[<code>str</code>, <code>ndarray</code>], <strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>opt_state</code></strong>:<code>Union</code>[<code>ndarray</code>, <code>typing.Iterable[ForwardRef('ArrayTree')]</code>, <code>typing.Mapping[typing.Any, ForwardRef('ArrayTree')]</code>], <strong><code>opt</code></strong>:<code>GradientTransformation</code>)</p>
+<h4 id="init_net_opt" class="doc_header"><code>init_net_opt</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L86" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>init_net_opt</code>(<strong><code>net</code></strong>:<code>Transformed</code>, <strong><code>opt</code></strong>:<code>GradientTransformation</code>, <strong><code>X</code></strong>:<code>DeviceArrayBase</code>, <strong><code>key</code></strong>:<code>PRNGKey</code>)</p>
 </blockquote>
 
 </div>
@@ -133,64 +102,7 @@ nb_path: "nbs/03_training_module.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="BaseTrainingModule" class="doc_header"><code>class</code> <code>BaseTrainingModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L49" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>BaseTrainingModule</code>() :: <code>ABC</code></p>
-</blockquote>
-<p>Helper class that provides a standard way to create an ABC using
-inheritance.</p>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-<div class="output_markdown rendered_html output_subarea ">
-<h4 id="accuracy" class="doc_header"><code>accuracy</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L92" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>accuracy</code>(<strong><code>y_true</code></strong>:<code>ndarray</code>, <strong><code>y_pred</code></strong>:<code>ndarray</code>)</p>
-</blockquote>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-<div class="output_markdown rendered_html output_subarea ">
-<h4 id="proximity" class="doc_header"><code>proximity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L96" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>proximity</code>(<strong><code>x</code></strong>:<code>ndarray</code>, <strong><code>cf</code></strong>:<code>ndarray</code>)</p>
+<h4 id="grad_update" class="doc_header"><code>grad_update</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L98" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>grad_update</code>(<strong><code>grads</code></strong>:<code>Dict</code>[<code>str</code>, <code>ndarray</code>], <strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>opt_state</code></strong>:<code>Union</code>[<code>ndarray</code>, <code>typing.Iterable[ForwardRef('ArrayTree')]</code>, <code>typing.Mapping[typing.Any, ForwardRef('ArrayTree')]</code>], <strong><code>opt</code></strong>:<code>GradientTransformation</code>)</p>
 </blockquote>
 
 </div>
@@ -221,38 +133,7 @@ inheritance.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PredictiveTrainingModuleConfigs" class="doc_header"><code>class</code> <code>PredictiveTrainingModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L101" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PredictiveTrainingModuleConfigs</code>(<strong><code>lr</code></strong>:<code>float</code>) :: <code>BaseModel</code></p>
-</blockquote>
-
-</div>
-
-</div>
-
-</div>
-</div>
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-<div class="output_markdown rendered_html output_subarea ">
-<h2 id="PredictiveTrainingModule" class="doc_header"><code>class</code> <code>PredictiveTrainingModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L105" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PredictiveTrainingModule</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>]) :: <a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a></p>
+<h2 id="BaseTrainingModule" class="doc_header"><code>class</code> <code>BaseTrainingModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L18" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>BaseTrainingModule</code>() :: <code>ABC</code></p>
 </blockquote>
 <p>Helper class that provides a standard way to create an ABC using
 inheritance.</p>
@@ -285,7 +166,7 @@ inheritance.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="cat_normalize" class="doc_header"><code>cat_normalize</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L157" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>cat_normalize</code>(<strong><code>cf</code></strong>, <strong><code>cat_arrays</code></strong>, <strong><code>cat_idx</code></strong>:<code>int</code>, <strong><code>hard</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
+<h2 id="PredictiveTrainingModuleConfigs" class="doc_header"><code>class</code> <code>PredictiveTrainingModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L61" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PredictiveTrainingModuleConfigs</code>(<strong><code>lr</code></strong>:<code>float</code>) :: <code>BaseModel</code></p>
 </blockquote>
 
 </div>
@@ -316,7 +197,40 @@ inheritance.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="partition_trainable_params" class="doc_header"><code>partition_trainable_params</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L179" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>partition_trainable_params</code>(<strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>trainable_name</code></strong>:<code>str</code>)</p>
+<h2 id="PredictiveTrainingModule" class="doc_header"><code>class</code> <code>PredictiveTrainingModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L65" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PredictiveTrainingModule</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>]) :: <a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a></p>
+</blockquote>
+<p>Helper class that provides a standard way to create an ABC using
+inheritance.</p>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="partition_trainable_params" class="doc_header"><code>partition_trainable_params</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L118" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>partition_trainable_params</code>(<strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>trainable_name</code></strong>:<code>str</code>)</p>
 </blockquote>
 
 </div>
@@ -347,7 +261,7 @@ inheritance.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="CounterNetTrainingModuleConfigs" class="doc_header"><code>class</code> <code>CounterNetTrainingModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L185" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CounterNetTrainingModuleConfigs</code>(<strong><code>lr</code></strong>:<code>float</code>, <strong><code>lambda_1</code></strong>:<code>float</code>, <strong><code>lambda_2</code></strong>:<code>float</code>, <strong><code>lambda_3</code></strong>:<code>float</code>) :: <code>BaseModel</code></p>
+<h2 id="CounterNetTrainingModuleConfigs" class="doc_header"><code>class</code> <code>CounterNetTrainingModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L124" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CounterNetTrainingModuleConfigs</code>(<strong><code>lr</code></strong>:<code>float</code>, <strong><code>lambda_1</code></strong>:<code>float</code>, <strong><code>lambda_2</code></strong>:<code>float</code>, <strong><code>lambda_3</code></strong>:<code>float</code>) :: <code>BaseModel</code></p>
 </blockquote>
 
 </div>
@@ -378,7 +292,7 @@ inheritance.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="CounterNetTrainingModule" class="doc_header"><code>class</code> <code>CounterNetTrainingModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L192" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CounterNetTrainingModule</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>]) :: <a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a></p>
+<h2 id="CounterNetTrainingModule" class="doc_header"><code>class</code> <code>CounterNetTrainingModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/training_module.py#L131" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CounterNetTrainingModule</code>(<strong><code>m_configs</code></strong>:<code>Dict</code>[<code>str</code>, <code>typing.Any</code>]) :: <a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a></p>
 </blockquote>
 <p>Helper class that provides a standard way to create an ABC using
 inheritance.</p>

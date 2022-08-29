@@ -4,6 +4,7 @@ __all__ = ['DenseBlock', 'MLP', 'PredictiveModel', 'CounterNetModel']
 
 # Cell
 from .import_essentials import *
+from .utils import validate_configs
 
 # Cell
 class DenseBlock(hk.Module):
@@ -50,15 +51,19 @@ class PredictiveModelConfigs(BaseParser):
 
 # Cell
 class PredictiveModel(hk.Module):
-    def __init__(self,
-                m_config: Dict[str, Any],
-                name: Optional[str] = None):
+    def __init__(
+        self,
+        m_config: Dict[str, Any],
+        name: Optional[str] = None
+    ):
         super().__init__(name=name)
-        self.configs = PredictiveModelConfigs(**m_config)
+        self.configs = validate_configs(m_config, PredictiveModelConfigs) #PredictiveModelConfigs(**m_config)
 
-    def __call__(self,
-                x: jnp.ndarray,
-                is_training: bool = True) -> jnp.ndarray:
+    def __call__(
+        self,
+        x: jnp.ndarray,
+        is_training: bool = True
+    ) -> jnp.ndarray:
         x = MLP(sizes=self.configs.sizes, dropout_rate=self.configs.dropout_rate)(x, is_training)
         x = hk.Linear(1)(x)
         x = jax.nn.sigmoid(x)
@@ -78,7 +83,7 @@ class CounterNetModel(hk.Module):
                 m_config: Dict[str, Any],
                 name: Optional[str] = None):
         super().__init__(name=name)
-        self.configs = CounterNetModelConfigs(**m_config)
+        self.configs = validate_configs(m_config, CounterNetModelConfigs)
 
     def __call__(self,
                 x: jnp.ndarray,

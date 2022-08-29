@@ -42,8 +42,7 @@ Then, you should install the right GPU or TPU version of Jax by following steps 
 
 ## A Minimum Example
 
-```
-#hide_output
+```python
 from cfnet.utils import load_json
 from cfnet.datasets import TabularDataModule
 from cfnet.training_module import PredictiveTrainingModule
@@ -82,11 +81,54 @@ params, opt_state = train_model(
 # define CF Explanation Module
 pred_fn = lambda x: training_module.forward(
     params, random.PRNGKey(0), x, is_training=False)
-cf_exp = VanillaCF(pred_fn, cf_configs)
+cf_exp = VanillaCF(cf_configs)
 
 # generate cf explanations
-cf_results = generate_cf_results_local_exp(cf_exp, dm)
+cf_results = generate_cf_results_local_exp(cf_exp, dm, pred_fn)
 
 # benchmark different cf explanation methods
 benchmark_cfs([cf_results])
 ```
+
+    Epoch 9: 100%|██████████| 191/191 [00:02<00:00, 76.28batch/s, train/train_loss_1=0.0548]
+    100%|██████████| 1000/1000 [00:06<00:00, 142.99it/s]
+
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>acc</th>
+      <th>validity</th>
+      <th>proximity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>VanillaCF</th>
+      <td>0.825943</td>
+      <td>0.894116</td>
+      <td>7.257979</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+

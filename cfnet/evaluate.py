@@ -9,6 +9,7 @@ from .import_essentials import *
 from .train import train_model, TensorboardLogger
 from .datasets import TabularDataModule
 from .interfaces import BaseCFExplanationModule, LocalCFExplanationModule
+from .utils import accuracy, proximity
 from copy import deepcopy
 
 # Cell
@@ -68,25 +69,21 @@ def generate_cf_results_cfnet(
     return generate_cf_results(cf_module, dm, params=params, rng_key=rng_key)
 
 # Cell
-def _compute_acc(x: jnp.ndarray, y: jnp.ndarray):
-    return jnp.sum(x == y) / len(x)
-
-# Cell
 def compute_predictive_acc(cf_results: CFExplanationResults):
     pred_fn = cf_results.pred_fn
     y_pred = pred_fn(cf_results.X).reshape(-1, 1)
     label = cf_results.y.reshape(-1, 1)
-    return _compute_acc(jnp.round(y_pred), label).item()
+    return accuracy(jnp.round(y_pred), label).item()
 
 def compute_validity(cf_results: CFExplanationResults):
     pred_fn = cf_results.pred_fn
     y_pred = pred_fn(cf_results.X).reshape(-1, 1).round()
     y_prime = 1 - y_pred
     cf_y = pred_fn(cf_results.cfs).reshape(-1, 1).round()
-    return _compute_acc(y_prime, cf_y).item()
+    return accuracy(y_prime, cf_y).item()
 
 def compute_proximity(cf_results: CFExplanationResults):
-    return jnp.abs(cf_results.X - cf_results.cfs).sum(axis=1).mean().item()
+    return proximity(cf_results.X, cf_results.cfs).item()
 
 def get_runtime(cf_results: CFExplanationResults):
     return cf_results.total_time
