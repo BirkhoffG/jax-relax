@@ -46,7 +46,7 @@
     "mlp_configs": {
         "sizes": [50, 10, 50],
         "dropout_rate": 0.3,
-        "lr": 0.003
+        "lr": 0.001
     },
     "cfnet_configs": {
         "enc_sizes": [50,10],

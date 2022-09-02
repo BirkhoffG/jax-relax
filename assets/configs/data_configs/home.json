@@ -2,7 +2,7 @@
     "data_configs": {
         "data_dir": "assets/data/s_home.csv",
         "data_name": "HELOC",
-        "batch_size": 128,
+        "batch_size": 256,
         "continous_cols": [
             "ExternalRiskEstimate",
             "MSinceOldestTradeOpen",

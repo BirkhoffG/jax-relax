@@ -46,7 +46,6 @@ nb_path: "nbs/02_nets.ipynb"
 <div class="output_area">
 
 
-
 <div class="output_markdown rendered_html output_subarea ">
 <h2 id="DenseBlock" class="doc_header"><code>class</code> <code>DenseBlock</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L10" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>DenseBlock</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>Module</code></p>
 </blockquote>
@@ -100,7 +99,6 @@ DeviceArray(2., dtype=float32)</p>
 <div class="output_area">
 
 
-
 <div class="output_markdown rendered_html output_subarea ">
 <h2 id="MLP" class="doc_header"><code>class</code> <code>MLP</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L31" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>MLP</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>Module</code></p>
 </blockquote>
@@ -152,7 +150,6 @@ DeviceArray(2., dtype=float32)</p>
 <div class="output">
 
 <div class="output_area">
-
 
 
 <div class="output_markdown rendered_html output_subarea ">
@@ -251,7 +248,6 @@ DeviceArray(2., dtype=float32)</p>
 <div class="output_area">
 
 
-
 <div class="output_markdown rendered_html output_subarea ">
 <h2 id="CounterNetModel" class="doc_header"><code>class</code> <code>CounterNetModel</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L80" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CounterNetModel</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>Module</code></p>
 </blockquote>
@@ -304,10 +300,10 @@ DeviceArray(2., dtype=float32)</p>
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">model_forward</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">is_training</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">"enc_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
-        <span class="s2">"dec_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
-        <span class="s2">"exp_sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
-        <span class="s2">"dropout_rate"</span><span class="p">:</span> <span class="mf">0.3</span>
+        <span class="s2">&quot;enc_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+        <span class="s2">&quot;dec_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+        <span class="s2">&quot;exp_sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">],</span>
+        <span class="s2">&quot;dropout_rate&quot;</span><span class="p">:</span> <span class="mf">0.3</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">CounterNetModel</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">is_training</span><span class="p">)</span>
 
@@ -370,5 +366,5 @@ DeviceArray(2., dtype=float32)</p>
     {% endraw %}
 
 </div>
-
+ 
 
