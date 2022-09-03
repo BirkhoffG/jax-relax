@@ -75,7 +75,7 @@ def generate_cf_results_cfnet(
     cf_module: LocalCFExplanationModule,
     dm: TabularDataModule,
     params: hk.Params, # params of `cf_module`
-    rng_key: random.PRNGKey = None
+    rng_key: random.PRNGKey
 ) -> CFExplanationResults:
     return generate_cf_results(cf_module, dm, params=params, rng_key=rng_key)
 
