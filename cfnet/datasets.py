@@ -90,6 +90,7 @@ class TabularDataModule:
     data: Optional[pd.DataFrame] = None
     sample_frac: Optional[float] = None
     batch_size: int = 128
+    data_name: str = ""
 
     def __init__(self, data_configs: Dict):
         # read data

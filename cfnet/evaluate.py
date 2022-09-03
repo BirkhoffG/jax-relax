@@ -17,11 +17,17 @@ from sklearn.neighbors import NearestNeighbors
 # Cell
 @dataclass
 class CFExplanationResults:
-    cf_name: str        # cf method's name
-    data_module: TabularDataModule
+    cf_name: str                    # cf method's name
+    data_module: TabularDataModule  # data module
     cfs: jnp.DeviceArray # generated cf explanation of `X`
     total_time: float   # total runtime
     pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray] # predict function
+    dataset_name: str = str()     # dataset name
+
+    def __post_init__(self):
+        if self.dataset_name == str() and self.data_module:
+            self.dataset_name = self.data_module.data_name
+
     # dataset_name: str   # dataset name
     # X: jnp.DeviceArray  # input
     # y: jnp.DeviceArray  # label
