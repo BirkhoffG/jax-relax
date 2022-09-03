@@ -43,6 +43,7 @@ def _vanilla_cf(
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
         cf = cat_normalize(
             cf, cat_arrays=cat_arrays, cat_idx=cat_idx, hard=False)
+        cf = jnp.clip(cf, 0., 1.)
         return cf, opt_state
 
     x_size = x.shape

@@ -30,6 +30,7 @@ class BaseCFExplanationModule(ABC):
     def update_cat_info(self, data_module: TabularDataModule):
         self.cat_arrays = deepcopy(data_module.cat_arrays)
         self.cat_idx = data_module.cat_idx
+        self.imutable_idx_list = data_module.imutable_idx_list
 
     # @abstractmethod
     # def generate_cf_results(
