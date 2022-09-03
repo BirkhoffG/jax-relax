@@ -1,0 +1,14 @@
+changelog:
+  exclude:
+    authors:
+      - BirkhoffG
+  categories:
+    - title: New Features
+      labels:
+        - enhancement
+    - title: Bug Fixed 🛠
+      labels:
+        - bug
+    - title: Other Changes
+      labels:
+        - "*"
