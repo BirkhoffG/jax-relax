@@ -26,21 +26,6 @@ nb_path: "nbs/02_nets.ipynb"
     
 <div class="cell border-box-sizing code_cell rendered">
 
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-<div class="output_subarea output_stream output_stderr output_text">
-<pre>/home/birk/mambaforge-pypy3/envs/cfnet/lib/python3.7/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
-  PyTreeDef = type(jax.tree_structure(None))
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
 </div>
     {% endraw %}
 
@@ -63,47 +48,30 @@ nb_path: "nbs/02_nets.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="DenseBlock" class="doc_header"><code>class</code> <code>DenseBlock</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L10" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>DenseBlock</code>(***<code>args</code><strong>, </strong>**<code>kwargs</code>**) :: <code>Module</code></p>
+<h2 id="DenseBlock" class="doc_header"><code>class</code> <code>DenseBlock</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L10" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>DenseBlock</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>Module</code></p>
 </blockquote>
 <p>Base class for Haiku modules.</p>
 <p>A Haiku module is a lightweight container for variables and other modules.
-Modules typically define one or more &quot;forward&quot; methods (e.g. <code>__call__</code>)
+Modules typically define one or more "forward" methods (e.g. <code>__call__</code>)
 which apply operations combining user input and module parameters.</p>
 <p>Modules must be initialized inside a :func:<code>transform</code> call.</p>
 <p>For example:</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>class AddModule(hk.Module):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   def <strong>call</strong>(self, x):
-...     w = hk.get_parameter(&quot;w&quot;, [], init=jnp.ones)
+<blockquote><blockquote><blockquote><p>class AddModule(hk.Module):
+...   def <strong>call</strong>(self, x):
+...     w = hk.get_parameter("w", [], init=jnp.ones)
 ...     return x + w</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>def forward_fn(x):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   mod = AddModule()
+<p>def forward_fn(x):
+...   mod = AddModule()
 ...   return mod(x)</p>
-<blockquote>
-<blockquote>
-<blockquote>
 <p>forward = hk.transform(forward_fn)
 x = 1.
 rng = None
 params = forward.init(rng, x)
-forward.apply(params, None, x)</p>
+forward.apply(params, None, x)
+DeviceArray(2., dtype=float32)</p>
 </blockquote>
 </blockquote>
 </blockquote>
-<p>DeviceArray(2., dtype=float32)</p>
 
 </div>
 
@@ -134,47 +102,30 @@ forward.apply(params, None, x)</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="MLP" class="doc_header"><code>class</code> <code>MLP</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L31" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>MLP</code>(***<code>args</code><strong>, </strong>**<code>kwargs</code>**) :: <code>Module</code></p>
+<h2 id="MLP" class="doc_header"><code>class</code> <code>MLP</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L31" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>MLP</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>Module</code></p>
 </blockquote>
 <p>Base class for Haiku modules.</p>
 <p>A Haiku module is a lightweight container for variables and other modules.
-Modules typically define one or more &quot;forward&quot; methods (e.g. <code>__call__</code>)
+Modules typically define one or more "forward" methods (e.g. <code>__call__</code>)
 which apply operations combining user input and module parameters.</p>
 <p>Modules must be initialized inside a :func:<code>transform</code> call.</p>
 <p>For example:</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>class AddModule(hk.Module):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   def <strong>call</strong>(self, x):
-...     w = hk.get_parameter(&quot;w&quot;, [], init=jnp.ones)
+<blockquote><blockquote><blockquote><p>class AddModule(hk.Module):
+...   def <strong>call</strong>(self, x):
+...     w = hk.get_parameter("w", [], init=jnp.ones)
 ...     return x + w</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>def forward_fn(x):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   mod = AddModule()
+<p>def forward_fn(x):
+...   mod = AddModule()
 ...   return mod(x)</p>
-<blockquote>
-<blockquote>
-<blockquote>
 <p>forward = hk.transform(forward_fn)
 x = 1.
 rng = None
 params = forward.init(rng, x)
-forward.apply(params, None, x)</p>
+forward.apply(params, None, x)
+DeviceArray(2., dtype=float32)</p>
 </blockquote>
 </blockquote>
 </blockquote>
-<p>DeviceArray(2., dtype=float32)</p>
 
 </div>
 
@@ -205,47 +156,30 @@ forward.apply(params, None, x)</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PredictiveModel" class="doc_header"><code>class</code> <code>PredictiveModel</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L53" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>PredictiveModel</code>(***<code>args</code><strong>, </strong>**<code>kwargs</code>**) :: <code>Module</code></p>
+<h2 id="PredictiveModel" class="doc_header"><code>class</code> <code>PredictiveModel</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L53" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PredictiveModel</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>Module</code></p>
 </blockquote>
 <p>Base class for Haiku modules.</p>
 <p>A Haiku module is a lightweight container for variables and other modules.
-Modules typically define one or more &quot;forward&quot; methods (e.g. <code>__call__</code>)
+Modules typically define one or more "forward" methods (e.g. <code>__call__</code>)
 which apply operations combining user input and module parameters.</p>
 <p>Modules must be initialized inside a :func:<code>transform</code> call.</p>
 <p>For example:</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>class AddModule(hk.Module):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   def <strong>call</strong>(self, x):
-...     w = hk.get_parameter(&quot;w&quot;, [], init=jnp.ones)
+<blockquote><blockquote><blockquote><p>class AddModule(hk.Module):
+...   def <strong>call</strong>(self, x):
+...     w = hk.get_parameter("w", [], init=jnp.ones)
 ...     return x + w</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>def forward_fn(x):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   mod = AddModule()
+<p>def forward_fn(x):
+...   mod = AddModule()
 ...   return mod(x)</p>
-<blockquote>
-<blockquote>
-<blockquote>
 <p>forward = hk.transform(forward_fn)
 x = 1.
 rng = None
 params = forward.init(rng, x)
-forward.apply(params, None, x)</p>
+forward.apply(params, None, x)
+DeviceArray(2., dtype=float32)</p>
 </blockquote>
 </blockquote>
 </blockquote>
-<p>DeviceArray(2., dtype=float32)</p>
 
 </div>
 
@@ -319,47 +253,30 @@ forward.apply(params, None, x)</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="CounterNetModel" class="doc_header"><code>class</code> <code>CounterNetModel</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L80" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>CounterNetModel</code>(***<code>args</code><strong>, </strong>**<code>kwargs</code>**) :: <code>Module</code></p>
+<h2 id="CounterNetModel" class="doc_header"><code>class</code> <code>CounterNetModel</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/nets.py#L80" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>CounterNetModel</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>Module</code></p>
 </blockquote>
 <p>Base class for Haiku modules.</p>
 <p>A Haiku module is a lightweight container for variables and other modules.
-Modules typically define one or more &quot;forward&quot; methods (e.g. <code>__call__</code>)
+Modules typically define one or more "forward" methods (e.g. <code>__call__</code>)
 which apply operations combining user input and module parameters.</p>
 <p>Modules must be initialized inside a :func:<code>transform</code> call.</p>
 <p>For example:</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>class AddModule(hk.Module):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   def <strong>call</strong>(self, x):
-...     w = hk.get_parameter(&quot;w&quot;, [], init=jnp.ones)
+<blockquote><blockquote><blockquote><p>class AddModule(hk.Module):
+...   def <strong>call</strong>(self, x):
+...     w = hk.get_parameter("w", [], init=jnp.ones)
 ...     return x + w</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>def forward_fn(x):</p>
-</blockquote>
-</blockquote>
-</blockquote>
-<p>...   mod = AddModule()
+<p>def forward_fn(x):
+...   mod = AddModule()
 ...   return mod(x)</p>
-<blockquote>
-<blockquote>
-<blockquote>
 <p>forward = hk.transform(forward_fn)
 x = 1.
 rng = None
 params = forward.init(rng, x)
-forward.apply(params, None, x)</p>
+forward.apply(params, None, x)
+DeviceArray(2., dtype=float32)</p>
 </blockquote>
 </blockquote>
 </blockquote>
-<p>DeviceArray(2., dtype=float32)</p>
 
 </div>
 

@@ -42,7 +42,7 @@ Then, you should install the right GPU or TPU version of Jax by following steps 
 
 ## A Minimum Example
 
-```python
+```
 from cfnet.utils import load_json
 from cfnet.datasets import TabularDataModule
 from cfnet.training_module import PredictiveTrainingModule

@@ -26,21 +26,6 @@ nb_path: "nbs/01_datasets.ipynb"
     
 <div class="cell border-box-sizing code_cell rendered">
 
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-<div class="output_subarea output_stream output_stderr output_text">
-<pre>/home/birk/mambaforge-pypy3/envs/cfnet/lib/python3.7/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
-  PyTreeDef = type(jax.tree_structure(None))
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
 </div>
     {% endraw %}
 
@@ -63,9 +48,7 @@ nb_path: "nbs/01_datasets.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="NumpyDataset" class="doc_header"><code>class</code> <code>NumpyDataset</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L11" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>NumpyDataset</code>(***<code>args</code><strong>, </strong>**<code>kwds</code>**) :: <code>Dataset</code></p>
+<h2 id="NumpyDataset" class="doc_header"><code>class</code> <code>NumpyDataset</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L11" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>NumpyDataset</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwds</code></strong>) :: <code>Dataset</code></p>
 </blockquote>
 <p>An abstract class representing a :class:<code>Dataset</code>.</p>
 <p>All datasets that represent a map from keys to data samples should subclass
@@ -108,9 +91,7 @@ of :class:<code>~torch.utils.data.DataLoader</code>.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="NumpyLoader" class="doc_header"><code>class</code> <code>NumpyLoader</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L34" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>NumpyLoader</code>(***<code>args</code><strong>, </strong>**<code>kwds</code>**) :: <code>DataLoader</code></p>
+<h2 id="NumpyLoader" class="doc_header"><code>class</code> <code>NumpyLoader</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L34" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>NumpyLoader</code>(<strong>*<code>args</code></strong>, <strong>**<code>kwds</code></strong>) :: <code>DataLoader</code></p>
 </blockquote>
 <p>Data loader. Combines a dataset and a sampler, and provides an iterable over
 the given dataset.</p>
@@ -118,7 +99,7 @@ the given dataset.</p>
 iterable-style datasets with single- or multi-process loading, customizing
 loading order and optional automatic batching (collation) and memory pinning.</p>
 <p>See :py:mod:<code>torch.utils.data</code> documentation page for more details.</p>
-<p>Args:
+<p>Arguments:
     dataset (Dataset): dataset from which to load the data.
     batch_size (int, optional): how many samples per batch to load
         (default: <code>1</code>).
@@ -138,7 +119,7 @@ loading order and optional automatic batching (collation) and memory pinning.</p
         mini-batch of Tensor(s).  Used when using batched loading from a
         map-style dataset.
     pin_memory (bool, optional): If <code>True</code>, the data loader will copy Tensors
-        into device/CUDA pinned memory before returning them.  If your data elements
+        into CUDA pinned memory before returning them.  If your data elements
         are a custom type, or your :attr:<code>collate_fn</code> returns a batch that is a custom type,
         see the example below.
     drop_last (bool, optional): set to <code>True</code> to drop the last incomplete batch,
@@ -150,17 +131,12 @@ loading order and optional automatic batching (collation) and memory pinning.</p
     worker_init_fn (callable, optional): If not <code>None</code>, this will be called on each
         worker subprocess with the worker id (an int in <code>[0, num_workers - 1]</code>) as
         input, after seeding and before data loading. (default: <code>None</code>)
-    generator (torch.Generator, optional): If not <code>None</code>, this RNG will be used
-        by RandomSampler to generate random indexes and multiprocessing to generate
-        <code>base_seed</code> for workers. (default: <code>None</code>)
-    prefetch_factor (int, optional, keyword-only arg): Number of batches loaded
+    prefetch_factor (int, optional, keyword-only arg): Number of sample loaded
         in advance by each worker. <code>2</code> means there will be a total of
-        2 * num_workers batches prefetched across all workers. (default: <code>2</code>)
+        2 * num_workers samples prefetched across all workers. (default: <code>2</code>)
     persistent_workers (bool, optional): If <code>True</code>, the data loader will not shutdown
-        the worker processes after a dataset has been consumed once. This allows to
-        maintain the workers <code>Dataset</code> instances alive. (default: <code>False</code>)
-    pin_memory_device (str, optional): the data loader will copy Tensors
-        into device pinned memory before returning them if pin_memory is set to true.</p>
+        the worker processes after a dataset has been consumed once. This allows to 
+        maintain the workers <code>Dataset</code> instances alive. (default: <code>False</code>)</p>
 <p>.. warning:: If the <code>spawn</code> start method is used, :attr:<code>worker_init_fn</code>
              cannot be an unpicklable object, e.g., a lambda function. See
              :ref:<code>multiprocessing-best-practices</code> on more details related
@@ -172,6 +148,7 @@ loading order and optional automatic batching (collation) and memory pinning.</p
              configurations. This represents the best guess PyTorch can make because PyTorch
              trusts user :attr:<code>dataset</code> code in correctly handling multi-process
              loading to avoid duplicate data.</p>
+
 <pre><code>         However, if sharding results in multiple workers having incomplete last batches,
          this estimate can still be inaccurate, because (1) an otherwise complete batch can
          be broken into multiple ones and (2) more than one batch worth of samples can be
@@ -180,11 +157,7 @@ loading order and optional automatic batching (collation) and memory pinning.</p
 
          See `Dataset Types`_ for more details on these two types of datasets and how
          :class:`~torch.utils.data.IterableDataset` interacts with
-         `Multi-process data loading`_.
-
-</code></pre>
-<p>.. warning:: See :ref:<code>reproducibility</code>, and :ref:<code>dataloader-workers-random-seed</code>, and
-             :ref:<code>data-loading-randomness</code> notes for random seed related questions.</p>
+         `Multi-process data loading`_.</code></pre>
 
 </div>
 
@@ -208,9 +181,7 @@ loading order and optional automatic batching (collation) and memory pinning.</p
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="find_imutable_idx_list" class="doc_header"><code>find_imutable_idx_list</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L53" class="source_link" style="float:right">[source]</a></h4>
-<blockquote>
-<p><code>find_imutable_idx_list</code>(<strong><code>imutable_col_names</code></strong>:<code>List</code>[<code>str</code>], <strong><code>discrete_col_names</code></strong>:<code>List</code>[<code>str</code>], <strong><code>continuous_col_names</code></strong>:<code>List</code>[<code>str</code>], <strong><code>cat_arrays</code></strong>:<code>List</code>[<code>typing.List[str]</code>])</p>
+<h4 id="find_imutable_idx_list" class="doc_header"><code>find_imutable_idx_list</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L53" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>find_imutable_idx_list</code>(<strong><code>imutable_col_names</code></strong>:<code>List</code>[<code>str</code>], <strong><code>discrete_col_names</code></strong>:<code>List</code>[<code>str</code>], <strong><code>continuous_col_names</code></strong>:<code>List</code>[<code>str</code>], <strong><code>cat_arrays</code></strong>:<code>List</code>[<code>typing.List[str]</code>])</p>
 </blockquote>
 
 </div>
@@ -242,9 +213,7 @@ loading order and optional automatic batching (collation) and memory pinning.</p
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="DataModuleConfigs" class="doc_header"><code>class</code> <code>DataModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L74" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>DataModuleConfigs</code>(<strong><code>batch_size</code></strong>:<code>int</code>, <strong><code>discret_cols</code></strong>:<code>List</code>[<code>str</code>]=<em><code>[]</code></em>, <strong><code>continous_cols</code></strong>:<code>List</code>[<code>str</code>]=<em><code>[]</code></em>, <strong><code>imutable_cols</code></strong>:<code>List</code>[<code>str</code>]=<em><code>[]</code></em>, <strong><code>normalizer</code></strong>:<code>Optional</code>[<code>typing.Any</code>]=<em><code>None</code></em>, <strong><code>encoder</code></strong>:<code>Optional</code>[<code>typing.Any</code>]=<em><code>None</code></em>, <strong><code>sample_frac</code></strong>:<code>Optional</code>[<code>float</code>]=<em><code>None</code></em>) :: <code>BaseModel</code></p>
+<h2 id="DataModuleConfigs" class="doc_header"><code>class</code> <code>DataModuleConfigs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L74" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>DataModuleConfigs</code>(<strong><code>batch_size</code></strong>:<code>int</code>, <strong><code>discret_cols</code></strong>:<code>List</code>[<code>str</code>]=<em><code>[]</code></em>, <strong><code>continous_cols</code></strong>:<code>List</code>[<code>str</code>]=<em><code>[]</code></em>, <strong><code>imutable_cols</code></strong>:<code>List</code>[<code>str</code>]=<em><code>[]</code></em>, <strong><code>normalizer</code></strong>:<code>typing.Any</code>=<em><code>None</code></em>, <strong><code>encoder</code></strong>:<code>typing.Any</code>=<em><code>None</code></em>, <strong><code>sample_frac</code></strong>:<code>float</code>=<em><code>None</code></em>) :: <code>BaseModel</code></p>
 </blockquote>
 
 </div>
@@ -276,9 +245,7 @@ loading order and optional automatic batching (collation) and memory pinning.</p
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="TabularDataModule" class="doc_header"><code>class</code> <code>TabularDataModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L84" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>TabularDataModule</code>(<strong><code>data_configs</code></strong>:<code>Dict</code>[<code>~KT</code>, <code>~VT</code>])</p>
+<h2 id="TabularDataModule" class="doc_header"><code>class</code> <code>TabularDataModule</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/datasets.py#L84" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>TabularDataModule</code>(<strong><code>data_configs</code></strong>:<code>Dict</code>[<code>~KT</code>, <code>~VT</code>])</p>
 </blockquote>
 
 </div>
