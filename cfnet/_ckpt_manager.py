@@ -31,13 +31,15 @@ def load_checkpoint(ckpt_dir: Path):
 class CheckpointManager:
     def __init__(self,
                  log_dir: Union[Path, str],
-                 monitor_metrics: str,
+                 monitor_metrics: Optional[str],
                  max_n_checkpoints: int = 3):
         self.log_dir = Path(log_dir)
         self.monitor_metrics = monitor_metrics
         self.max_n_checkpoints = max_n_checkpoints
         self.checkpoints = OrderedDict()
         self.n_checkpoints = 0
+        if self.monitor_metrics is None:
+            warnings.warn("`monitor_metrics` is not specified in `CheckpointManager`. No checkpoints will be stored.")
 
     # update checkpoints based on monitor_metrics
     def update_checkpoints(self,
@@ -46,7 +48,8 @@ class CheckpointManager:
                            epoch_logs: Dict[str, float],
                            epochs: int,
                            steps: Optional[int] = None):
-
+        if self.monitor_metrics is None:
+            return
         metric = float(epoch_logs[self.monitor_metrics])
         if steps:
             ckpt_name = f'epoch={epochs}_step={steps}'
