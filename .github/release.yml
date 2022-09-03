@@ -1,7 +1,4 @@
 changelog:
-  exclude:
-    authors:
-      - BirkhoffG
   categories:
     - title: New Features
       labels:
