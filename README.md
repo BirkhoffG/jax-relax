@@ -42,7 +42,7 @@ Then, you should install the right GPU or TPU version of Jax by following steps 
 
 ## A Minimum Example
 
-```
+```python
 from cfnet.utils import load_json
 from cfnet.datasets import TabularDataModule
 from cfnet.training_module import PredictiveTrainingModule
@@ -51,7 +51,14 @@ from cfnet.methods import VanillaCF
 from cfnet.evaluate import generate_cf_results_local_exp, benchmark_cfs
 from cfnet.import_essentials import *
 
-data_configs = load_json('assets/configs/data_configs/adult.json')
+data_configs = {
+    "data_dir": "assets/data/s_adult.csv",
+    "data_name": "adult",
+    "batch_size": 256,
+    "continous_cols": ["age","hours_per_week"],
+    "discret_cols": ["workclass","education","marital_status","occupation","race","gender"],
+    "imutable_cols": ["race","gender"]
+}
 m_configs = {
     'lr': 0.003,
     "sizes": [50, 10, 50],

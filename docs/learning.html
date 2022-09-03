@@ -26,6 +26,21 @@ nb_path: "nbs/04_learning.ipynb"
     
 <div class="cell border-box-sizing code_cell rendered">
 
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>/home/birk/mambaforge-pypy3/envs/cfnet/lib/python3.7/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
+  PyTreeDef = type(jax.tree_structure(None))
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
     {% endraw %}
 
@@ -46,8 +61,11 @@ nb_path: "nbs/04_learning.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="train_model_with_states" class="doc_header"><code>train_model_with_states</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/train.py#L27" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>train_model_with_states</code>(<strong><code>training_module</code></strong>:<a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a>, <strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>opt_state</code></strong>:<code>Union</code>[<code>ndarray</code>, <code>typing.Iterable[ForwardRef('ArrayTree')]</code>, <code>typing.Mapping[typing.Any, ForwardRef('ArrayTree')]</code>], <strong><code>data_module</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>t_configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <a href="/cfnet/learning.html#TrainingConfigs"><code>TrainingConfigs</code></a>])</p>
+<h4 id="train_model_with_states" class="doc_header"><code>train_model_with_states</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/train.py#L27" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>train_model_with_states</code>(<strong><code>training_module</code></strong>:<a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a>, <strong><code>params</code></strong>:<code>Mapping</code>[<code>str</code>, <code>typing.Mapping[str, jax._src.numpy.ndarray.ndarray]</code>], <strong><code>opt_state</code></strong>:<code>Union</code>[<code>ndarray</code>, <code>typing.Iterable[ForwardRef('ArrayTree')]</code>, <code>typing.Mapping[typing.Any, ForwardRef('ArrayTree')]</code>], <strong><code>data_module</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>t_configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <a href="/cfnet/learning.html#TrainingConfigs"><code>TrainingConfigs</code></a>])</p>
 </blockquote>
 
 </div>
@@ -77,8 +95,11 @@ nb_path: "nbs/04_learning.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="train_model" class="doc_header"><code>train_model</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/train.py#L83" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>train_model</code>(<strong><code>training_module</code></strong>:<a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a>, <strong><code>data_module</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>t_configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <a href="/cfnet/learning.html#TrainingConfigs"><code>TrainingConfigs</code></a>])</p>
+<h4 id="train_model" class="doc_header"><code>train_model</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/train.py#L88" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>train_model</code>(<strong><code>training_module</code></strong>:<a href="/cfnet/training_module.html#BaseTrainingModule"><code>BaseTrainingModule</code></a>, <strong><code>data_module</code></strong>:<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>, <strong><code>t_configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <a href="/cfnet/learning.html#TrainingConfigs"><code>TrainingConfigs</code></a>])</p>
 </blockquote>
 
 </div>
@@ -115,32 +136,32 @@ nb_path: "nbs/04_learning.ipynb"
 <span class="kn">from</span> <span class="nn">cfnet.training_module</span> <span class="kn">import</span> <span class="n">PredictiveTrainingModule</span>
 
 <span class="n">data_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;data_dir&quot;</span><span class="p">:</span> <span class="s2">&quot;assets/data/s_adult.csv&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;data_name&quot;</span><span class="p">:</span> <span class="s2">&quot;adult&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
-    <span class="s1">&#39;sample_frac&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="s2">&quot;continous_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;age&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;hours_per_week&quot;</span>
+    <span class="s2">"data_dir"</span><span class="p">:</span> <span class="s2">"assets/data/s_adult.csv"</span><span class="p">,</span>
+    <span class="s2">"data_name"</span><span class="p">:</span> <span class="s2">"adult"</span><span class="p">,</span>
+    <span class="s2">"batch_size"</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="s1">'sample_frac'</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="s2">"continous_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"age"</span><span class="p">,</span>
+        <span class="s2">"hours_per_week"</span>
     <span class="p">],</span>
-    <span class="s2">&quot;discret_cols&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;workclass&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;education&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;marital_status&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;occupation&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;race&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;gender&quot;</span>
+    <span class="s2">"discret_cols"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"workclass"</span><span class="p">,</span>
+        <span class="s2">"education"</span><span class="p">,</span>
+        <span class="s2">"marital_status"</span><span class="p">,</span>
+        <span class="s2">"occupation"</span><span class="p">,</span>
+        <span class="s2">"race"</span><span class="p">,</span>
+        <span class="s2">"gender"</span>
     <span class="p">],</span>
 <span class="p">}</span>
 <span class="c1"># dm = </span>
 <span class="n">m_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
-    <span class="s2">&quot;dropout_rate&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+    <span class="s2">"sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="s2">"dropout_rate"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span>
+    <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
 <span class="p">}</span>
 <span class="n">t_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_epochs&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-    <span class="s1">&#39;monitor_metrics&#39;</span><span class="p">:</span> <span class="s1">&#39;val/val_loss&#39;</span>
+    <span class="s1">'n_epochs'</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="s1">'monitor_metrics'</span><span class="p">:</span> <span class="s1">'val/val_loss'</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -171,172 +192,9 @@ nb_path: "nbs/04_learning.ipynb"
 </div>
 </div>
 
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-<div class="output_subarea output_stream output_stderr output_text">
-<pre>[autoreload of cfnet.nets failed: Traceback (most recent call last):
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 245, in check
-    superreload(m, reload, self.old_objects)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 410, in superreload
-    update_generic(old_obj, new_obj)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 347, in update_generic
-    update(a, b)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 317, in update_class
-    update_instances(old, new)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 280, in update_instances
-    ref.__class__ = new
-  File &#34;pydantic/main.py&#34;, line 357, in pydantic.main.BaseModel.__setattr__
-ValueError: &#34;PredictiveModelConfigs&#34; object has no field &#34;__class__&#34;
-]
-[autoreload of cfnet.training_module failed: Traceback (most recent call last):
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 245, in check
-    superreload(m, reload, self.old_objects)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 410, in superreload
-    update_generic(old_obj, new_obj)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 347, in update_generic
-    update(a, b)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 317, in update_class
-    update_instances(old, new)
-  File &#34;/home/birk/miniconda3/lib/python3.7/site-packages/IPython/extensions/autoreload.py&#34;, line 280, in update_instances
-    ref.__class__ = new
-  File &#34;pydantic/main.py&#34;, line 357, in pydantic.main.BaseModel.__setattr__
-ValueError: &#34;PredictiveTrainingModuleConfigs&#34; object has no field &#34;__class__&#34;
-]
-                                                                                    </pre>
-</div>
-</div>
-
-<div class="output_area">
-
-<div class="output_subarea output_text output_error">
-<pre>
-<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
-<span class="ansi-red-fg">KeyboardInterrupt</span>                         Traceback (most recent call last)
-<span class="ansi-green-fg">/tmp/ipykernel_18913/1593120662.py</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
-<span class="ansi-green-intense-fg ansi-bold">      4</span>     PredictiveTrainingModule<span class="ansi-blue-fg">(</span>m_configs<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span>
-<span class="ansi-green-intense-fg ansi-bold">      5</span>     TabularDataModule<span class="ansi-blue-fg">(</span>data_configs<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span>
-<span class="ansi-green-fg">----&gt; 6</span><span class="ansi-red-fg">     </span>t_configs
-<span class="ansi-green-intense-fg ansi-bold">      7</span> )
-
-<span class="ansi-green-fg">/tmp/ipykernel_18913/4243876125.py</span> in <span class="ansi-cyan-fg">train_model</span><span class="ansi-blue-fg">(training_module, data_module, t_configs)</span>
-<span class="ansi-green-intense-fg ansi-bold">      8</span>     return train_model_with_states(
-<span class="ansi-green-intense-fg ansi-bold">      9</span>         training_module<span class="ansi-blue-fg">=</span>training_module<span class="ansi-blue-fg">,</span> params<span class="ansi-blue-fg">=</span>params<span class="ansi-blue-fg">,</span>
-<span class="ansi-green-fg">---&gt; 10</span><span class="ansi-red-fg">         </span>opt_state<span class="ansi-blue-fg">=</span>opt_state<span class="ansi-blue-fg">,</span> data_module<span class="ansi-blue-fg">=</span>data_module<span class="ansi-blue-fg">,</span> t_configs<span class="ansi-blue-fg">=</span>t_configs
-<span class="ansi-green-intense-fg ansi-bold">     11</span>     )
-
-<span class="ansi-green-fg">/tmp/ipykernel_18913/2033540544.py</span> in <span class="ansi-cyan-fg">train_model_with_states</span><span class="ansi-blue-fg">(training_module, params, opt_state, data_module, t_configs)</span>
-<span class="ansi-green-intense-fg ansi-bold">     35</span>                 x<span class="ansi-blue-fg">,</span> y <span class="ansi-blue-fg">=</span> map<span class="ansi-blue-fg">(</span>device_put<span class="ansi-blue-fg">,</span> tuple<span class="ansi-blue-fg">(</span>batch<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">     36</span>                 params, opt_state = training_module.training_step(
-<span class="ansi-green-fg">---&gt; 37</span><span class="ansi-red-fg">                     params, opt_state, next(keys), (x, y))
-</span><span class="ansi-green-intense-fg ansi-bold">     38</span>                 <span class="ansi-red-fg"># logs = training_module.training_step_logs(</span>
-<span class="ansi-green-intense-fg ansi-bold">     39</span>                 <span class="ansi-red-fg">#     params, next(keys), (x, y))</span>
-
-<span class="ansi-green-fg">~/code/counternet_jax/cfnet/training_module.py</span> in <span class="ansi-cyan-fg">training_step</span><span class="ansi-blue-fg">(self, params, opt_state, rng_key, batch)</span>
-<span class="ansi-green-intense-fg ansi-bold">    142</span>             <span class="ansi-blue-fg">&#39;train/train_loss_1&#39;</span><span class="ansi-blue-fg">:</span> loss<span class="ansi-blue-fg">.</span>item<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    143</span>         })
-<span class="ansi-green-fg">--&gt; 144</span><span class="ansi-red-fg">         </span><span class="ansi-green-fg">return</span> step<span class="ansi-blue-fg">(</span>params<span class="ansi-blue-fg">,</span> opt_state<span class="ansi-blue-fg">,</span> rng_key<span class="ansi-blue-fg">,</span> batch<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    145</span> 
-<span class="ansi-green-intense-fg ansi-bold">    146</span>     <span class="ansi-green-fg">def</span> validation_step<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> params<span class="ansi-blue-fg">,</span> rng_key<span class="ansi-blue-fg">,</span> batch<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-
-    <span class="ansi-red-fg">[... skipping hidden 1 frame]</span>
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/api.py</span> in <span class="ansi-cyan-fg">cache_miss</span><span class="ansi-blue-fg">(*args, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">    474</span>         flat_fun<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args_flat<span class="ansi-blue-fg">,</span>
-<span class="ansi-green-intense-fg ansi-bold">    475</span>         device<span class="ansi-blue-fg">=</span>device<span class="ansi-blue-fg">,</span> backend<span class="ansi-blue-fg">=</span>backend<span class="ansi-blue-fg">,</span> name<span class="ansi-blue-fg">=</span>flat_fun<span class="ansi-blue-fg">.</span>__name__<span class="ansi-blue-fg">,</span>
-<span class="ansi-green-fg">--&gt; 476</span><span class="ansi-red-fg">         donated_invars=donated_invars, inline=inline, keep_unused=keep_unused)
-</span><span class="ansi-green-intense-fg ansi-bold">    477</span>     out_pytree_def <span class="ansi-blue-fg">=</span> out_tree<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    478</span>     out <span class="ansi-blue-fg">=</span> tree_unflatten<span class="ansi-blue-fg">(</span>out_pytree_def<span class="ansi-blue-fg">,</span> out_flat<span class="ansi-blue-fg">)</span>
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/core.py</span> in <span class="ansi-cyan-fg">bind</span><span class="ansi-blue-fg">(self, fun, *args, **params)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1763</span> 
-<span class="ansi-green-intense-fg ansi-bold">   1764</span>   <span class="ansi-green-fg">def</span> bind<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> fun<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>params<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-fg">-&gt; 1765</span><span class="ansi-red-fg">     </span><span class="ansi-green-fg">return</span> call_bind<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> fun<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>params<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1766</span> 
-<span class="ansi-green-intense-fg ansi-bold">   1767</span>   <span class="ansi-green-fg">def</span> get_bind_params<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> params<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/core.py</span> in <span class="ansi-cyan-fg">call_bind</span><span class="ansi-blue-fg">(primitive, fun, *args, **params)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1779</span>   tracers <span class="ansi-blue-fg">=</span> map<span class="ansi-blue-fg">(</span>top_trace<span class="ansi-blue-fg">.</span>full_raise<span class="ansi-blue-fg">,</span> args<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1780</span>   fun_ <span class="ansi-blue-fg">=</span> lu<span class="ansi-blue-fg">.</span>annotate<span class="ansi-blue-fg">(</span>fun_<span class="ansi-blue-fg">,</span> fun<span class="ansi-blue-fg">.</span>in_type<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-fg">-&gt; 1781</span><span class="ansi-red-fg">   </span>outs <span class="ansi-blue-fg">=</span> top_trace<span class="ansi-blue-fg">.</span>process_call<span class="ansi-blue-fg">(</span>primitive<span class="ansi-blue-fg">,</span> fun_<span class="ansi-blue-fg">,</span> tracers<span class="ansi-blue-fg">,</span> params<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1782</span>   <span class="ansi-green-fg">return</span> map<span class="ansi-blue-fg">(</span>full_lower<span class="ansi-blue-fg">,</span> apply_todos<span class="ansi-blue-fg">(</span>env_trace_todo<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">,</span> outs<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">   1783</span> 
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/core.py</span> in <span class="ansi-cyan-fg">process_call</span><span class="ansi-blue-fg">(self, primitive, f, tracers, params)</span>
-<span class="ansi-green-intense-fg ansi-bold">    676</span> 
-<span class="ansi-green-intense-fg ansi-bold">    677</span>   <span class="ansi-green-fg">def</span> process_call<span class="ansi-blue-fg">(</span>self<span class="ansi-blue-fg">,</span> primitive<span class="ansi-blue-fg">,</span> f<span class="ansi-blue-fg">,</span> tracers<span class="ansi-blue-fg">,</span> params<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-fg">--&gt; 678</span><span class="ansi-red-fg">     </span><span class="ansi-green-fg">return</span> primitive<span class="ansi-blue-fg">.</span>impl<span class="ansi-blue-fg">(</span>f<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>tracers<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>params<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    679</span>   process_map <span class="ansi-blue-fg">=</span> process_call
-<span class="ansi-green-intense-fg ansi-bold">    680</span> 
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/dispatch.py</span> in <span class="ansi-cyan-fg">_xla_call_impl</span><span class="ansi-blue-fg">(***failed resolving arguments***)</span>
-<span class="ansi-green-intense-fg ansi-bold">    181</span>     arg_specs <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">[</span><span class="ansi-blue-fg">(</span><span class="ansi-green-fg">None</span><span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>xs<span class="ansi-blue-fg">)</span> <span class="ansi-green-fg">for</span> _<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>xs <span class="ansi-green-fg">in</span> arg_specs<span class="ansi-blue-fg">]</span>
-<span class="ansi-green-intense-fg ansi-bold">    182</span>   compiled_fun = _xla_callable(fun, device, backend, name, donated_invars,
-<span class="ansi-green-fg">--&gt; 183</span><span class="ansi-red-fg">                                keep_unused, *arg_specs)
-</span><span class="ansi-green-intense-fg ansi-bold">    184</span>   <span class="ansi-green-fg">try</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">    185</span>     <span class="ansi-green-fg">return</span> compiled_fun<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">)</span>
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/linear_util.py</span> in <span class="ansi-cyan-fg">memoized_fun</span><span class="ansi-blue-fg">(fun, *args)</span>
-<span class="ansi-green-intense-fg ansi-bold">    283</span>       fun<span class="ansi-blue-fg">.</span>populate_stores<span class="ansi-blue-fg">(</span>stores<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    284</span>     <span class="ansi-green-fg">else</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-fg">--&gt; 285</span><span class="ansi-red-fg">       </span>ans <span class="ansi-blue-fg">=</span> call<span class="ansi-blue-fg">(</span>fun<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    286</span>       cache<span class="ansi-blue-fg">[</span>key<span class="ansi-blue-fg">]</span> <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">(</span>ans<span class="ansi-blue-fg">,</span> fun<span class="ansi-blue-fg">.</span>stores<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    287</span> 
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/dispatch.py</span> in <span class="ansi-cyan-fg">_xla_callable_uncached</span><span class="ansi-blue-fg">(fun, device, backend, name, donated_invars, keep_unused, *arg_specs)</span>
-<span class="ansi-green-intense-fg ansi-bold">    229</span>                            donated_invars, keep_unused, *arg_specs):
-<span class="ansi-green-intense-fg ansi-bold">    230</span>   return lower_xla_callable(fun, device, backend, name, donated_invars, False,
-<span class="ansi-green-fg">--&gt; 231</span><span class="ansi-red-fg">                             keep_unused, *arg_specs).compile().unsafe_call
-</span><span class="ansi-green-intense-fg ansi-bold">    232</span> 
-<span class="ansi-green-intense-fg ansi-bold">    233</span> _xla_callable <span class="ansi-blue-fg">=</span> lu<span class="ansi-blue-fg">.</span>cache<span class="ansi-blue-fg">(</span>_xla_callable_uncached<span class="ansi-blue-fg">)</span>
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/dispatch.py</span> in <span class="ansi-cyan-fg">compile</span><span class="ansi-blue-fg">(self)</span>
-<span class="ansi-green-intense-fg ansi-bold">    703</span>       <span class="ansi-green-fg">else</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">    704</span>         self._executable = XlaCompiledComputation.from_xla_computation(
-<span class="ansi-green-fg">--&gt; 705</span><span class="ansi-red-fg">             self.name, self._hlo, self._explicit_args, **self.compile_args)
-</span><span class="ansi-green-intense-fg ansi-bold">    706</span> 
-<span class="ansi-green-intense-fg ansi-bold">    707</span>     <span class="ansi-green-fg">return</span> self<span class="ansi-blue-fg">.</span>_executable
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/dispatch.py</span> in <span class="ansi-cyan-fg">from_xla_computation</span><span class="ansi-blue-fg">(name, xla_computation, explicit_args, nreps, device, backend, tuple_args, in_avals, out_avals, effects, kept_var_idx, keepalive)</span>
-<span class="ansi-green-intense-fg ansi-bold">    804</span>     with log_elapsed_time(f&#34;Finished XLA compilation of {name} &#34;
-<span class="ansi-green-intense-fg ansi-bold">    805</span>                           &#34;in {elapsed_time} sec&#34;):
-<span class="ansi-green-fg">--&gt; 806</span><span class="ansi-red-fg">       </span>compiled <span class="ansi-blue-fg">=</span> compile_or_get_cached<span class="ansi-blue-fg">(</span>backend<span class="ansi-blue-fg">,</span> xla_computation<span class="ansi-blue-fg">,</span> options<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    807</span>     buffer_counts = (None if len(out_avals) == 1 and not config.jax_dynamic_shapes
-<span class="ansi-green-intense-fg ansi-bold">    808</span>                      else [aval_to_num_buffers(aval) for aval in out_avals])
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/dispatch.py</span> in <span class="ansi-cyan-fg">compile_or_get_cached</span><span class="ansi-blue-fg">(backend, computation, compile_options)</span>
-<span class="ansi-green-intense-fg ansi-bold">    766</span>       ir_str <span class="ansi-blue-fg">=</span> computation
-<span class="ansi-green-intense-fg ansi-bold">    767</span>     _dump_ir_to_file<span class="ansi-blue-fg">(</span>module_name<span class="ansi-blue-fg">,</span> ir_str<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-fg">--&gt; 768</span><span class="ansi-red-fg">   </span><span class="ansi-green-fg">return</span> backend_compile<span class="ansi-blue-fg">(</span>backend<span class="ansi-blue-fg">,</span> computation<span class="ansi-blue-fg">,</span> compile_options<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    769</span> 
-<span class="ansi-green-intense-fg ansi-bold">    770</span> 
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/profiler.py</span> in <span class="ansi-cyan-fg">wrapper</span><span class="ansi-blue-fg">(*args, **kwargs)</span>
-<span class="ansi-green-intense-fg ansi-bold">    204</span>   <span class="ansi-green-fg">def</span> wrapper<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>kwargs<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-intense-fg ansi-bold">    205</span>     <span class="ansi-green-fg">with</span> TraceAnnotation<span class="ansi-blue-fg">(</span>name<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>decorator_kwargs<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
-<span class="ansi-green-fg">--&gt; 206</span><span class="ansi-red-fg">       </span><span class="ansi-green-fg">return</span> func<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">*</span>args<span class="ansi-blue-fg">,</span> <span class="ansi-blue-fg">**</span>kwargs<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    207</span>     <span class="ansi-green-fg">return</span> wrapper
-<span class="ansi-green-intense-fg ansi-bold">    208</span>   <span class="ansi-green-fg">return</span> wrapper
-
-<span class="ansi-green-fg">~/miniconda3/lib/python3.7/site-packages/jax/_src/dispatch.py</span> in <span class="ansi-cyan-fg">backend_compile</span><span class="ansi-blue-fg">(backend, built_c, options)</span>
-<span class="ansi-green-intense-fg ansi-bold">    711</span>   <span class="ansi-red-fg"># we use a separate function call to ensure that XLA compilation appears</span>
-<span class="ansi-green-intense-fg ansi-bold">    712</span>   <span class="ansi-red-fg"># separately in Python profiling results</span>
-<span class="ansi-green-fg">--&gt; 713</span><span class="ansi-red-fg">   </span><span class="ansi-green-fg">return</span> backend<span class="ansi-blue-fg">.</span>compile<span class="ansi-blue-fg">(</span>built_c<span class="ansi-blue-fg">,</span> compile_options<span class="ansi-blue-fg">=</span>options<span class="ansi-blue-fg">)</span>
-<span class="ansi-green-intense-fg ansi-bold">    714</span> 
-<span class="ansi-green-intense-fg ansi-bold">    715</span> <span class="ansi-red-fg"># TODO(phawkins): update users.</span>
-
-<span class="ansi-red-fg">KeyboardInterrupt</span>: </pre>
-</div>
-</div>
-
-</div>
-</div>
-
 </div>
     {% endraw %}
 
 </div>
- 
+
 

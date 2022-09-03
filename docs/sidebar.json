@@ -10,6 +10,8 @@
     "Experiment Logger": "logger.html",
     "Checkpoint Manager": "ckpt_manager.html",
     "Vanilla CF": "methods.vanilla.html",
+    "Diverse CF": "methods.diverse.html",
+    "Proto CF": "methods.prototype.html",
     "Evaluate": "evaluate.html"
   }
 }
