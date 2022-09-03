@@ -6,7 +6,7 @@ changelog:
     - title: New Features
       labels:
         - enhancement
-    - title: Bug Fixed 🛠
+    - title: Bug Fixed
       labels:
         - bug
     - title: Other Changes
