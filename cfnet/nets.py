@@ -4,7 +4,7 @@ __all__ = ['DenseBlock', 'MLP', 'PredictiveModel', 'CounterNetModel']
 
 # Cell
 from .import_essentials import *
-from .utils import validate_configs
+from .utils import validate_configs, sigmoid
 
 # Cell
 class DenseBlock(hk.Module):
@@ -66,7 +66,7 @@ class PredictiveModel(hk.Module):
     ) -> jnp.ndarray:
         x = MLP(sizes=self.configs.sizes, dropout_rate=self.configs.dropout_rate)(x, is_training)
         x = hk.Linear(1)(x)
-        x = jax.nn.sigmoid(x)
+        x = sigmoid(x)
         return x
 
 # Internal Cell
@@ -95,7 +95,7 @@ class CounterNetModel(hk.Module):
         # prediction
         pred = MLP(self.configs.dec_sizes, self.configs.dropout_rate, name="Predictor")(z, is_training)
         y_hat = hk.Linear(1, name='Predictor')(pred)
-        y_hat = jax.nn.sigmoid(y_hat)
+        y_hat = sigmoid(y_hat)
 
         # explain
         z_exp = jnp.concatenate((z, pred), axis=-1)

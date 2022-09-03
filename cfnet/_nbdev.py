@@ -7,6 +7,7 @@ index = {"validate_configs": "00_utils.ipynb",
          "add_to_class": "00_utils.ipynb",
          "cat_normalize": "00_utils.ipynb",
          "binary_cross_entropy": "00_utils.ipynb",
+         "sigmoid": "00_utils.ipynb",
          "accuracy": "00_utils.ipynb",
          "dist": "00_utils.ipynb",
          "proximity": "00_utils.ipynb",
@@ -69,7 +70,9 @@ modules = ["utils.py",
            "train.py",
            "logger.py",
            "_ckpt_manager.py",
+           "methods/proto.py",
            "methods/vanilla.py",
+           "methods/diverse.py",
            "evaluate.py"]
 
 doc_url = "https://birkhoffg.github.io/cfnet/"
