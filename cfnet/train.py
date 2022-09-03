@@ -13,7 +13,7 @@ from ._ckpt_manager import CheckpointManager
 # Internal Cell
 class TrainingConfigs(BaseParser):
     n_epochs: int
-    monitor_metrics: str
+    monitor_metrics: Optional[str] = None
     seed: int = 42
     log_dir: str = "log"
     logger_name: str = "debug"
@@ -43,9 +43,14 @@ def train_model_with_states(
 
     training_module.init_logger(logger)
     # define checkpoint manageer
+    if t_configs.monitor_metrics is None:
+        monitor_metrics = None
+    else:
+        monitor_metrics = f"{t_configs.monitor_metrics}_epoch"
+
     ckpt_manager = CheckpointManager(
         log_dir=Path(training_module.logger.log_dir) / 'checkpoints',
-        monitor_metrics=f"{t_configs.monitor_metrics}_epoch",
+        monitor_metrics=monitor_metrics,
         max_n_checkpoints=t_configs.max_n_checkpoints
     )
     # dataloaders
