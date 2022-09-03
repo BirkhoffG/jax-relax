@@ -37,6 +37,12 @@ entries:
       title: Vanilla CF
       url: methods.vanilla.html
     - output: web,pdf
+      title: Diverse CF
+      url: methods.diverse.html
+    - output: web,pdf
+      title: Proto CF
+      url: methods.prototype.html
+    - output: web,pdf
       title: Evaluate
       url: evaluate.html
     output: web

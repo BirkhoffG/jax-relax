@@ -82,20 +82,27 @@ pip install -e cfnet
 <span class="kn">from</span> <span class="nn">cfnet.evaluate</span> <span class="kn">import</span> <span class="n">generate_cf_results_local_exp</span><span class="p">,</span> <span class="n">benchmark_cfs</span>
 <span class="kn">from</span> <span class="nn">cfnet.import_essentials</span> <span class="kn">import</span> <span class="o">*</span>
 
-<span class="n">data_configs</span> <span class="o">=</span> <span class="n">load_json</span><span class="p">(</span><span class="s1">&#39;assets/configs/data_configs/adult.json&#39;</span><span class="p">)</span>
+<span class="n">data_configs</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"data_dir"</span><span class="p">:</span> <span class="s2">"assets/data/s_adult.csv"</span><span class="p">,</span>
+    <span class="s2">"data_name"</span><span class="p">:</span> <span class="s2">"adult"</span><span class="p">,</span>
+    <span class="s2">"batch_size"</span><span class="p">:</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="s2">"continous_cols"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"age"</span><span class="p">,</span><span class="s2">"hours_per_week"</span><span class="p">],</span>
+    <span class="s2">"discret_cols"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"workclass"</span><span class="p">,</span><span class="s2">"education"</span><span class="p">,</span><span class="s2">"marital_status"</span><span class="p">,</span><span class="s2">"occupation"</span><span class="p">,</span><span class="s2">"race"</span><span class="p">,</span><span class="s2">"gender"</span><span class="p">],</span>
+    <span class="s2">"imutable_cols"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"race"</span><span class="p">,</span><span class="s2">"gender"</span><span class="p">]</span>
+<span class="p">}</span>
 <span class="n">m_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
-    <span class="s2">&quot;sizes&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
-    <span class="s2">&quot;dropout_rate&quot;</span><span class="p">:</span> <span class="mf">0.3</span>
+    <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.003</span><span class="p">,</span>
+    <span class="s2">"sizes"</span><span class="p">:</span> <span class="p">[</span><span class="mi">50</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">],</span>
+    <span class="s2">"dropout_rate"</span><span class="p">:</span> <span class="mf">0.3</span>
 <span class="p">}</span>
 <span class="n">t_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_epochs&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-    <span class="s1">&#39;monitor_metrics&#39;</span><span class="p">:</span> <span class="s1">&#39;val/val_loss&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;logger_name&#39;</span><span class="p">:</span> <span class="s1">&#39;pred&#39;</span>
+    <span class="s1">'n_epochs'</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="s1">'monitor_metrics'</span><span class="p">:</span> <span class="s1">'val/val_loss'</span><span class="p">,</span>
+    <span class="s1">'logger_name'</span><span class="p">:</span> <span class="s1">'pred'</span>
 <span class="p">}</span>
 <span class="n">cf_configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;n_steps&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.001</span>
+    <span class="s1">'n_steps'</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+    <span class="s1">'lr'</span><span class="p">:</span> <span class="mf">0.001</span>
 <span class="p">}</span>
 
 <span class="c1"># load data</span>
@@ -129,5 +136,5 @@ pip install -e cfnet
     {% endraw %}
 
 </div>
- 
+
 

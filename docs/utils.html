@@ -26,6 +26,21 @@ nb_path: "nbs/00_utils.ipynb"
     
 <div class="cell border-box-sizing code_cell rendered">
 
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>/home/birk/mambaforge-pypy3/envs/cfnet/lib/python3.7/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
+  PyTreeDef = type(jax.tree_structure(None))
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
 </div>
     {% endraw %}
 
@@ -53,32 +68,16 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="validate_configs" class="doc_header"><code>validate_configs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L10" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>validate_configs</code>(<strong><code>configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <code>BaseModel</code>], <strong><code>config_cls</code></strong>:<code>BaseModel</code>)</p>
+<h4 id="validate_configs" class="doc_header"><code>validate_configs</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L10" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>validate_configs</code>(<strong><code>configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <code>BaseModel</code>], <strong><code>config_cls</code></strong>:<code>BaseModel</code>)</p>
 </blockquote>
-<table>
-<thead><tr>
-<th></th>
-<th>Type</th>
-<th>Default</th>
-<th>Details</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong><code>configs</code></strong></td>
-<td><code>typing.Union[typing.Dict[str, typing.Any], pydantic.main.BaseModel]</code></td>
-<td></td>
-<td>configs</td>
-</tr>
-<tr>
-<td><strong><code>config_cls</code></strong></td>
-<td><code>BaseModel</code></td>
-<td></td>
-<td>config class</td>
-</tr>
-</tbody>
-</table>
+<p>||Type|Default|Details|
+|---|---|---|---|
+|<strong><code>configs</code></strong>|<code>typing.Union[typing.Dict[str, typing.Any], pydantic.main.BaseModel]</code>||configs|
+|<strong><code>config_cls</code></strong>|<code>BaseModel</code>||config class|</p>
 
 </div>
 
@@ -93,38 +92,6 @@ nb_path: "nbs/00_utils.ipynb"
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
-
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">cfnet.training_module</span> <span class="kn">import</span> <span class="n">PredictiveTrainingModuleConfigs</span><span class="p">,</span> <span class="n">CounterNetTrainingModuleConfigs</span>
-
-<span class="n">configs</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
-    <span class="s1">&#39;lambda_1&#39;</span><span class="p">:</span> <span class="mf">1.</span><span class="p">,</span>
-    <span class="s1">&#39;lambda_2&#39;</span><span class="p">:</span> <span class="mf">1.</span><span class="p">,</span>
-    <span class="s1">&#39;lambda_3&#39;</span><span class="p">:</span> <span class="mf">1.</span><span class="p">,</span>
-<span class="p">}</span>
-<span class="n">p_config</span> <span class="o">=</span> <span class="n">validate_configs</span><span class="p">(</span><span class="n">configs</span><span class="p">,</span> <span class="n">PredictiveTrainingModuleConfigs</span><span class="p">)</span>
-<span class="n">cf_config</span> <span class="o">=</span> <span class="n">validate_configs</span><span class="p">(</span><span class="n">configs</span><span class="p">,</span> <span class="n">CounterNetTrainingModuleConfigs</span><span class="p">)</span>
-
-<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p_config</span><span class="p">,</span> <span class="n">PredictiveTrainingModuleConfigs</span><span class="p">)</span>
-<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cf_config</span><span class="p">,</span> <span class="n">CounterNetTrainingModuleConfigs</span><span class="p">)</span>
-
-<span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p_config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-<span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cf_config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-</pre></div>
-
-    </div>
-</div>
-</div>
 
 </div>
     {% endraw %}
@@ -139,8 +106,11 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="load_json" class="doc_header"><code>load_json</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L19" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>load_json</code>(<strong><code>f_name</code></strong>:<code>str</code>)</p>
+<h4 id="load_json" class="doc_header"><code>load_json</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L19" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>load_json</code>(<strong><code>f_name</code></strong>:<code>str</code>)</p>
 </blockquote>
 
 </div>
@@ -170,8 +140,11 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="add_to_class" class="doc_header"><code>add_to_class</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L24" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>add_to_class</code>(<strong><code>Class</code></strong>)</p>
+<h4 id="add_to_class" class="doc_header"><code>add_to_class</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L24" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>add_to_class</code>(<strong><code>Class</code></strong>)</p>
 </blockquote>
 
 </div>
@@ -208,8 +181,11 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="cat_normalize" class="doc_header"><code>cat_normalize</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L30" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>cat_normalize</code>(<strong><code>cf</code></strong>, <strong><code>cat_arrays</code></strong>, <strong><code>cat_idx</code></strong>:<code>int</code>, <strong><code>hard</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
+<h4 id="cat_normalize" class="doc_header"><code>cat_normalize</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L30" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>cat_normalize</code>(<strong><code>cf</code></strong>, <strong><code>cat_arrays</code></strong>, <strong><code>cat_idx</code></strong>:<code>int</code>, <strong><code>hard</code></strong>:<code>bool</code>=<em><code>False</code></em>)</p>
 </blockquote>
 
 </div>
@@ -225,6 +201,30 @@ nb_path: "nbs/00_utils.ipynb"
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">cfnet.datasets</span> <span class="kn">import</span> <span class="n">TabularDataModule</span>
+
+<span class="n">dm</span> <span class="o">=</span> <span class="n">TabularDataModule</span><span class="p">(</span><span class="n">data_configs</span><span class="p">)</span>
+<span class="n">cf</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">29</span><span class="p">))</span>
+<span class="n">cf_norm</span> <span class="o">=</span> <span class="n">cat_normalize</span><span class="p">(</span><span class="n">cf</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">cat_arrays</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">cat_idx</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">cat_feats</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">dm</span><span class="o">.</span><span class="n">cat_arrays</span><span class="p">)</span>
+
+<span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">cf_norm</span><span class="p">[:,</span> <span class="n">dm</span><span class="o">.</span><span class="n">cat_idx</span><span class="p">:],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">cat_feats</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
 
 </div>
     {% endraw %}
@@ -246,8 +246,45 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="binary_cross_entropy" class="doc_header"><code>binary_cross_entropy</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L52" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>binary_cross_entropy</code>(<strong><code>y_pred</code></strong>:<code>ndarray</code>, <strong><code>y</code></strong>:<code>ndarray</code>)</p>
+<h4 id="binary_cross_entropy" class="doc_header"><code>binary_cross_entropy</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L52" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>binary_cross_entropy</code>(<strong><code>y_pred</code></strong>:<code>ndarray</code>, <strong><code>y</code></strong>:<code>ndarray</code>)</p>
+</blockquote>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="sigmoid" class="doc_header"><code>sigmoid</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L56" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>sigmoid</code>(<strong><code>x</code></strong>)</p>
 </blockquote>
 
 </div>
@@ -284,8 +321,11 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="accuracy" class="doc_header"><code>accuracy</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L56" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>accuracy</code>(<strong><code>y_true</code></strong>:<code>ndarray</code>, <strong><code>y_pred</code></strong>:<code>ndarray</code>)</p>
+<h4 id="accuracy" class="doc_header"><code>accuracy</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L61" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>accuracy</code>(<strong><code>y_true</code></strong>:<code>ndarray</code>, <strong><code>y_pred</code></strong>:<code>ndarray</code>)</p>
 </blockquote>
 
 </div>
@@ -308,8 +348,11 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="dist" class="doc_header"><code>dist</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L60" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>dist</code>(<strong><code>x</code></strong>:<code>ndarray</code>, <strong><code>cf</code></strong>:<code>ndarray</code>, <strong><code>ord</code></strong>:<code>int</code>=<em><code>2</code></em>)</p>
+<h4 id="dist" class="doc_header"><code>dist</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L65" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>dist</code>(<strong><code>x</code></strong>:<code>ndarray</code>, <strong><code>cf</code></strong>:<code>ndarray</code>, <strong><code>ord</code></strong>:<code>int</code>=<em><code>2</code></em>)</p>
 </blockquote>
 
 </div>
@@ -332,8 +375,11 @@ nb_path: "nbs/00_utils.ipynb"
 <div class="output_area">
 
 
+
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="proximity" class="doc_header"><code>proximity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L64" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>proximity</code>(<strong><code>x</code></strong>:<code>ndarray</code>, <strong><code>cf</code></strong>:<code>ndarray</code>)</p>
+<h4 id="proximity" class="doc_header"><code>proximity</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/utils.py#L69" class="source_link" style="float:right">[source]</a></h4>
+<blockquote>
+<p><code>proximity</code>(<strong><code>x</code></strong>:<code>ndarray</code>, <strong><code>cf</code></strong>:<code>ndarray</code>)</p>
 </blockquote>
 
 </div>
@@ -353,31 +399,6 @@ nb_path: "nbs/00_utils.ipynb"
 </div>
     {% endraw %}
 
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">m</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
-    <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span>
-    <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">4.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span>
-<span class="p">])</span>
-<span class="n">n</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
-    <span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">3.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span>
-    <span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">,</span> <span class="mf">4.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span>
-<span class="p">])</span>
-<span class="k">assert</span> <span class="n">proximity</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">==</span> <span class="mf">3.5</span>
-</pre></div>
-
-    </div>
-</div>
 </div>
 
-</div>
-    {% endraw %}
-
-</div>
- 
 
