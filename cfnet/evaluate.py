@@ -23,10 +23,19 @@ class CFExplanationResults:
     total_time: float   # total runtime
     pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray] # predict function
     dataset_name: str = str()     # dataset name
+    X: Optional[jnp.DeviceArray] = None  # input
+    y: Optional[jnp.DeviceArray] = None  # label
+
 
     def __post_init__(self):
-        if self.dataset_name == str() and self.data_module:
-            self.dataset_name = self.data_module.data_name
+        if self.data_module:
+            if self.dataset_name == str():
+                self.dataset_name = self.data_module.data_name
+            test_X, label = self.data_module.test_dataset[:]
+            if self.X is None:
+                self.X = test_X
+            if self.y is None:
+                self.y = label
 
     # dataset_name: str   # dataset name
     # X: jnp.DeviceArray  # input
