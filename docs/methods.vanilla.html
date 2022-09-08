@@ -26,21 +26,6 @@ nb_path: "nbs/05_methods.vanilla.ipynb"
     
 <div class="cell border-box-sizing code_cell rendered">
 
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-<div class="output_subarea output_stream output_stderr output_text">
-<pre>/home/birk/mambaforge-pypy3/envs/cfnet/lib/python3.7/site-packages/haiku/_src/data_structures.py:37: FutureWarning: jax.tree_structure is deprecated, and will be removed in a future release. Use jax.tree_util.tree_structure instead.
-  PyTreeDef = type(jax.tree_structure(None))
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
 </div>
     {% endraw %}
 
@@ -63,9 +48,7 @@ nb_path: "nbs/05_methods.vanilla.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="VanillaCFConfig" class="doc_header"><code>class</code> <code>VanillaCFConfig</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/methods/vanilla.py#L66" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>VanillaCFConfig</code>(<strong><code>n_steps</code></strong>:<code>int</code>=<em><code>1000</code></em>, <strong><code>lr</code></strong>:<code>float</code>=<em><code>0.01</code></em>, <strong><code>lambda_</code></strong>:<code>float</code>=<em><code>0.01</code></em>) :: <code>BaseModel</code></p>
+<h2 id="VanillaCFConfig" class="doc_header"><code>class</code> <code>VanillaCFConfig</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/methods/vanilla.py#L66" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>VanillaCFConfig</code>(<strong><code>n_steps</code></strong>:<code>int</code>=<em><code>1000</code></em>, <strong><code>lr</code></strong>:<code>float</code>=<em><code>0.01</code></em>, <strong><code>lambda_</code></strong>:<code>float</code>=<em><code>0.01</code></em>) :: <code>BaseModel</code></p>
 </blockquote>
 
 </div>
@@ -97,9 +80,7 @@ nb_path: "nbs/05_methods.vanilla.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="VanillaCF" class="doc_header"><code>class</code> <code>VanillaCF</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/methods/vanilla.py#L72" class="source_link" style="float:right">[source]</a></h2>
-<blockquote>
-<p><code>VanillaCF</code>(<strong><code>configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <a href="/cfnet/methods.vanilla.html#VanillaCFConfig"><code>VanillaCFConfig</code></a>], <strong><code>data_module</code></strong>:<code>Optional</code>[<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>]=<em><code>None</code></em>) :: <a href="/cfnet/inferfaces.html#LocalCFExplanationModule"><code>LocalCFExplanationModule</code></a></p>
+<h2 id="VanillaCF" class="doc_header"><code>class</code> <code>VanillaCF</code><a href="https://github.com/birkhoffg/cfnet/tree/master/cfnet/methods/vanilla.py#L72" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>VanillaCF</code>(<strong><code>configs</code></strong>:<code>Union</code>[<code>typing.Dict[str, typing.Any]</code>, <a href="/cfnet/methods.vanilla.html#VanillaCFConfig"><code>VanillaCFConfig</code></a>], <strong><code>data_module</code></strong>:<code>Optional</code>[<a href="/cfnet/datasets.html#TabularDataModule"><code>TabularDataModule</code></a>]=<em><code>None</code></em>) :: <a href="/cfnet/inferfaces.html#LocalCFExplanationModule"><code>LocalCFExplanationModule</code></a></p>
 </blockquote>
 <p>Helper class that provides a standard way to create an ABC using
 inheritance.</p>
