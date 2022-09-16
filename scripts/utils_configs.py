@@ -9,6 +9,8 @@ configs = {
     "breast_cancer": "assets/configs/data_configs/breast_cancer.json",
     "student performance": "assets/configs/data_configs/student_performance.json",
     "titanic": "assets/configs/data_configs/titanic.json",
+    "credit": "assets/configs/data_configs/credit_card.json",
+    "german": "assets/configs/data_configs/german_credit.json"
 }
 
 
