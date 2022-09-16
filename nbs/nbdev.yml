@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "cfnet"
+  site-url: "https://birkhoffg.github.io/cfnet/"
+  description: "counterfactual explanation using Jax"
+  repo-branch: master
+  repo-url: "https://github.com/birkhoffg/cfnet/tree/master/"
