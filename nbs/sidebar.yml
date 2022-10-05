@@ -5,8 +5,8 @@ website:
       - section: Tutorials
         contents:
         - tutorials/install.ipynb
-        - tutorials/contribution.ipynb
         - tutorials/how_to_use_cfnet.ipynb
+        - tutorials/contribution.ipynb        
       - section: API
         contents:
         - 00_utils.ipynb

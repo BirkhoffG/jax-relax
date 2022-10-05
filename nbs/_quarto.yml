@@ -24,6 +24,9 @@ website:
   navbar:
     background: primary
     search: true
+    right:
+      - icon: github
+        href: "https://github.com/birkhoffg/cfnet"
     
 
 metadata-files: [nbdev.yml, sidebar.yml]
