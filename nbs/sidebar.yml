@@ -1,0 +1,22 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      - section: Tutorials
+        contents:
+        - tutorials/contribution.ipynb
+      - section: API
+        contents:
+        - 00_utils.ipynb
+        - 00a_inferfaces.ipynb
+        - 01_datasets.ipynb
+        - 02_nets.ipynb
+        - 03_training_module.ipynb
+        - 04_learning.ipynb
+        - 04a_logger.ipynb
+        - 04b_ckpt_manager.ipynb
+        - 05_methods.vanilla.ipynb
+        - 05b_methods.diverse.ipynb
+        - 05c_methods.prototype.ipynb
+        - 06_evaluate.ipynb
+      

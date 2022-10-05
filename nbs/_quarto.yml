@@ -1,0 +1,29 @@
+project:
+  type: website
+  output-dir: _docs
+  preview:
+    port: 3000
+    browser: false
+
+format:
+  html:
+    theme: minty
+    css: styles.css
+    font-size: 80%
+    toc: true
+    toc-depth: 4    
+    number-sections: true
+    number-depth: 2
+
+website:
+  twitter-card: true
+  open-graph: true
+  repo-actions: [issue]
+  sidebar:
+    style: "floating"
+  navbar:
+    background: primary
+    search: true
+    
+
+metadata-files: [nbdev.yml, sidebar.yml]

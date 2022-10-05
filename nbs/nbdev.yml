@@ -4,6 +4,6 @@ project:
 website:
   title: "cfnet"
   site-url: "https://birkhoffg.github.io/cfnet/"
-  description: "counterfactual explanation using Jax"
+  description: "A counterfactual explanation library using Jax"
   repo-branch: master
   repo-url: "https://github.com/birkhoffg/cfnet/tree/master/"

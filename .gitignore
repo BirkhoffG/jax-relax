@@ -1,11 +1,8 @@
 # logs
 log
 lightning_logs
-_docs/
-sidebar.yml
 
 _publish.yml
-_quarto.yml
 _proc/
 tests/settings.ini
 idx/
