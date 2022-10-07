@@ -5,35 +5,27 @@ from __future__ import annotations
 from .import_essentials import *
 
 # %% auto 0
-__all__ = ['validate_configs', 'load_json', 'add_to_class', 'cat_normalize', 'binary_cross_entropy', 'sigmoid', 'accuracy',
-           'dist', 'proximity', 'make_model', 'init_net_opt', 'grad_update', 'check_cat_info']
+__all__ = ['validate_configs', 'cat_normalize', 'make_model', 'init_net_opt', 'grad_update', 'check_cat_info', 'load_json',
+           'add_to_class', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
-    # configs:Union[Dict[str, Any],BaseParser], # A configuration of the model/data.
-    configs:dict|BaseParser, # A configuration of the model/data.
+    configs:dict|BaseParser, # A configuration of the model/dataset.
     config_cls: BaseParser # The desired configuration class.
 ) -> BaseParser:
+    """return a valid configuration object."""
     if not isinstance(configs, config_cls):
         configs = config_cls(**configs)
     return configs
 
-# %% ../nbs/00_utils.ipynb 7
-def load_json(
-    f_name: str # file name
-) -> Dict[str, Any]:
-    with open(f_name) as f: return json.load(f)
-
-# %% ../nbs/00_utils.ipynb 8
-# https://github.com/d2l-ai/d2l-en/blob/d9a3f6ac0e86468159d7b69345a1732bbe3ce1c7/d2l/torch.py#L100
-def add_to_class(cls):
-    warnings.warn("deprecated", DeprecationWarning)
-    def wrapper(obj):
-        setattr(cls, obj.__name__, obj)
-    return wrapper
-
-# %% ../nbs/00_utils.ipynb 10
-def cat_normalize(cf, cat_arrays, cat_idx: int, hard: bool=False):
+# %% ../nbs/00_utils.ipynb 14
+def cat_normalize(
+    cf: jnp.ndarray, # Unnormalized counterfactual explanations `[n_samples, n_features]`
+    cat_arrays: List[List[str]], # A list of a list of each categorical feature name
+    cat_idx: int, # Index that starts categorical features
+    hard: bool=False # If `True`, return one-hot vectors; If `False`, return probability normalized via softmax
+) -> jnp.ndarray:
+    """Ensure generated counterfactual explanations to respect one-hot encoding constraints."""
     cf_cont = cf[:, :cat_idx]
     normalized_cf = [cf_cont]
 
@@ -54,30 +46,9 @@ def cat_normalize(cf, cat_arrays, cat_idx: int, hard: bool=False):
         normalized_cf.append(cf_cat)
     return jnp.concatenate(normalized_cf, axis=-1)
 
-# %% ../nbs/00_utils.ipynb 14
-def binary_cross_entropy(y_pred: chex.Array, y: chex.Array) -> chex.Array:
-    return -(y * jnp.log(y_pred + 1e-5) + (1 - y) * jnp.log(1 - y_pred + 1e-5))
-
-# %% ../nbs/00_utils.ipynb 15
-def sigmoid(x):
-    # https://stackoverflow.com/a/68293931
-    return 0.5 * (jnp.tanh(x  / 2) + 1)
-
-# %% ../nbs/00_utils.ipynb 17
-def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
-    y_true, y_pred = map(jnp.round, (y_true, y_pred))
-    return jnp.mean(jnp.equal(y_true, y_pred))
-
-def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jnp.DeviceArray:
-    dist = jnp.linalg.norm(x - cf, ord=ord, axis=-1, keepdims=True)
-    return jnp.mean(vmap(jnp.sum)(dist))
-
-def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jnp.DeviceArray:
-    return dist(x, cf, ord=1)
-
-# %% ../nbs/00_utils.ipynb 20
+# %% ../nbs/00_utils.ipynb 28
 def make_model(
-    m_configs: Dict[str, Any],
+    m_configs: Dict[str, Any], # model configs
     model: hk.Module
 ) -> hk.Transformed:
     # example:
@@ -89,6 +60,7 @@ def make_model(
     return hk.transform(model_fn)
 
 
+# %% ../nbs/00_utils.ipynb 29
 def init_net_opt(
     net: hk.Transformed,
     opt: optax.GradientTransformation,
@@ -100,7 +72,7 @@ def init_net_opt(
     opt_state = opt.init(params)
     return params, opt_state
 
-# %% ../nbs/00_utils.ipynb 21
+# %% ../nbs/00_utils.ipynb 30
 def grad_update(
     grads: Dict[str, jnp.ndarray],
     params: hk.Params,
@@ -111,7 +83,7 @@ def grad_update(
     upt_params = optax.apply_updates(params, updates)
     return upt_params, opt_state
 
-# %% ../nbs/00_utils.ipynb 22
+# %% ../nbs/00_utils.ipynb 31
 def check_cat_info(method):
     def inner(cf_module, *args, **kwargs):
         warning_msg = f"""This CFExplanationModule might not be updated with categorical information.
@@ -121,3 +93,38 @@ You should try `{cf_module.name}.update_cat_info(dm)` before generating cfs.
             warnings.warn(warning_msg, RuntimeWarning)
         return method(cf_module, *args, **kwargs)
     return inner
+
+# %% ../nbs/00_utils.ipynb 33
+def load_json(
+    f_name: str # file name
+) -> Dict[str, Any]:
+    with open(f_name) as f: return json.load(f)
+
+# %% ../nbs/00_utils.ipynb 34
+# https://github.com/d2l-ai/d2l-en/blob/d9a3f6ac0e86468159d7b69345a1732bbe3ce1c7/d2l/torch.py#L100
+def add_to_class(cls):
+    warnings.warn("deprecated", DeprecationWarning)
+    def wrapper(obj):
+        setattr(cls, obj.__name__, obj)
+    return wrapper
+
+# %% ../nbs/00_utils.ipynb 36
+def binary_cross_entropy(y_pred: chex.Array, y: chex.Array) -> chex.Array:
+    return -(y * jnp.log(y_pred + 1e-5) + (1 - y) * jnp.log(1 - y_pred + 1e-5))
+
+# %% ../nbs/00_utils.ipynb 37
+def sigmoid(x):
+    # https://stackoverflow.com/a/68293931
+    return 0.5 * (jnp.tanh(x  / 2) + 1)
+
+# %% ../nbs/00_utils.ipynb 39
+def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
+    y_true, y_pred = map(jnp.round, (y_true, y_pred))
+    return jnp.mean(jnp.equal(y_true, y_pred))
+
+def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jnp.DeviceArray:
+    dist = jnp.linalg.norm(x - cf, ord=ord, axis=-1, keepdims=True)
+    return jnp.mean(vmap(jnp.sum)(dist))
+
+def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jnp.DeviceArray:
+    return dist(x, cf, ord=1)
