@@ -102,3 +102,50 @@ cf_results = generate_cf_results_local_exp(cf_exp, dm, pred_fn)
 # benchmark different cf explanation methods
 benchmark_cfs([cf_results])
 ```
+
+    /home/birk/mambaforge-pypy3/envs/nbdev2/lib/python3.7/site-packages/ipykernel_launcher.py:36: DeprecatedWarning: PredictiveTrainingModule is deprecated as of 0.0.7 and will be removed in 0.1.0. Use `cfnet.module.PredictiveTrainingModule` instead.
+    WARNING:absl:No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+    /home/birk/mambaforge-pypy3/envs/nbdev2/lib/python3.7/site-packages/haiku/_src/data_structures.py:144: FutureWarning: jax.tree_flatten is deprecated, and will be removed in a future release. Use jax.tree_util.tree_flatten instead.
+      leaves, treedef = jax.tree_flatten(tree)
+    /home/birk/mambaforge-pypy3/envs/nbdev2/lib/python3.7/site-packages/haiku/_src/data_structures.py:145: FutureWarning: jax.tree_unflatten is deprecated, and will be removed in a future release. Use jax.tree_util.tree_unflatten instead.
+      return jax.tree_unflatten(treedef, leaves)
+    /home/birk/code/cfnet/cfnet/_ckpt_manager.py:14: FutureWarning: jax.tree_leaves is deprecated, and will be removed in a future release. Use jax.tree_util.tree_leaves instead.
+      for x in jax.tree_leaves(state):
+    Epoch 9: 100%|██████████| 96/96 [00:01<00:00, 57.03batch/s, train/train_loss_1=0.0485]
+    100%|██████████| 1000/1000 [00:08<00:00, 124.53it/s]
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>acc</th>
+      <th>validity</th>
+      <th>proximity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>adult</th>
+      <th>VanillaCF</th>
+      <td>0.826188</td>
+      <td>0.883675</td>
+      <td>7.05637</td>
+    </tr>
+  </tbody>
+</table>
+</div>

@@ -7,8 +7,7 @@ __all__ = ['DiverseCFConfig', 'DiverseCF']
 from ..import_essentials import *
 from ..interfaces import BaseCFExplanationModule, LocalCFExplanationModule
 from ..datasets import TabularDataModule
-from ..training_module import grad_update
-from ..utils import check_cat_info, validate_configs, binary_cross_entropy, cat_normalize, dist
+from ..utils import check_cat_info, validate_configs, binary_cross_entropy, cat_normalize, dist, grad_update
 
 # %% ../../nbs/05b_methods.diverse.ipynb 4
 def hinge_loss(input: jnp.DeviceArray, target: jnp.DeviceArray):

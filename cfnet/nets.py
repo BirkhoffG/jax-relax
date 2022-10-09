@@ -8,6 +8,8 @@ from .import_essentials import *
 from .utils import validate_configs, sigmoid
 
 # %% ../nbs/02_nets.ipynb 4
+@deprecated(removed_in='0.1.0', deprecated_in='0.0.7',
+            details='Use `cfnet.module.DenseBlock` instead.')
 class DenseBlock(hk.Module):
     def __init__(self,
                 output_size: int,
@@ -29,6 +31,8 @@ class DenseBlock(hk.Module):
         return x
 
 # %% ../nbs/02_nets.ipynb 5
+@deprecated(removed_in='0.1.0', deprecated_in='0.0.7',
+            details='Use `cfnet.module.MLP` instead.')
 class MLP(hk.Module):
     def __init__(self,
                 sizes: List[int],
@@ -51,6 +55,8 @@ class PredictiveModelConfigs(BaseParser):
     dropout_rate: float = 0.3
 
 # %% ../nbs/02_nets.ipynb 7
+@deprecated(removed_in='0.1.0', deprecated_in='0.0.7',
+            details='Use `cfnet.module.PredictiveModel` instead.')
 class PredictiveModel(hk.Module):
     def __init__(
         self,
@@ -78,6 +84,8 @@ class CounterNetModelConfigs(BaseParser):
     dropout_rate: float = 0.3
 
 # %% ../nbs/02_nets.ipynb 11
+@deprecated(removed_in='0.1.0', deprecated_in='0.0.7',
+            details='Use `cfnet.module.CounterNetModel` instead.')
 class CounterNetModel(hk.Module):
 
     def __init__(self,

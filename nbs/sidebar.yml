@@ -12,7 +12,6 @@ website:
         - 00_utils.ipynb
         - 00a_inferfaces.ipynb
         - 01_datasets.ipynb
-        - 02_nets.ipynb
         - 03_training_module.ipynb
         - 04_learning.ipynb
         - 04a_logger.ipynb

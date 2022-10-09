@@ -7,9 +7,9 @@ __all__ = ['ProtoCFConfig', 'ProtoCF']
 from ..import_essentials import *
 from ..interfaces import BaseCFExplanationModule, LocalCFExplanationModule
 from ..datasets import TabularDataModule
-from ..training_module import grad_update, BaseTrainingModule
+from ..module import BaseTrainingModule
 from ..train import train_model
-from ..utils import check_cat_info, validate_configs, binary_cross_entropy, cat_normalize, make_model, init_net_opt
+from ..utils import check_cat_info, validate_configs, binary_cross_entropy, cat_normalize, make_model, init_net_opt, grad_update
 from ..nets import MLP
 from functools import partial
 
