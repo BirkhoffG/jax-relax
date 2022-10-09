@@ -7,8 +7,7 @@ __all__ = ['VanillaCFConfig', 'VanillaCF']
 from ..import_essentials import *
 from ..interfaces import BaseCFExplanationModule, LocalCFExplanationModule
 from ..datasets import TabularDataModule
-from ..training_module import grad_update
-from ..utils import check_cat_info, validate_configs, binary_cross_entropy, cat_normalize
+from ..utils import check_cat_info, validate_configs, binary_cross_entropy, cat_normalize, grad_update
 
 # %% ../../nbs/05_methods.vanilla.ipynb 4
 def _vanilla_cf(
