@@ -23,7 +23,9 @@ class TrainingConfigs(BaseParser):
     max_n_checkpoints: int = 3
 
     @property
-    def PRNGSequence(self): return hk.PRNGSequence(self.seed)
+    def PRNGSequence(self):
+        return hk.PRNGSequence(self.seed)
+
 
 # %% ../nbs/04_learning.ipynb 5
 def train_model_with_states(
@@ -31,13 +33,15 @@ def train_model_with_states(
     params: hk.Params,
     opt_state: optax.OptState,
     data_module: TabularDataModule,
-    t_configs: Union[Dict[str, Any], TrainingConfigs]
+    t_configs: Union[Dict[str, Any], TrainingConfigs],
 ) -> Tuple[hk.Params, optax.OptState]:
     t_configs = validate_configs(t_configs, TrainingConfigs)
     keys = t_configs.PRNGSequence
     # define logger
     logger = TensorboardLogger(
-        log_dir=t_configs.log_dir, name=t_configs.logger_name, on_step=t_configs.log_on_step
+        log_dir=t_configs.log_dir,
+        name=t_configs.logger_name,
+        on_step=t_configs.log_on_step,
     )
     logger.save_hyperparams(t_configs.dict())
     if training_module.hparams:
@@ -51,9 +55,9 @@ def train_model_with_states(
         monitor_metrics = f"{t_configs.monitor_metrics}_epoch"
 
     ckpt_manager = CheckpointManager(
-        log_dir=Path(training_module.logger.log_dir) / 'checkpoints',
+        log_dir=Path(training_module.logger.log_dir) / "checkpoints",
         monitor_metrics=monitor_metrics,
-        max_n_checkpoints=t_configs.max_n_checkpoints
+        max_n_checkpoints=t_configs.max_n_checkpoints,
     )
     # dataloaders
     train_loader = data_module.train_dataloader(t_configs.seed, t_configs.batch_size)
@@ -63,12 +67,15 @@ def train_model_with_states(
     for epoch in range(t_configs.n_epochs):
         training_module.logger.on_epoch_started()
         # training
-        with tqdm(train_loader, unit='batch', leave=epoch==t_configs.n_epochs-1) as t_loader:
+        with tqdm(
+            train_loader, unit="batch", leave=epoch == t_configs.n_epochs - 1
+        ) as t_loader:
             t_loader.set_description(f"Epoch {epoch}")
             for batch in t_loader:
                 x, y = map(device_put, tuple(batch))
                 params, opt_state = training_module.training_step(
-                    params, opt_state, next(keys), (x, y))
+                    params, opt_state, next(keys), (x, y)
+                )
                 # logs = training_module.training_step_logs(
                 #     params, next(keys), (x, y))
                 logs = training_module.logger.get_last_logs()
@@ -86,16 +93,20 @@ def train_model_with_states(
     training_module.logger.close()
     return params, opt_state
 
+
 # %% ../nbs/04_learning.ipynb 6
 def train_model(
     training_module: BaseTrainingModule,
     data_module: TabularDataModule,
-    t_configs: Union[Dict[str, Any], TrainingConfigs]
+    t_configs: Union[Dict[str, Any], TrainingConfigs],
 ) -> Tuple[hk.Params, optax.OptState]:
     t_configs = validate_configs(t_configs, TrainingConfigs)
     keys = t_configs.PRNGSequence
     params, opt_state = training_module.init_net_opt(data_module, next(keys))
     return train_model_with_states(
-        training_module=training_module, params=params,
-        opt_state=opt_state, data_module=data_module, t_configs=t_configs
+        training_module=training_module,
+        params=params,
+        opt_state=opt_state,
+        data_module=data_module,
+        t_configs=t_configs,
     )

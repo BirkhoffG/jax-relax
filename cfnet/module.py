@@ -7,7 +7,16 @@ from .nets import PredictiveModel, CounterNetModel
 from .interfaces import BaseCFExplanationModule
 from .datasets import TabularDataModule
 from .logger import TensorboardLogger
-from .utils import validate_configs, sigmoid, cat_normalize, accuracy, proximity, make_model, init_net_opt, grad_update
+from cfnet.utils import (
+    validate_configs,
+    sigmoid,
+    cat_normalize,
+    accuracy,
+    proximity,
+    make_model,
+    init_net_opt,
+    grad_update,
+)
 from fastcore.basics import patch
 from functools import partial
 from abc import ABC, abstractmethod
@@ -21,30 +30,28 @@ __all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'CounterNetMod
 # %% ../nbs/03_training_module.ipynb 5
 class BaseNetwork(ABC):
     """BaseNetwork needs a `is_training` argument"""
+
     def __call__(self, *, is_training: bool):
         pass
+
 
 # %% ../nbs/03_training_module.ipynb 6
 class DenseBlock(hk.Module):
     def __init__(
         self,
-        output_size: int, # Output dimensionality.
-        dropout_rate: float = 0.3, # Dropout rate.
-        name: str | None = None # Name of the Module
+        output_size: int,  # Output dimensionality.
+        dropout_rate: float = 0.3,  # Dropout rate.
+        name: str | None = None,  # Name of the Module
     ):
         """A `DenseBlock` consists of a dense layer, followed by Leaky Relu and a dropout layer."""
         super().__init__(name=name)
         self.output_size = output_size
         self.dropout_rate = dropout_rate
 
-    def __call__(
-        self,
-        x: jnp.ndarray,
-        is_training: bool = True
-    ) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, is_training: bool = True) -> jnp.ndarray:
         dropout_rate = self.dropout_rate if is_training else 0.0
         # he_uniform
-        w_init = hk.initializers.VarianceScaling(2.0, 'fan_in', 'uniform')
+        w_init = hk.initializers.VarianceScaling(2.0, "fan_in", "uniform")
         x = hk.Linear(self.output_size, w_init=w_init)(x)
         x = jax.nn.leaky_relu(x)
         x = hk.dropout(hk.next_rng_key(), dropout_rate, x)
@@ -55,87 +62,98 @@ class DenseBlock(hk.Module):
 class MLP(hk.Module):
     def __init__(
         self,
-        sizes: Iterable[int], # Sequence of layer sizes.
-        dropout_rate: float = 0.3, # Dropout rate.
-        name: str | None = None # Name of the Module
-    ):  
+        sizes: Iterable[int],  # Sequence of layer sizes.
+        dropout_rate: float = 0.3,  # Dropout rate.
+        name: str | None = None,  # Name of the Module
+    ):
         """A `MLP` consists of a list of `DenseBlock` layers."""
         super().__init__(name=name)
         self.sizes = sizes
         self.dropout_rate = dropout_rate
 
-    def __call__(self,
-                x: jnp.ndarray,
-                is_training: bool = True) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, is_training: bool = True) -> jnp.ndarray:
         for size in self.sizes:
             x = DenseBlock(size, self.dropout_rate)(x, is_training)
         return x
 
+
 # %% ../nbs/03_training_module.ipynb 11
 class PredictiveModelConfigs(BaseParser):
     """Configurator of `PredictiveModel`."""
-    sizes: List[int] # Sequence of layer sizes.
-    dropout_rate: float = 0.3 # Dropout rate.
+
+    sizes: List[int]  # Sequence of layer sizes.
+    dropout_rate: float = 0.3  # Dropout rate.
+
 
 # %% ../nbs/03_training_module.ipynb 12
 class PredictiveModel(hk.Module):
     def __init__(
         self,
-        m_config: Dict[str, Any], # Model configs which contain configs in `PredictiveModelConfigs`.
-        name: Optional[str] = None # Name of the module.
+        m_config: Dict[
+            str, Any
+        ],  # Model configs which contain configs in `PredictiveModelConfigs`.
+        name: Optional[str] = None,  # Name of the module.
     ):
         """A basic predictive model for binary classification."""
         super().__init__(name=name)
-        self.configs = validate_configs(m_config, PredictiveModelConfigs) #PredictiveModelConfigs(**m_config)
+        self.configs = validate_configs(
+            m_config, PredictiveModelConfigs
+        )  # PredictiveModelConfigs(**m_config)
 
-    def __call__(
-        self,
-        x: jnp.ndarray,
-        is_training: bool = True
-    ) -> jnp.ndarray:
-        x = MLP(sizes=self.configs.sizes, dropout_rate=self.configs.dropout_rate)(x, is_training)
+    def __call__(self, x: jnp.ndarray, is_training: bool = True) -> jnp.ndarray:
+        x = MLP(sizes=self.configs.sizes, dropout_rate=self.configs.dropout_rate)(
+            x, is_training
+        )
         x = hk.Linear(1)(x)
         x = sigmoid(x)
         return x
 
+
 # %% ../nbs/03_training_module.ipynb 30
 class CounterNetModelConfigs(BaseParser):
     """Configurator of `CounterNetModel`."""
+
     enc_sizes: List[int]
     dec_sizes: List[int]
     exp_sizes: List[int]
     dropout_rate: float = 0.3
 
+
 # %% ../nbs/03_training_module.ipynb 31
 class CounterNetModel(hk.Module):
     def __init__(
         self,
-        m_config: Dict[str, Any], # Model configs which contain configs in `CounterNetModelConfigs`.
-        name: Optional[str] = None # Name of the module.
+        m_config: Dict[
+            str, Any
+        ],  # Model configs which contain configs in `CounterNetModelConfigs`.
+        name: Optional[str] = None,  # Name of the module.
     ):
         """CounterNet model architecture."""
         super().__init__(name=name)
         self.configs = validate_configs(m_config, CounterNetModelConfigs)
 
-    def __call__(
-        self,
-        x: jnp.ndarray,
-        is_training: bool = True
-    ) -> jnp.ndarray:
+    def __call__(self, x: jnp.ndarray, is_training: bool = True) -> jnp.ndarray:
         input_shape = x.shape[-1]
         # encoder
-        z = MLP(self.configs.enc_sizes, self.configs.dropout_rate, name="Encoder")(x, is_training)
+        z = MLP(self.configs.enc_sizes, self.configs.dropout_rate, name="Encoder")(
+            x, is_training
+        )
 
         # prediction
-        pred = MLP(self.configs.dec_sizes, self.configs.dropout_rate, name="Predictor")(z, is_training)
-        y_hat = hk.Linear(1, name='Predictor')(pred)
+        pred = MLP(self.configs.dec_sizes, self.configs.dropout_rate, name="Predictor")(
+            z, is_training
+        )
+        y_hat = hk.Linear(1, name="Predictor")(pred)
         y_hat = sigmoid(y_hat)
 
         # explain
         z_exp = jnp.concatenate((z, pred), axis=-1)
-        cf = MLP(self.configs.exp_sizes, self.configs.dropout_rate, name="Explainer")(z_exp, is_training)
-        cf = hk.Linear(input_shape, name='Explainer')(cf)
+        cf = MLP(self.configs.exp_sizes, self.configs.dropout_rate, name="Explainer")(
+            z_exp, is_training
+        )
+        cf = hk.Linear(input_shape, name="Explainer")(cf)
         return y_hat, cf
+
 
 # %% ../nbs/03_training_module.ipynb 36
 class BaseTrainingModule(ABC):
@@ -160,46 +178,53 @@ class BaseTrainingModule(ABC):
             raise ValueError("Logger has not been initliazed.")
 
     @abstractmethod
-    def init_net_opt(self,
-        data_module: TabularDataModule,
-        key: random.PRNGKey) -> Tuple[hk.Params, optax.OptState]:
+    def init_net_opt(
+        self, data_module: TabularDataModule, key: random.PRNGKey
+    ) -> Tuple[hk.Params, optax.OptState]:
         pass
 
     @abstractmethod
-    def training_step(self,
+    def training_step(
+        self,
         params: hk.Params,
         opt_state: optax.OptState,
         rng_key: random.PRNGKey,
-        batch: Tuple[jnp.array, jnp.array]) -> Tuple[hk.Params, optax.OptState]:
+        batch: Tuple[jnp.array, jnp.array],
+    ) -> Tuple[hk.Params, optax.OptState]:
         pass
 
     @abstractmethod
-    def validation_step(self,
+    def validation_step(
+        self,
         params: hk.Params,
         rng_key: random.PRNGKey,
-        batch: Tuple[jnp.array, jnp.array]) -> Dict[str, Any]:
+        batch: Tuple[jnp.array, jnp.array],
+    ) -> Dict[str, Any]:
         pass
+
 
 # %% ../nbs/03_training_module.ipynb 38
 class PredictiveTrainingModuleConfigs(BaseParser):
     lr: float
 
+
 # %% ../nbs/03_training_module.ipynb 39
 class PredictiveTrainingModule(BaseTrainingModule):
-    def __init__(self,
-                 m_configs: Dict[str, Any]):
+    def __init__(self, m_configs: Dict[str, Any]):
         self.save_hyperparameters(m_configs)
         self.net = make_model(m_configs, PredictiveModel)
         self.configs = validate_configs(m_configs, PredictiveTrainingModuleConfigs)
         # self.configs = PredictiveTrainingModuleConfigs(**m_configs)
         self.opt = optax.adam(learning_rate=self.configs.lr)
 
-    @partial(jax.jit, static_argnames=['self', 'is_training'])
+    @partial(jax.jit, static_argnames=["self", "is_training"])
     def forward(self, params, rng_key, x, is_training: bool = True):
-        return self.net.apply(params, rng_key, x, is_training = is_training)
+        return self.net.apply(params, rng_key, x, is_training=is_training)
 
     def init_net_opt(self, data_module, key):
-        params, opt_state = init_net_opt(self.net, self.opt, X=data_module.get_sample_X(), key=key)
+        params, opt_state = init_net_opt(
+            self.net, self.opt, X=data_module.get_sample_X(), key=key
+        )
         return params, opt_state
 
     def loss_fn(self, params, rng_key, batch, is_training: bool = True):
@@ -212,7 +237,7 @@ class PredictiveTrainingModule(BaseTrainingModule):
     #     upt_params, opt_state = grad_update(grads, params, opt_state, self.opt)
     #     return upt_params, opt_state
 
-    @partial(jax.jit, static_argnames=['self'])
+    @partial(jax.jit, static_argnames=["self"])
     def _training_step(self, params, opt_state, rng_key, batch):
         grads = jax.grad(self.loss_fn)(params, rng_key, batch)
         upt_params, opt_state = grad_update(grads, params, opt_state, self.opt)
@@ -222,26 +247,24 @@ class PredictiveTrainingModule(BaseTrainingModule):
         params, opt_state = self._training_step(params, opt_state, rng_key, batch)
 
         loss = self.loss_fn(params, rng_key, batch)
-        self.log_dict({
-            'train/train_loss_1': loss.item()
-        })
+        self.log_dict({"train/train_loss_1": loss.item()})
         return params, opt_state
 
     def validation_step(self, params, rng_key, batch):
         x, y = batch
         y_pred = self.net.apply(params, rng_key, x, is_training=False)
         loss = self.loss_fn(params, rng_key, batch, is_training=False)
-        logs = {
-            'val/val_loss': loss.item(),
-            'val/val_accuracy': accuracy(y, y_pred)
-        }
+        logs = {"val/val_loss": loss.item(), "val/val_accuracy": accuracy(y, y_pred)}
         self.log_dict(logs)
+
 
 # %% ../nbs/03_training_module.ipynb 41
 def partition_trainable_params(params: hk.Params, trainable_name: str):
     trainable_params, non_trainable_params = hk.data_structures.partition(
-            lambda m, n, p: trainable_name in m, params)
+        lambda m, n, p: trainable_name in m, params
+    )
     return trainable_params, non_trainable_params
+
 
 # %% ../nbs/03_training_module.ipynb 42
 class CounterNetTrainingModuleConfigs(BaseParser):
@@ -251,16 +274,17 @@ class CounterNetTrainingModuleConfigs(BaseParser):
     lambda_3: float
     use_immutable: bool = True
 
+
 # %% ../nbs/03_training_module.ipynb 43
 def project_immutable_features(x, cf: jnp.DeviceArray, imutable_idx_list: List[int]):
     cf = cf.at[:, imutable_idx_list].set(x[:, imutable_idx_list])
     return cf
 
+
 class CounterNetTrainingModule(BaseTrainingModule, BaseCFExplanationModule):
     name = "CounterNet"
 
-    def __init__(self,
-                 m_configs: Dict[str, Any]):
+    def __init__(self, m_configs: Dict[str, Any]):
         self.save_hyperparameters(m_configs)
         self.net = make_model(m_configs, CounterNetModel)
         self.configs = validate_configs(m_configs, CounterNetTrainingModuleConfigs)
@@ -271,14 +295,16 @@ class CounterNetTrainingModule(BaseTrainingModule, BaseCFExplanationModule):
     def init_net_opt(self, data_module, key):
         self.update_cat_info(data_module)
         # manually init multiple opts
-        params, opt_1_state = init_net_opt(self.net, self.opt_1, X=data_module.get_sample_X(), key=key)
+        params, opt_1_state = init_net_opt(
+            self.net, self.opt_1, X=data_module.get_sample_X(), key=key
+        )
         trainable_params, _ = partition_trainable_params(
-            params, trainable_name='counter_net_model/Explainer'
+            params, trainable_name="counter_net_model/Explainer"
         )
         opt_2_state = self.opt_2.init(trainable_params)
         return params, (opt_1_state, opt_2_state)
 
-    @partial(jax.jit, static_argnames=['self', 'is_training'])
+    @partial(jax.jit, static_argnames=["self", "is_training"])
     def forward(self, params, rng_key, x, is_training: bool = True):
         # first forward to get y_pred and normalized cf
         y_pred, cf = self.net.apply(params, rng_key, x, is_training=is_training)
@@ -323,7 +349,14 @@ class CounterNetTrainingModule(BaseTrainingModule, BaseCFExplanationModule):
         y_pred, cf = self.net.apply(params, rng_key, x, is_training=is_training)
         return self.configs.lambda_1 * self.loss_fn_1(y_pred, y)
 
-    def exp_loss_fn(self, trainable_params, non_trainable_params, rng_key, batch, is_training: bool = True):
+    def exp_loss_fn(
+        self,
+        trainable_params,
+        non_trainable_params,
+        rng_key,
+        batch,
+        is_training: bool = True,
+    ):
         # merge trainable and non_trainable params
         params = hk.data_structures.merge(trainable_params, non_trainable_params)
         x, y = batch
@@ -339,23 +372,32 @@ class CounterNetTrainingModule(BaseTrainingModule, BaseCFExplanationModule):
 
     def _explainer_step(self, params, opt_state, rng_key, batch):
         trainable_params, non_trainable_params = partition_trainable_params(
-            params, trainable_name='counter_net_model/Explainer'
+            params, trainable_name="counter_net_model/Explainer"
         )
         grads = jax.grad(self.exp_loss_fn)(
-            trainable_params, non_trainable_params, rng_key, batch)
-        upt_trainable_params, opt_state = grad_update(grads, trainable_params, opt_state, self.opt_2)
-        upt_params = hk.data_structures.merge(upt_trainable_params, non_trainable_params)
+            trainable_params, non_trainable_params, rng_key, batch
+        )
+        upt_trainable_params, opt_state = grad_update(
+            grads, trainable_params, opt_state, self.opt_2
+        )
+        upt_params = hk.data_structures.merge(
+            upt_trainable_params, non_trainable_params
+        )
         return upt_params, opt_state
 
-    @partial(jax.jit, static_argnames=['self'])
-    def _training_step(self,
-            params: hk.Params,
-            opts_state: Tuple[optax.GradientTransformation, optax.GradientTransformation],
-            rng_key: random.PRNGKey,
-            batch: Tuple[jnp.array, jnp.array]):
+    @partial(jax.jit, static_argnames=["self"])
+    def _training_step(
+        self,
+        params: hk.Params,
+        opts_state: Tuple[optax.GradientTransformation, optax.GradientTransformation],
+        rng_key: random.PRNGKey,
+        batch: Tuple[jnp.array, jnp.array],
+    ):
         opt_1_state, opt_2_state = opts_state
         params, opt_1_state = self._predictor_step(params, opt_1_state, rng_key, batch)
-        upt_params, opt_2_state = self._explainer_step(params, opt_2_state, rng_key, batch)
+        upt_params, opt_2_state = self._explainer_step(
+            params, opt_2_state, rng_key, batch
+        )
         return upt_params, (opt_1_state, opt_2_state)
 
     def _training_step_logs(self, params, rng_key, batch):
@@ -363,21 +405,28 @@ class CounterNetTrainingModule(BaseTrainingModule, BaseCFExplanationModule):
         y_pred, cf, cf_y = self.forward(params, rng_key, x, is_training=False)
         y_prime = 1 - jnp.round(y_pred)
 
-        loss_1, loss_2, loss_3 = self.loss_fn_1(y_pred, y), self.loss_fn_2(cf_y, y_prime), self.loss_fn_3(x, cf)
+        loss_1, loss_2, loss_3 = (
+            self.loss_fn_1(y_pred, y),
+            self.loss_fn_2(cf_y, y_prime),
+            self.loss_fn_3(x, cf),
+        )
         logs = {
-            'train/train_loss_1': loss_1.item(),
-            'train/train_loss_2': loss_2.item(),
-            'train/train_loss_3': loss_3.item(),
+            "train/train_loss_1": loss_1.item(),
+            "train/train_loss_2": loss_2.item(),
+            "train/train_loss_3": loss_3.item(),
         }
         return logs
 
-    def training_step(self,
+    def training_step(
+        self,
         params: hk.Params,
         opts_state: Tuple[optax.OptState, optax.OptState],
         rng_key: random.PRNGKey,
-        batch: Tuple[jnp.array, jnp.array]
+        batch: Tuple[jnp.array, jnp.array],
     ) -> Tuple[hk.Params, Tuple[optax.OptState, optax.OptState]]:
-        upt_params, (opt_1_state, opt_2_state) = self._training_step(params, opts_state, rng_key, batch)
+        upt_params, (opt_1_state, opt_2_state) = self._training_step(
+            params, opts_state, rng_key, batch
+        )
 
         logs = self._training_step_logs(upt_params, rng_key, batch)
         self.log_dict(logs)
@@ -388,16 +437,20 @@ class CounterNetTrainingModule(BaseTrainingModule, BaseCFExplanationModule):
         y_pred, cf, cf_y = self.forward(params, rng_key, x, is_training=False)
         y_prime = 1 - jnp.round(y_pred)
 
-        loss_1, loss_2, loss_3 = self.loss_fn_1(y_pred, y), self.loss_fn_2(cf_y, y_prime), self.loss_fn_3(x, cf)
+        loss_1, loss_2, loss_3 = (
+            self.loss_fn_1(y_pred, y),
+            self.loss_fn_2(cf_y, y_prime),
+            self.loss_fn_3(x, cf),
+        )
         loss_1, loss_2, loss_3 = map(np.asarray, (loss_1, loss_2, loss_3))
         logs = {
-            'val/accuracy': accuracy(y, y_pred),
-            'val/validity': accuracy(cf_y, y_prime),
-            'val/proximity': proximity(x, cf),
-            'val/val_loss_1': loss_1,
-            'val/val_loss_2': loss_2,
-            'val/val_loss_3': loss_3,
-            'val/val_loss': loss_1 + loss_2 + loss_3
+            "val/accuracy": accuracy(y, y_pred),
+            "val/validity": accuracy(cf_y, y_prime),
+            "val/proximity": proximity(x, cf),
+            "val/val_loss_1": loss_1,
+            "val/val_loss_2": loss_2,
+            "val/val_loss_3": loss_3,
+            "val/val_loss": loss_1 + loss_2 + loss_3,
         }
         self.log_dict(logs)
         return logs

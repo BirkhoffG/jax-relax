@@ -12,16 +12,10 @@ from collections import defaultdict
 class TensorboardLogger:
     _last_logs: Dict = dict()
 
-    def __init__(self,
-                 log_dir: Union[str, Path],
-                 name: str,
-                 on_step: bool = False):
+    def __init__(self, log_dir: Union[str, Path], name: str, on_step: bool = False):
         self._log_dir = log_dir
         self._on_step = on_step
-        self.experiment = test_tube.Experiment(
-            name=name,
-            save_dir=log_dir
-        )
+        self.experiment = test_tube.Experiment(name=name, save_dir=log_dir)
         self._epoch_logs = defaultdict(list)
 
     @property

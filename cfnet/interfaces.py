@@ -24,7 +24,7 @@ class BaseCFExplanationModule(ABC):
         X: chex.ArrayBatched,
         pred_fn: Optional[Callable] = None,
         params: Optional[hk.Params] = None,
-        rng_key: Optional[random.PRNGKey] = None
+        rng_key: Optional[random.PRNGKey] = None,
     ) -> chex.ArrayBatched:
         pass
 
@@ -39,6 +39,7 @@ class BaseCFExplanationModule(ABC):
     #     dm: TabularDataModule,
     #     pred_fn: Optional[Callable] = None) -> CFExplanationResults:
     #     pass
+
 
 # %% ../nbs/00a_inferfaces.ipynb 5
 class LocalCFExplanationModule(BaseCFExplanationModule):
