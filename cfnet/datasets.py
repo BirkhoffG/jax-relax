@@ -205,16 +205,16 @@ class TabularDataModule:
         self.val_dataset = Dataset(test_X, test_y)
         self.test_dataset = self.val_dataset
 
-    def train_dataloader(self):
-        return DataLoader(self.train_dataset, batch_size=self.batch_size,
+    def train_dataloader(self, seed, batch_size):
+        return DataLoader(self.train_dataset,seed=seed,batch_size=batch_size,
                           pin_memory=True, shuffle=True, num_workers=0)
 
-    def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size * 4,
+    def val_dataloader(self, seed, batch_size):
+        return DataLoader(self.val_dataset,seed=seed,batch_size=batch_size * 4,
                           pin_memory=True, shuffle=False, num_workers=0)
 
-    def test_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.batch_size,
+    def test_dataloader(self, seed, batch_size):
+        return DataLoader(self.val_dataset,seed=seed,batch_size=batch_size,
                           pin_memory=True, shuffle=False, num_workers=0)
 
     def get_sample_X(self, frac: Optional[float]=None):

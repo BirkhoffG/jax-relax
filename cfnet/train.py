@@ -14,6 +14,7 @@ from ._ckpt_manager import CheckpointManager
 # %% ../nbs/04_learning.ipynb 4
 class TrainingConfigs(BaseParser):
     n_epochs: int
+    batch_size: int
     monitor_metrics: Optional[str] = None
     seed: int = 42
     log_dir: str = "log"
@@ -55,8 +56,8 @@ def train_model_with_states(
         max_n_checkpoints=t_configs.max_n_checkpoints
     )
     # dataloaders
-    train_loader = data_module.train_dataloader()
-    val_loader = data_module.val_dataloader()
+    train_loader = data_module.train_dataloader(t_configs.seed, t_configs.batch_size)
+    val_loader = data_module.val_dataloader(t_configs.seed, t_configs.batch_size)
 
     # start training
     for epoch in range(t_configs.n_epochs):
