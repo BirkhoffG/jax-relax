@@ -3,7 +3,8 @@
 # %% ../nbs/01_datasets.ipynb 3
 from __future__ import annotations
 from .import_essentials import *
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
+from sklearn.preprocessing import StandardScaler,MinMaxScaler,OneHotEncoder
+from urllib.request import urlretrieve
 
 # %% auto 0
 __all__ = ['Dataset', 'DataLoader', 'find_imutable_idx_list', 'DataModuleConfigs', 'TabularDataModule']
@@ -21,7 +22,6 @@ class Dataset:
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
 
-
 # %% ../nbs/01_datasets.ipynb 5
 # copy from https://jax.readthedocs.io/en/latest/notebooks/Neural_Network_and_Data_Loading.html#data-loading-with-pytorch
 def _numpy_collate(batch):
@@ -32,7 +32,6 @@ def _numpy_collate(batch):
         return [_numpy_collate(samples) for samples in transposed]
     else:
         return np.array(batch)
-
 
 class DataLoader:
     def __init__(
@@ -130,7 +129,6 @@ def find_imutable_idx_list(
         cat_idx = cat_end_idx
     return imutable_idx_list
 
-
 # %% ../nbs/01_datasets.ipynb 6
 class DataModuleConfigs(BaseParser):
     batch_size: int
@@ -141,8 +139,34 @@ class DataModuleConfigs(BaseParser):
     encoder: Optional[Any] = None
     sample_frac: Optional[float] = None
 
-
 # %% ../nbs/01_datasets.ipynb 7
+def _data_name2configs(data_name: str):
+    with open('../assets/configs/{}.json'.format(data_name)) as json_file:
+        data = json.load(json_file)
+        data_configs['data_name'] = data_name
+        data_configs['discret_cols'] = data['discret_cols']
+        data_configs['continous_cols'] = data['continous_cols']
+        data_configs['imutable_cols'] = data.get('imutable_cols', [])
+        data_configs['sample_frac'] = data.get('sample_frac', [])
+        data_configs['normalizer'] = data.get('normalizer', [])
+        data_configs['encoder'] = data.get('encoder', [])
+        data_configs['data_dir'] = _download_data(data_name)
+    return data_configs
+
+def _download_data(data_name: str):
+        url = 'https://github.com/BirkhoffG/cfnet/raw/master/assets/data/{}.csv'.format(data_name)
+        path = Path(os.getcwd())
+        path = path / "cf_data"
+        if not path.exists():
+            os.makedirs(path)
+        path = path / f'{data_name}.csv'
+        if path.is_file():
+            return path
+        else:
+            urlretrieve(url,path)
+            return path
+
+# %% ../nbs/01_datasets.ipynb 8
 class TabularDataModule:
     discret_cols: List[str] = []
     continous_cols: List[str] = []
@@ -154,9 +178,14 @@ class TabularDataModule:
     batch_size: int = 128
     data_name: str = ""
 
-    def __init__(self, data_configs: Dict):
-        # read data
-        self.data = pd.read_csv(Path(data_configs["data_dir"]))
+    def __init__(self, data_configs: dict | str = None):
+        if isinstance(data_configs, str):
+            data_configs = _data_name2configs(data_configs)
+            self.data = pd.read_csv(Path(data_configs['data_dir']))
+        elif isinstance(data_configs, dict):
+            # read data
+            self.data = pd.read_csv(Path(data_configs['data_dir']))
+
         # update configs
         self._update_configs(data_configs)
         self.check_cols()
@@ -165,14 +194,15 @@ class TabularDataModule:
         # prepare data
         self.prepare_data()
 
+
     def check_cols(self):
         self.data = self.data.astype({col: np.float for col in self.continous_cols})
         # check imutable cols
         cols = self.continous_cols + self.discret_cols
         for col in self.imutable_cols:
             assert (
-                col in cols
-            ), f"imutable_cols=[{col}] is not specified in `continous_cols` or `discret_cols`."
+                 col in cols
+             ), f"imutable_cols=[{col}] is not specified in `continous_cols` or `discret_cols`."
 
     def _update_configs(self, configs):
         for k, v in configs.items():
@@ -192,20 +222,20 @@ class TabularDataModule:
         else:
             self.normalizer = MinMaxScaler()
             X_cont = (
-                self.normalizer.fit_transform(X[self.continous_cols])
-                if self.continous_cols
-                else np.array([[] for _ in range(len(X))])
-            )
+                 self.normalizer.fit_transform(X[self.continous_cols])
+                 if self.continous_cols
+                 else np.array([[] for _ in range(len(X))])
+             )
 
         if self.encoder:
             X_cat = self.encoder.transform(X[self.discret_cols])
         else:
             self.encoder = OneHotEncoder(sparse=False)
             X_cat = (
-                self.encoder.fit_transform(X[self.discret_cols])
-                if self.discret_cols
-                else np.array([[] for _ in range(len(X))])
-            )
+                 self.encoder.fit_transform(X[self.discret_cols])
+                 if self.discret_cols
+                 else np.array([[] for _ in range(len(X))])
+             )
         X = np.concatenate((X_cont, X_cat), axis=1)
         # get categorical arrays
         self.cat_arrays = self.encoder.categories_ if self.discret_cols else []
@@ -219,8 +249,8 @@ class TabularDataModule:
         # prepare train & test
         train_test_tuple = train_test_split(X, y.to_numpy(), shuffle=False)
         train_X, test_X, train_y, test_y = map(
-            lambda x: x.astype(jnp.float32), train_test_tuple
-        )
+             lambda x: x.astype(jnp.float32), train_test_tuple
+         )
         if self.sample_frac:
             train_size = int(len(train_X) * self.sample_frac)
             train_X, train_y = train_X[:train_size], train_y[:train_size]
@@ -230,33 +260,33 @@ class TabularDataModule:
 
     def train_dataloader(self, seed, batch_size):
         return DataLoader(
-            self.train_dataset,
-            seed=seed,
-            batch_size=batch_size,
-            pin_memory=True,
-            shuffle=True,
-            num_workers=0,
-        )
+             self.train_dataset,
+             seed=seed,
+             batch_size=batch_size,
+             pin_memory=True,
+             shuffle=True,
+             num_workers=0,
+         )
 
     def val_dataloader(self, seed, batch_size):
         return DataLoader(
-            self.val_dataset,
-            seed=seed,
-            batch_size=batch_size * 4,
-            pin_memory=True,
-            shuffle=False,
-            num_workers=0,
-        )
+             self.val_dataset,
+             seed=seed,
+             batch_size=batch_size * 4,
+             pin_memory=True,
+             shuffle=False,
+             num_workers=0,
+         )
 
     def test_dataloader(self, seed, batch_size):
         return DataLoader(
-            self.val_dataset,
-            seed=seed,
-            batch_size=batch_size,
-            pin_memory=True,
-            shuffle=False,
-            num_workers=0,
-        )
+             self.val_dataset,
+             seed=seed,
+             batch_size=batch_size,
+             pin_memory=True,
+             shuffle=False,
+             num_workers=0,
+         )
 
     def get_sample_X(self, frac: float | None = None):
         train_X, _ = self.get_samples(frac)

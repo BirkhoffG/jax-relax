@@ -1,3 +1,5 @@
+# directory for the data
+cf_data
 # logs
 log
 lightning_logs
