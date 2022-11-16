@@ -7,10 +7,16 @@ from sklearn.preprocessing import StandardScaler,MinMaxScaler,OneHotEncoder
 from urllib.request import urlretrieve
 
 # %% auto 0
-__all__ = ['backend2dataloader', 'Dataset', 'DataLoaderABC', 'DataLoaderPytorch', 'DataLoaderJax', 'DataLoader',
+__all__ = ['backend2dataloader', 'Dataset', 'BaseDataLoader', 'DataLoaderPytorch', 'DataLoaderJax', 'DataLoader',
            'find_imutable_idx_list', 'DataModuleConfigs', 'TabularDataModule']
 
-# %% ../nbs/01_datasets.ipynb 4
+# %% ../nbs/01_datasets.ipynb 3
+try:
+    import torch.utils.data as torch_data
+except ModuleNotFoundError:
+    torch_data = None
+
+# %% ../nbs/01_datasets.ipynb 5
 class Dataset:
     def __init__(self, X, y):
         self.X = X
@@ -23,14 +29,18 @@ class Dataset:
     def __getitem__(self, idx):
         return self.X[idx], self.y[idx]
 
-# %% ../nbs/01_datasets.ipynb 5
-class DataLoaderABC(ABC):
+# %% ../nbs/01_datasets.ipynb 6
+class BaseDataLoader(ABC):
     def __init__(
         self, 
+        dataset,
+        backend: str,
+        *,
         batch_size: int = 1,  # batch size
         shuffle: bool = False,  # if true, dataloader shuffles before sampling each batch
         num_workers: int = 0,
-        drop_last: bool = False
+        drop_last: bool = False,
+        **kwargs
     ):
         pass 
     
@@ -43,7 +53,7 @@ class DataLoaderABC(ABC):
     def __iter__(self):
         raise NotImplementedError
 
-# %% ../nbs/01_datasets.ipynb 6
+# %% ../nbs/01_datasets.ipynb 8
 # copy from https://jax.readthedocs.io/en/latest/notebooks/Neural_Network_and_Data_Loading.html#data-loading-with-pytorch
 def _numpy_collate(batch):
     if isinstance(batch[0], np.ndarray):
@@ -54,29 +64,40 @@ def _numpy_collate(batch):
     else:
         return np.array(batch)
 
+def _convert_dataset_pytorch(dataset: Dataset):
+    class DatasetPytorch(torch_data.Dataset):
+        def __init__(self, dataset: Dataset): self.dataset = dataset
+        def __len__(self): return len(self.dataset)
+        def __getitem__(self, idx): return self.dataset[idx]
+    
+    return DatasetPytorch(dataset)
 
-class DataLoaderPytorch(DataLoaderABC):
+# %% ../nbs/01_datasets.ipynb 9
+class DataLoaderPytorch(BaseDataLoader):
     def __init__(
         self, 
-        dataset,
+        dataset: Dataset,
+        backend: str = 'pytorch', # positional argument
+        *,
         batch_size: int = 1,  # batch size
         shuffle: bool = False,  # if true, dataloader shuffles before sampling each batch
         num_workers: int = 0,
-        drop_last: bool = False
-    ):  
-        try:
-            import torch
-        except ImportError:
-            raise ImportError("`Pytorch` library has not been installed. Try `pip install torch`."
+        drop_last: bool = False,
+        **kwargs
+    ):
+        if torch_data is None:
+            raise ModuleNotFoundError("`pytorch` library needs to be installed. Try `pip install torch`."
             "Please refer to pytorch documentation for details: https://pytorch.org/get-started/.")
         
-        self.dataloader = torch.DataLoader(
+        dataset = _convert_dataset_pytorch(dataset)
+        self.dataloader = torch_data.DataLoader(
             dataset, 
-            batchsize=batch_size, 
+            batch_size=batch_size, 
             shuffle=shuffle, 
             num_workers=num_workers, 
             drop_last=drop_last,
             collate_fn=_numpy_collate,
+            **kwargs
         ) 
 
     def __len__(self):
@@ -86,40 +107,28 @@ class DataLoaderPytorch(DataLoaderABC):
         return next(self.dataloader)
 
     def __iter__(self):
-        return self.dataloader
+        return self.dataloader.__iter__()
 
-# %% ../nbs/01_datasets.ipynb 7
-class DataLoaderJax:
+# %% ../nbs/01_datasets.ipynb 11
+class DataLoaderJax(BaseDataLoader):
     def __init__(
-        self,
-        dataset: Dataset,  # dataset, a Dataset object
+        self, 
+        dataset: Dataset,
+        backend: str,
+        *,
         batch_size: int = 1,  # batch size
         shuffle: bool = False,  # if true, dataloader shuffles before sampling each batch
-        seed: int = 42,  # seed for random number generator
-        sampler=None,
-        batch_sampler=None,
-        num_workers=0,
-        collate_fn=_numpy_collate,  # collate function, default is _numpy_collate()
-        pin_memory=False,
-        drop_last: bool = False,  # if true, dataloader drops the last batch that is less than the batch size
-        timeout=0,
-        worker_init_fn=None,
+        num_workers: int = 0,
+        drop_last: bool = False,
+        **kwargs
     ):
         # Attributes from pytorch data loader (implemented)
         self.dataset = dataset
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.seed = seed
-        self.collate_fn = collate_fn
+        self.seed = 42 # TODO: maybe use a global seed or something in the future
+        self.collate_fn = _numpy_collate
         self.drop_last = drop_last
-
-        # Attributes from pytorch data loader (not implemented)
-        self.sampler = sampler
-        self.batch_sampler = batch_sampler
-        self.num_workers = num_workers
-        self.pin_memory = pin_memory
-        self.worker_init_fn = worker_init_fn
-        self.timeout = timeout
 
         self.data_len: int = len(dataset)  # Length of the dataset
         self.key_seq: hk.PRNGSequence = hk.PRNGSequence(
@@ -164,7 +173,7 @@ class DataLoaderJax:
     def __iter__(self):
         return self
 
-# %% ../nbs/01_datasets.ipynb 8
+# %% ../nbs/01_datasets.ipynb 13
 backend2dataloader = {
     'jax': DataLoaderJax,
     'pytorch': DataLoaderPytorch,
@@ -172,11 +181,12 @@ backend2dataloader = {
     'merlin': None,
 }
 
-# %% ../nbs/01_datasets.ipynb 9
+# %% ../nbs/01_datasets.ipynb 14
 def _dispatch_datalaoder(backend: str):
     dataloader_backends = backend2dataloader.keys()
     if not backend in dataloader_backends:
-        raise ValueError(f"backend=`{backend}` is not supported for dataloader. Should be one of {dataloader_backends}.")
+        raise ValueError(f"backend=`{backend}` is an invalid backend for dataloader. "
+            f"Should be one of {dataloader_backends}.")
     
     dataloader_cls = backend2dataloader[backend]
     if dataloader_cls is None:
@@ -184,20 +194,31 @@ def _dispatch_datalaoder(backend: str):
     return dataloader_cls
 
 
-# %% ../nbs/01_datasets.ipynb 10
-class DataLoader:
+# %% ../nbs/01_datasets.ipynb 15
+class DataLoader(BaseDataLoader):
     def __init__(
         self,
-        backend,
         dataset,
+        backend,
+        *,
         batch_size: int = 1,  # batch size
         shuffle: bool = False,  # if true, dataloader shuffles before sampling each batch
-        num_workers: int = 0
+        num_workers: int = 0,
+        drop_last: bool = False,
+        **kwargs
     ):
         self.__class__ = _dispatch_datalaoder(backend)
-        self.__init__(dataset, batch_size, shuffle, num_workers)
+        self.__init__(
+            dataset=dataset, 
+            backend=backend, 
+            batch_size=batch_size, 
+            shuffle=shuffle, 
+            num_workers=num_workers,
+            drop_last=drop_last,
+            **kwargs
+        )
 
-# %% ../nbs/01_datasets.ipynb 18
+# %% ../nbs/01_datasets.ipynb 24
 def find_imutable_idx_list(
     imutable_col_names: List[str],
     discrete_col_names: List[str],
@@ -218,17 +239,7 @@ def find_imutable_idx_list(
         cat_idx = cat_end_idx
     return imutable_idx_list
 
-# %% ../nbs/01_datasets.ipynb 19
-class DataModuleConfigs(BaseParser):
-    batch_size: int
-    discret_cols: List[str] = []
-    continous_cols: List[str] = []
-    imutable_cols: List[str] = []
-    normalizer: Optional[Any] = None
-    encoder: Optional[Any] = None
-    sample_frac: Optional[float] = None
-
-# %% ../nbs/01_datasets.ipynb 20
+# %% ../nbs/01_datasets.ipynb 25
 def _data_name2configs(data_name: str):
     with open('../assets/configs/{}.json'.format(data_name)) as json_file:
         data = json.load(json_file)
@@ -255,7 +266,18 @@ def _download_data(data_name: str):
             urlretrieve(url,path)
             return path
 
-# %% ../nbs/01_datasets.ipynb 21
+# %% ../nbs/01_datasets.ipynb 26
+class DataModuleConfigs(BaseParser):
+    batch_size: int
+    discret_cols: List[str] = []
+    continous_cols: List[str] = []
+    imutable_cols: List[str] = []
+    normalizer: Optional[Any] = None
+    encoder: Optional[Any] = None
+    sample_frac: Optional[float] = None
+    backend: str = 'jax'
+
+# %% ../nbs/01_datasets.ipynb 27
 class TabularDataModule:
     discret_cols: List[str] = []
     continous_cols: List[str] = []
@@ -265,6 +287,7 @@ class TabularDataModule:
     data: Optional[pd.DataFrame] = None
     sample_frac: Optional[float] = None
     batch_size: int = 128
+    backend: str = 'jax'
     data_name: str = ""
 
     def __init__(self, data_configs: dict | str = None):
@@ -347,34 +370,34 @@ class TabularDataModule:
         self.val_dataset = Dataset(test_X, test_y)
         self.test_dataset = self.val_dataset
 
-    def train_dataloader(self, seed, batch_size):
+    def train_dataloader(self, batch_size):
         return DataLoader(
              self.train_dataset,
-             seed=seed,
+             self.backend,
              batch_size=batch_size,
-             pin_memory=True,
              shuffle=True,
              num_workers=0,
+             drop_last=False
          )
 
-    def val_dataloader(self, seed, batch_size):
+    def val_dataloader(self, batch_size):
         return DataLoader(
              self.val_dataset,
-             seed=seed,
-             batch_size=batch_size * 4,
-             pin_memory=True,
-             shuffle=False,
-             num_workers=0,
-         )
-
-    def test_dataloader(self, seed, batch_size):
-        return DataLoader(
-             self.val_dataset,
-             seed=seed,
+             self.backend,
              batch_size=batch_size,
-             pin_memory=True,
-             shuffle=False,
+             shuffle=True,
              num_workers=0,
+             drop_last=False
+         )
+
+    def test_dataloader(self, batch_size):
+        return DataLoader(
+             self.val_dataset,
+             self.backend,
+             batch_size=batch_size,
+             shuffle=True,
+             num_workers=0,
+             drop_last=False
          )
 
     def get_sample_X(self, frac: float | None = None):
