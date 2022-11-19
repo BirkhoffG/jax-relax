@@ -60,8 +60,8 @@ def train_model_with_states(
         max_n_checkpoints=t_configs.max_n_checkpoints,
     )
     # dataloaders
-    train_loader = data_module.train_dataloader(t_configs.seed, t_configs.batch_size)
-    val_loader = data_module.val_dataloader(t_configs.seed, t_configs.batch_size)
+    train_loader = data_module.train_dataloader(t_configs.batch_size)
+    val_loader = data_module.val_dataloader(t_configs.batch_size)
 
     # start training
     for epoch in range(t_configs.n_epochs):

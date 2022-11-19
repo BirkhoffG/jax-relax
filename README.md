@@ -73,7 +73,9 @@ m_configs = {
 t_configs = {
     'n_epochs': 10,
     'monitor_metrics': 'val/val_loss',
-    'logger_name': 'pred'
+    'logger_name': 'pred',
+    'seed': 42,
+    "batch_size": 256
 }
 cf_configs = {
     'n_steps': 1000,
