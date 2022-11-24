@@ -3,12 +3,13 @@
 # %% ../nbs/01_datasets.ipynb 2
 from __future__ import annotations
 from .import_essentials import *
+from .utils import load_json, validate_configs
 from sklearn.preprocessing import StandardScaler,MinMaxScaler,OneHotEncoder
 from urllib.request import urlretrieve
 
 # %% auto 0
-__all__ = ['backend2dataloader', 'Dataset', 'BaseDataLoader', 'DataLoaderPytorch', 'DataLoaderJax', 'DataLoader',
-           'find_imutable_idx_list', 'DataModuleConfigs', 'TabularDataModule']
+__all__ = ['backend2dataloader', 'DEFAULT_DATA_CONFIGS', 'Dataset', 'BaseDataLoader', 'DataLoaderPytorch', 'DataLoaderJax',
+           'DataLoader', 'find_imutable_idx_list', 'DataModuleConfigs', 'TabularDataModule', 'load_default_data']
 
 # %% ../nbs/01_datasets.ipynb 3
 try:
@@ -240,35 +241,9 @@ def find_imutable_idx_list(
     return imutable_idx_list
 
 # %% ../nbs/01_datasets.ipynb 25
-def _data_name2configs(data_name: str):
-    with open('../assets/configs/{}.json'.format(data_name)) as json_file:
-        data = json.load(json_file)
-        data_configs['data_name'] = data_name
-        data_configs['discret_cols'] = data['discret_cols']
-        data_configs['continous_cols'] = data['continous_cols']
-        data_configs['imutable_cols'] = data.get('imutable_cols', [])
-        data_configs['sample_frac'] = data.get('sample_frac', [])
-        data_configs['normalizer'] = data.get('normalizer', [])
-        data_configs['encoder'] = data.get('encoder', [])
-        data_configs['data_dir'] = _download_data(data_name)
-    return data_configs
-
-def _download_data(data_name: str):
-        url = 'https://github.com/BirkhoffG/cfnet/raw/master/assets/data/{}.csv'.format(data_name)
-        path = Path(os.getcwd())
-        path = path / "cf_data"
-        if not path.exists():
-            os.makedirs(path)
-        path = path / f'{data_name}.csv'
-        if path.is_file():
-            return path
-        else:
-            urlretrieve(url,path)
-            return path
-
-# %% ../nbs/01_datasets.ipynb 26
 class DataModuleConfigs(BaseParser):
-    batch_size: int
+    data_dir: str
+    data_name: str
     discret_cols: List[str] = []
     continous_cols: List[str] = []
     imutable_cols: List[str] = []
@@ -277,38 +252,35 @@ class DataModuleConfigs(BaseParser):
     sample_frac: Optional[float] = None
     backend: str = 'jax'
 
-# %% ../nbs/01_datasets.ipynb 27
+# %% ../nbs/01_datasets.ipynb 26
 class TabularDataModule:
     discret_cols: List[str] = []
     continous_cols: List[str] = []
     imutable_cols: List[str] = []
     normalizer: Optional[Any] = None
     encoder: Optional[OneHotEncoder] = None
+    cat_arrays: List[str] = []
     data: Optional[pd.DataFrame] = None
     sample_frac: Optional[float] = None
-    batch_size: int = 128
     backend: str = 'jax'
     data_name: str = ""
 
-    def __init__(self, data_configs: dict | str = None):
-        if isinstance(data_configs, str):
-            data_configs = _data_name2configs(data_configs)
-            self.data = pd.read_csv(Path(data_configs['data_dir']))
-        elif isinstance(data_configs, dict):
-            # read data
-            self.data = pd.read_csv(Path(data_configs['data_dir']))
+    def __init__(self, data_config: dict | DataModuleConfigs):
+        self.configs: DataModuleConfigs = validate_configs(
+            data_config, DataModuleConfigs
+        )
+        self.data = pd.read_csv(self.configs.data_dir)
 
         # update configs
-        self._update_configs(data_configs)
+        self._update_configs(self.configs.dict())
         self.check_cols()
         # update cat_idx
         self.cat_idx = len(self.continous_cols)
         # prepare data
         self.prepare_data()
 
-
     def check_cols(self):
-        self.data = self.data.astype({col: np.float for col in self.continous_cols})
+        self.data = self.data.astype({col: float for col in self.continous_cols})
         # check imutable cols
         cols = self.continous_cols + self.discret_cols
         for col in self.imutable_cols:
@@ -361,7 +333,7 @@ class TabularDataModule:
         # prepare train & test
         train_test_tuple = train_test_split(X, y.to_numpy(), shuffle=False)
         train_X, test_X, train_y, test_y = map(
-             lambda x: x.astype(jnp.float32), train_test_tuple
+             lambda x: x.astype(float), train_test_tuple
          )
         if self.sample_frac:
             train_size = int(len(train_X) * self.sample_frac)
@@ -371,34 +343,19 @@ class TabularDataModule:
         self.test_dataset = self.val_dataset
 
     def train_dataloader(self, batch_size):
-        return DataLoader(
-             self.train_dataset,
-             self.backend,
-             batch_size=batch_size,
-             shuffle=True,
-             num_workers=0,
-             drop_last=False
-         )
+        return DataLoader(self.train_dataset, self.backend, 
+            batch_size=batch_size, shuffle=True, num_workers=0, drop_last=False
+        )
 
     def val_dataloader(self, batch_size):
-        return DataLoader(
-             self.val_dataset,
-             self.backend,
-             batch_size=batch_size,
-             shuffle=True,
-             num_workers=0,
-             drop_last=False
-         )
+        return DataLoader(self.val_dataset, self.backend,
+            batch_size=batch_size, shuffle=True, num_workers=0, drop_last=False
+        )
 
     def test_dataloader(self, batch_size):
-        return DataLoader(
-             self.val_dataset,
-             self.backend,
-             batch_size=batch_size,
-             shuffle=True,
-             num_workers=0,
-             drop_last=False
-         )
+        return DataLoader(self.val_dataset, self.backend,
+            batch_size=batch_size, shuffle=True, num_workers=0, drop_last=False
+        )
 
     def get_sample_X(self, frac: float | None = None):
         train_X, _ = self.get_samples(frac)
@@ -410,3 +367,56 @@ class TabularDataModule:
         train_X, train_y = self.train_dataset[:]
         train_size = int(len(train_X) * frac)
         return train_X[:train_size], train_y[:train_size]
+
+# %% ../nbs/01_datasets.ipynb 30
+DEFAULT_DATA_CONFIGS = {
+    'adult': {
+        'data' :'assets/data/s_adult.csv',
+        'conf' :'assets/configs/adult.json',
+    },
+    'heloc': {
+        'data': 'assets/data/s_home.csv',
+        'conf': 'assets/configs/home.json'
+    },
+    'oulad': {
+        'data': 'assets/data/s_student.csv',
+        'conf': 'assets/configs/student.json'
+    }
+}
+
+# %% ../nbs/01_datasets.ipynb 31
+def _validate_dataname(data_name: str):
+    if data_name not in DEFAULT_DATA_CONFIGS.keys():
+        raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
+            f'but got data_name={data_name}.')
+
+# %% ../nbs/01_datasets.ipynb 32
+def load_default_data(data_name: str) -> TabularDataModule:
+    _validate_dataname(data_name)
+
+    # get data/config urls
+    _data_path = DEFAULT_DATA_CONFIGS[data_name]['data']
+    _conf_path = DEFAULT_DATA_CONFIGS[data_name]['conf']
+    
+    data_url = f"https://github.com/BirkhoffG/cfnet/raw/master/{_data_path}"
+    conf_url = f"https://github.com/BirkhoffG/cfnet/raw/master/{_conf_path}"
+
+    # create new dir
+    data_dir = Path(os.getcwd()) / "cf_data"
+    if not data_dir.exists():
+        os.makedirs(data_dir)
+    data_path = data_dir / f'{data_name}.csv'
+    conf_path = data_dir / f'{data_name}.json'
+
+    # download data/configs
+    if not data_path.is_file():
+        urlretrieve(data_url, data_path)    
+    if not conf_path.is_file():
+        urlretrieve(conf_url, conf_path)
+
+    # read config
+    config = load_json(conf_path)
+    config['data_dir'] = str(data_path)
+
+    data_module = TabularDataModule(config)
+    return data_module
