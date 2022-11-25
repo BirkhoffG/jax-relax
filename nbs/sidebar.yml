@@ -19,6 +19,6 @@ website:
         - 05_methods.vanilla.ipynb
         - 05b_methods.diverse.ipynb
         - 05c_methods.prototype.ipynb
-        - 05_methods.counternet.ipynb
+        - 05d_methods.counternet.ipynb
         - 06_evaluate.ipynb
       
