@@ -126,21 +126,10 @@ class DataLoaderJax(BaseDataLoader):
         self.dataset = dataset
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.seed = 42 # TODO: maybe use a global seed or something in the future
-        self.collate_fn = _numpy_collate
         self.drop_last = drop_last
 
         self.data_len: int = len(dataset)  # Length of the dataset
-        self.key_seq: hk.PRNGSequence = hk.PRNGSequence(
-            self.seed
-        )  # random number sequence
-        self.key_seq.reserve(
-            len(self)
-        )  # generate some random number as key based on the number of batches
-        self.key = next(self.key_seq)  # obtain a random key from the sequence
-        self.indices: jax.numpy.array = jax.numpy.arange(
-            self.data_len
-        )  # available indices in the dataset
+        self.indices: np.ndarray = np.arange(self.data_len) # available indices in the dataset
         self.pose: int = 0  # record the current position in the dataset
 
     def __len__(self):
@@ -155,19 +144,18 @@ class DataLoaderJax(BaseDataLoader):
     def __next__(self):
         if self.pose <= self.data_len:
             if self.shuffle:
-                self.key = next(self.key_seq)
-                self.indices = jax.random.permutation(self.key, self.indices)
-            batch_data = [self.dataset[i] for i in self.indices[: self.batch_size]]
+                self.indices = np.random.permutation(self.indices)
+            batch_data = self.dataset[self.indices[: self.batch_size]]
             self.indices = self.indices[self.batch_size :]
             if self.drop_last and len(self.indices) < self.batch_size:
                 self.pose = 0
-                self.indices = jax.numpy.arange(self.data_len)
+                self.indices = np.arange(self.data_len)
                 raise StopIteration
             self.pose += self.batch_size
-            return self.collate_fn(batch_data)
+            return batch_data
         else:
             self.pose = 0
-            self.indices = jax.numpy.arange(self.data_len)
+            self.indices = np.arange(self.data_len)
             raise StopIteration
 
     def __iter__(self):
