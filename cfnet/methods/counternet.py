@@ -4,7 +4,7 @@
 from __future__ import annotations
 from ..import_essentials import *
 from ..module import MLP, BaseTrainingModule
-from .base import BaseCFModule, ParametricCFModule
+from .base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
 from ..train import TrainingConfigs, train_model
 from ..datasets import TabularDataModule
 from cfnet.utils import (
@@ -279,7 +279,7 @@ class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs)
 
 
 # %% ../../nbs/05d_methods.counternet.ipynb 19
-class CounterNet(BaseCFModule, ParametricCFModule):
+class CounterNet(BaseCFModule, BaseParametricCFModule, BasePredFnCFModule):
     """API for CounterNet Explanation Module."""
     params: hk.Params = None
     module: CounterNetTrainingModule
@@ -309,5 +309,10 @@ class CounterNet(BaseCFModule, ParametricCFModule):
         self.params = params
 
     def generate_cfs(self, X: jnp.ndarray, pred_fn = None) -> jnp.ndarray:
-        return self.module.generate_cfs(X, self.params, rng_key=jax.random.PRNGKey(0))    
+        return self.module.generate_cfs(X, self.params, rng_key=jax.random.PRNGKey(0))
+    
+    def pred_fn(self, X: jnp.DeviceArray):
+        rng_key = jax.random.PRNGKey(0)
+        y_pred = self.module.predict(self.params, rng_key, X)
+        return y_pred
 

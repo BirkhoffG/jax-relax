@@ -8,7 +8,7 @@ from ..train import TrainingConfigs
 from copy import deepcopy
 
 # %% auto 0
-__all__ = ['BaseCFModule', 'ParametricCFModule']
+__all__ = ['BaseCFModule', 'BaseParametricCFModule', 'BasePredFnCFModule']
 
 # %% ../../nbs/05_methods.base.ipynb 4
 class BaseCFModule(ABC):
@@ -36,7 +36,7 @@ class BaseCFModule(ABC):
 
 
 # %% ../../nbs/05_methods.base.ipynb 5
-class ParametricCFModule(ABC):
+class BaseParametricCFModule(ABC):
     @abstractmethod
     def train(
         self, 
@@ -47,3 +47,13 @@ class ParametricCFModule(ABC):
 
     @abstractmethod
     def _is_module_trained(self) -> bool: pass
+
+# %% ../../nbs/05_methods.base.ipynb 7
+class BasePredFnCFModule(ABC):
+    """Base class of CF Module with a predictive module."""
+    @abstractmethod
+    def pred_fn(
+        self, 
+        X: jnp.DeviceArray  # input `X`
+    ) -> jnp.DeviceArray:   # prediction
+        raise NotImplementedError

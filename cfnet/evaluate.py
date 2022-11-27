@@ -6,7 +6,7 @@ from .import_essentials import *
 from .train import train_model, TensorboardLogger
 from .datasets import TabularDataModule
 from .utils import accuracy, proximity
-from .methods.base import BaseCFModule, ParametricCFModule
+from .methods.base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
 from .methods.counternet import CounterNet
 from copy import deepcopy
 from sklearn.neighbors import NearestNeighbors
@@ -44,6 +44,18 @@ class Explanation:
 CFExplanationResults = Explanation
 
 # %% ../nbs/06_evaluate.ipynb 8
+def _validate_configs(
+    cf_module: BaseCFModule,
+    datamodule: TabularDataModule,
+    pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray] = None,
+    t_configs=None
+):
+    if (pred_fn is None) and (not isinstance(cf_module, BasePredFnCFModule)):
+        warnings.warn(f"`{type(cf_module).__name__}` is not a subclass of `BasePredFnCFModule`."
+            "This might cause problems as you set `pred_fn=None`, "
+            f"which infers that `{type(cf_module).__name__}` has an attribute `pred_fn`.")
+
+
 def _prepare_module(
     cf_module: BaseCFModule,
     datamodule: TabularDataModule
@@ -56,7 +68,7 @@ def _train_parametric_module(
     datamodule: TabularDataModule,
     t_configs=None
 ):
-    print(f'{type(cf_module)} contains parametric models. '
+    print(f'{type(cf_module).__name__} contains parametric models. '
         'Starts training before generating explanations...')
     cf_module.train(datamodule, t_configs)
     return cf_module
@@ -69,9 +81,9 @@ def _check_pred_fn(pred_fn, cf_module):
             raise AttributeError(
                     "`generate_cf_explanations` is incorrectly configured."
                     f"It is supposed to be `pred_fn != None`,"
-                    f"or {type(cf_module)} has attribute `pred_fn`."
+                    f"or `{type(cf_module).__name__}` has attribute `pred_fn`."
                     f"However, we got `pred_fn={pred_fn}`, "
-                    f"and cf_module=`{type(cf_module)}` contains no `pred_fn`."
+                    f"and `{type(cf_module).__name__}` has not attribute `pred_fn`."
             )
     return pred_fn
 
@@ -84,9 +96,11 @@ def generate_cf_explanations(
     t_configs=None
 ) -> Explanation:
     """Generate CF explanations."""
+
+    _validate_configs(cf_module, datamodule, pred_fn, t_configs)
     cf_module = _prepare_module(cf_module, datamodule)
 
-    if isinstance(cf_module, ParametricCFModule):
+    if isinstance(cf_module, BaseParametricCFModule):
         cf_module = _train_parametric_module(
             cf_module, datamodule, t_configs=t_configs
         )
