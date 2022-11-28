@@ -253,11 +253,20 @@ class TabularDataModule:
     backend: str = 'jax'
     data_name: str = ""
 
-    def __init__(self, data_config: dict | DataModuleConfigs):
+    def __init__(
+        self, 
+        data_config: dict | DataModuleConfigs, # Configurator of `TabularDataModule`
+        df: pd.DataFrame = None # Dataframe which overrides `data_dir` in `data_config` (if not None)
+    ):
         self.configs: DataModuleConfigs = validate_configs(
             data_config, DataModuleConfigs
         )
-        self.data = pd.read_csv(self.configs.data_dir)
+        if df is None:
+            self.data = pd.read_csv(self.configs.data_dir)
+        elif isinstance(df, pd.DataFrame):
+            self.data = df
+        else:
+            raise ValueError(f"{type(df).__name__} is not supported as an input type for `TabularDataModule`.")
 
         # update configs
         self._update_configs(self.configs.dict())
