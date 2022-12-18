@@ -3,7 +3,7 @@
 # %% ../nbs/06_evaluate.ipynb 3
 from __future__ import annotations
 from .import_essentials import *
-from .train import train_model, TensorboardLogger
+from .train import train_model, TrainingConfigs
 from .datasets import TabularDataModule
 from .utils import accuracy, proximity
 from .methods.base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
@@ -73,7 +73,29 @@ def _train_parametric_module(
     cf_module.train(datamodule, t_configs)
     return cf_module
 
-def _check_pred_fn(pred_fn, cf_module):
+# %% ../nbs/06_evaluate.ipynb 9
+def _check_aux_pred_fn_args(pred_fn_args: dict | None):
+    if pred_fn_args is None:
+        return dict()
+    elif isinstance(pred_fn_args, dict):
+        return pred_fn_args
+    else:
+        raise ValueError(f'`pred_fn_args` should be a `dict`,',
+            f'but got `{type(pred_fn_args).__name__}`')
+
+class _AuxPredFn:
+    def __init__(self, pred_fn, pred_fn_args: dict | None):
+        self.pred_fn = pred_fn
+        self.fn_args = deepcopy(_check_aux_pred_fn_args(pred_fn_args))
+
+    def __call__(self, x: jnp.DeviceArray) -> jnp.DeviceArray:
+        return self.pred_fn(x, **self.fn_args)
+
+
+def _check_pred_fn(
+    pred_fn: callable | None, 
+    cf_module: BaseCFModule
+) -> callable:
     if pred_fn is None:
         try:
             pred_fn = cf_module.pred_fn
@@ -85,15 +107,18 @@ def _check_pred_fn(pred_fn, cf_module):
                     f"However, we got `pred_fn={pred_fn}`, "
                     f"and `{type(cf_module).__name__}` has not attribute `pred_fn`."
             )
+    elif isinstance(cf_module, BasePredFnCFModule):
+        # override pred_fn if `cf_module` has `pred_fn`
+        pred_fn = cf_module.pred_fn
     return pred_fn
 
-# %% ../nbs/06_evaluate.ipynb 9
+# %% ../nbs/06_evaluate.ipynb 10
 def generate_cf_explanations(
-    cf_module: BaseCFModule,
-    datamodule: TabularDataModule,
-    pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray] = None,
-    *,
-    t_configs=None
+    cf_module: BaseCFModule, # CF Explanation Module
+    datamodule: TabularDataModule, # Data Module
+    pred_fn: callable = None, # Predictive function
+    t_configs: TrainingConfigs = None, # training configs for `BaseParametricCFModule`
+    pred_fn_args: dict = None # auxiliary arguments for `pred_fn` 
 ) -> Explanation:
     """Generate CF explanations."""
 
@@ -105,6 +130,10 @@ def generate_cf_explanations(
             cf_module, datamodule, t_configs=t_configs
         )
     X, _ = datamodule.test_dataset[:]
+    
+    # create `pred_fn` which only takes `x` as an input
+    if pred_fn is not None:
+        pred_fn = _AuxPredFn(pred_fn, pred_fn_args=pred_fn_args)
 
     # generate cfs
     current_time = time.time()
@@ -121,46 +150,8 @@ def generate_cf_explanations(
         pred_fn=pred_fn,
     )
 
-# def generate_cf_results(
-#     cf_module: BaseCFExplanationModule,
-#     dm: TabularDataModule,
-#     pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray] = None,
-#     params: hk.Params = None,  # params of `cf_module`
-#     rng_key: Optional[random.PRNGKey] = None,
-# ) -> CFExplanationResults:
-#     # validate arguments
-#     if (pred_fn is None) and (params is None) and (rng_key is None):
-#         raise ValueError(
-#             "A valid `pred_fn: Callable[jnp.DeviceArray], jnp.DeviceArray]` or `params: hk.Params` needs to be passed."
-#         )
-#     # prepare
-#     X, y = dm.test_dataset[:]
-#     cf_module.update_cat_info(dm)
-#     # generate cfs
-#     current_time = time.time()
-#     if pred_fn:
-#         cfs = cf_module.generate_cfs(X, pred_fn)
-#     else:
-#         cfs = cf_module.generate_cfs(X, params, rng_key)
-#         pred_fn = lambda x: cf_module.predict(deepcopy(params), rng_key, x)
-#     total_time = time.time() - current_time
 
-#     return CFExplanationResults(
-#         cf_name=cf_module.name,
-#         data_module=dm,
-#         cfs=cfs,
-#         total_time=total_time,
-#         pred_fn=pred_fn,
-#     )
-    # return CFExplanationResults(
-    #     X=X, y=y, cfs=cfs, total_time=total_time,
-    #     pred_fn=pred_fn,
-    #     cf_name=cf_module.name, dataset_name=dm.data_name
-    # )
-
-
-
-# %% ../nbs/06_evaluate.ipynb 10
+# %% ../nbs/06_evaluate.ipynb 17
 @deprecated(removed_in='0.1.0', deprecated_in='0.0.9')
 def generate_cf_results_local_exp(
     cf_module: BaseCFModule,
@@ -180,7 +171,7 @@ def generate_cf_results_cfnet(
     return generate_cf_explanations(cf_module, dm, pred_fn=None)
 
 
-# %% ../nbs/06_evaluate.ipynb 12
+# %% ../nbs/06_evaluate.ipynb 19
 def compute_predictive_acc(cf_results: CFExplanationResults):
     X, y = cf_results.data_module.test_dataset[:]
     pred_fn = cf_results.pred_fn
@@ -273,7 +264,7 @@ def compute_so_sparsity(cf_results: CFExplanationResults, threshold: float = 2.0
     return compute_sparsity(cf_results_so)
 
 
-# %% ../nbs/06_evaluate.ipynb 13
+# %% ../nbs/06_evaluate.ipynb 20
 metrics2fn = {
     "acc": compute_predictive_acc,
     "validity": compute_validity,
@@ -286,7 +277,7 @@ metrics2fn = {
 }
 
 
-# %% ../nbs/06_evaluate.ipynb 14
+# %% ../nbs/06_evaluate.ipynb 21
 DEFAULT_METRICS = ["acc", "validity", "proximity"]
 
 
@@ -311,7 +302,7 @@ def evaluate_cfs(
         return result_df if return_df else result_dict
 
 
-# %% ../nbs/06_evaluate.ipynb 15
+# %% ../nbs/06_evaluate.ipynb 22
 def benchmark_cfs(
     cf_results_list: Iterable[CFExplanationResults],
     metrics: Optional[Iterable[str]] = None,
