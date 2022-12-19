@@ -10,7 +10,10 @@ website:
       - section: API
         contents:
         - 00_utils.ipynb
-        - 01_datasets.ipynb
+        - section: Data
+          contents:
+          - 01_data.loader.ipynb
+          - 01_data.module.ipynb
         - 03_training_module.ipynb
         - 04_learning.ipynb
         - 04a_logger.ipynb
