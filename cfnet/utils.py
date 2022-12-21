@@ -3,10 +3,13 @@
 # %% ../nbs/00_utils.ipynb 3
 from __future__ import annotations
 from .import_essentials import *
+import nbdev
+from fastcore.basics import AttrDict
+from nbdev.showdoc import BasicMarkdownRenderer
 
 # %% auto 0
-__all__ = ['validate_configs', 'cat_normalize', 'make_model', 'init_net_opt', 'grad_update', 'check_cat_info', 'load_json',
-           'add_to_class', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity']
+__all__ = ['validate_configs', 'show_doc', 'cat_normalize', 'make_model', 'init_net_opt', 'grad_update', 'check_cat_info',
+           'load_json', 'add_to_class', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -19,7 +22,40 @@ def validate_configs(
     return configs
 
 
+# %% ../nbs/00_utils.ipynb 13
+def _docment_parser(parser: BaseParser):
+    p = parser.schema()['properties']
+    anno = parser.__annotations__
+    d = { 
+        k: {
+            'anno': anno[k],
+            'default': v['default'] if 'default' in v else inspect._empty,
+            'docment': v['description'] if 'description' in v else inspect._empty,
+        } for k, v in p.items()
+    }
+
+    d = AttrDict(d)
+    return d
+
+
 # %% ../nbs/00_utils.ipynb 14
+class ParserMarkdownRenderer(BasicMarkdownRenderer):
+        def __init__(self, sym, name: str | None = None, title_level: int = 3):
+            super().__init__(sym, name, title_level)
+            self.dm.dm = _docment_parser(sym)
+
+# %% ../nbs/00_utils.ipynb 15
+def show_doc(
+    sym # Symbol to document
+):
+    """Same functionality as [nbdev.show_doc](configurator), 
+    but provide additional support for `BaseParser`."""
+    if inspect.isclass(sym) and issubclass(sym, BaseParser):
+        return nbdev.show_doc(sym, ParserMarkdownRenderer)
+    else:
+        return nbdev.show_doc(sym)
+
+# %% ../nbs/00_utils.ipynb 18
 def cat_normalize(
     cf: jnp.ndarray,  # Unnormalized counterfactual explanations `[n_samples, n_features]`
     cat_arrays: List[List[str]],  # A list of a list of each categorical feature name
@@ -46,7 +82,7 @@ def cat_normalize(
     return jnp.concatenate(normalized_cf, axis=-1)
 
 
-# %% ../nbs/00_utils.ipynb 28
+# %% ../nbs/00_utils.ipynb 32
 def make_model(
     m_configs: Dict[str, Any], model: hk.Module  # model configs
 ) -> hk.Transformed:
@@ -59,7 +95,7 @@ def make_model(
     return hk.transform(model_fn)
 
 
-# %% ../nbs/00_utils.ipynb 29
+# %% ../nbs/00_utils.ipynb 33
 def init_net_opt(
     net: hk.Transformed,
     opt: optax.GradientTransformation,
@@ -72,7 +108,7 @@ def init_net_opt(
     return params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 30
+# %% ../nbs/00_utils.ipynb 34
 def grad_update(
     grads: Dict[str, jnp.ndarray],
     params: hk.Params,
@@ -84,7 +120,7 @@ def grad_update(
     return upt_params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 31
+# %% ../nbs/00_utils.ipynb 35
 def check_cat_info(method):
     def inner(cf_module, *args, **kwargs):
         warning_msg = f"""This CFExplanationModule might not be updated with categorical information.
@@ -97,13 +133,13 @@ You should try `{cf_module.name}.update_cat_info(dm)` before generating cfs.
     return inner
 
 
-# %% ../nbs/00_utils.ipynb 33
+# %% ../nbs/00_utils.ipynb 37
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 34
+# %% ../nbs/00_utils.ipynb 38
 # https://github.com/d2l-ai/d2l-en/blob/d9a3f6ac0e86468159d7b69345a1732bbe3ce1c7/d2l/torch.py#L100
 def add_to_class(cls):
     warnings.warn("deprecated", DeprecationWarning)
@@ -114,18 +150,18 @@ def add_to_class(cls):
     return wrapper
 
 
-# %% ../nbs/00_utils.ipynb 36
+# %% ../nbs/00_utils.ipynb 40
 def binary_cross_entropy(y_pred: chex.Array, y: chex.Array) -> chex.Array:
     return -(y * jnp.log(y_pred + 1e-5) + (1 - y) * jnp.log(1 - y_pred + 1e-5))
 
 
-# %% ../nbs/00_utils.ipynb 37
+# %% ../nbs/00_utils.ipynb 41
 def sigmoid(x):
     # https://stackoverflow.com/a/68293931
     return 0.5 * (jnp.tanh(x / 2) + 1)
 
 
-# %% ../nbs/00_utils.ipynb 39
+# %% ../nbs/00_utils.ipynb 43
 def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
     y_true, y_pred = map(jnp.round, (y_true, y_pred))
     return jnp.mean(jnp.equal(y_true, y_pred))

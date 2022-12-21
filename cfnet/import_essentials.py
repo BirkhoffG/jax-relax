@@ -20,7 +20,7 @@ from pathlib import Path
 from fastcore.utils import in_jupyter
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from pydantic import BaseModel as BaseParser, validator, ValidationError
+from pydantic import BaseModel as BaseParser, validator, ValidationError, Field
 from deprecation import deprecated
 
 # jax related
