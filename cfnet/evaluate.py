@@ -344,7 +344,7 @@ def _get_metric(metric: str | callable, cf_exp: Explanation):
 # %% ../nbs/06_evaluate.ipynb 35
 def evaluate_cfs(
     cf_exp: Explanation, # CF Explanations
-    metrics: Iterable[str | callable] = None, # A list of Metrics. Can be `str` or a subclass of `BaseEvalMetrics`
+    metrics: Iterable[Union[str, Callable]] = None, # A list of Metrics. Can be `str` or a subclass of `BaseEvalMetrics`
     return_dict: bool = True, # return a dictionary or not (default: True)
     return_df: bool = False # return a pandas Dataframe or not (default: False)
 ):
