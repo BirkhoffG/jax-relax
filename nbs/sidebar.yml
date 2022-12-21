@@ -4,7 +4,7 @@ website:
       - index.ipynb
       - section: Tutorials
         contents:
-        - tutorials/how_to_use_cfnet.ipynb
+        - tutorials/getting_started.ipynb
         - tutorials/install.ipynb
         - tutorials/contribution.ipynb        
       - section: API

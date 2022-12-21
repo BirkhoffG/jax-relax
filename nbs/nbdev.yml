@@ -2,7 +2,7 @@ project:
   output-dir: _docs
 
 website:
-  title: "RELax"
+  title: "ReLax"
   site-url: "https://birkhoffg.github.io/cfnet/"
   description: "Jax-based Recourse Explanation Library"
   repo-branch: master
