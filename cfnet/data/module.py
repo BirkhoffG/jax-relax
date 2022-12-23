@@ -10,7 +10,7 @@ from sklearn.base import TransformerMixin
 from urllib.request import urlretrieve
 
 # %% auto 0
-__all__ = ['BaseDataModule', 'find_imutable_idx_list', 'TabularDataModuleConfigs', 'TabularDataModule', 'samples', 'load_data']
+__all__ = ['BaseDataModule', 'find_imutable_idx_list', 'TabularDataModuleConfigs', 'TabularDataModule', 'sample', 'load_data']
 
 # %% ../../nbs/01_data.module.ipynb 5
 class BaseDataModule(ABC):
@@ -62,11 +62,22 @@ class BaseDataModule(ABC):
     def inverse_transform(self, x: jnp.DeviceArray) -> Any:
         raise NotImplementedError
 
-    @abstractmethod
-    def apply_constraints(self, x: jnp.DeviceArray) -> jnp.DeviceArray:
-        return x
+    def apply_constraints(
+        self, 
+        x: jnp.DeviceArray,
+        cf: jnp.DeviceArray,
+        hard: bool
+    ) -> jnp.DeviceArray:
+        return cf
     
-    
+    def apply_regularization(
+        self, 
+        x: jnp.DeviceArray,
+        cf: jnp.DeviceArray,
+        hard: bool
+    ):
+        raise NotImplementedError
+
 
 # %% ../../nbs/01_data.module.ipynb 7
 def find_imutable_idx_list(
@@ -299,7 +310,7 @@ class TabularDataModule(BaseDataModule):
             self.cat_encoder, data, self._configs.discret_cols
         )
         X = np.concatenate((X_cont, X_cat), axis=1)
-        y = data.iloc[:, -1].values
+        y = data.iloc[:, -1:].to_numpy()
         
         return X, y
 
@@ -343,14 +354,31 @@ class TabularDataModule(BaseDataModule):
             cf = cf.at[:, self._imutable_idx_list].set(x[:, self._imutable_idx_list])
         return cf
 
+    def apply_regularization(
+        self, 
+        x: jnp.DeviceArray, # Input
+        cf: jnp.DeviceArray, # Unnormalized counterfactuals
+    ) -> float: # Return regularization loss
+        """Apply categorical constraints by adding regularization terms"""
+        reg_loss = 0.
+        cat_arrays = self.cat_encoder.categories_
+        cat_idx = len(self._configs.continous_cols)
 
-# %% ../../nbs/01_data.module.ipynb 39
-def samples(datamodule: BaseDataModule, frac: float = 1.0): 
+        for col in cat_arrays:
+            cat_idx_end = cat_idx + len(col)
+            reg_loss += jnp.power(
+                (jnp.sum(cf[cat_idx:cat_idx_end]) - 1.0), 2
+            )
+        return reg_loss
+
+
+# %% ../../nbs/01_data.module.ipynb 41
+def sample(datamodule: BaseDataModule, frac: float = 1.0): 
     X, y = datamodule.train_dataset[:]
     size = int(len(X) * frac)
     return X[:size], y[:size]
 
-# %% ../../nbs/01_data.module.ipynb 44
+# %% ../../nbs/01_data.module.ipynb 46
 DEFAULT_DATA_CONFIGS = {
     'adult': {
         'data' :'assets/data/s_adult.csv',
@@ -366,16 +394,17 @@ DEFAULT_DATA_CONFIGS = {
     }
 }
 
-# %% ../../nbs/01_data.module.ipynb 45
+# %% ../../nbs/01_data.module.ipynb 47
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA_CONFIGS.keys():
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
             f'but got data_name={data_name}.')
 
-# %% ../../nbs/01_data.module.ipynb 46
+# %% ../../nbs/01_data.module.ipynb 48
 def load_data(
     data_name: str, # The name of data
-    return_config: bool = False # Return `data_config `or not
+    return_config: bool = False, # Return `data_config `or not
+    data_configs: dict = None # Data configs to override default configuration
 ) -> TabularDataModule | Tuple[TabularDataModule, TabularDataModuleConfigs]: 
     _validate_dataname(data_name)
 
@@ -402,6 +431,9 @@ def load_data(
     # read config
     config = load_json(conf_path)['data_configs']
     config['data_dir'] = str(data_path)
+
+    if not (data_configs is None):
+        config.update(data_configs)
 
     config = TabularDataModuleConfigs(**config)
     data_module = TabularDataModule(config)

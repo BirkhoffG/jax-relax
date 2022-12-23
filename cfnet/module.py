@@ -5,7 +5,7 @@ from __future__ import annotations
 from .import_essentials import *
 from .nets import PredictiveModel, CounterNetModel
 from .interfaces import BaseCFExplanationModule
-from .datasets import TabularDataModule
+from .data import TabularDataModule
 from .logger import TensorboardLogger
 from cfnet.utils import (
     validate_configs,
@@ -175,8 +175,9 @@ class PredictiveTrainingModule(BaseTrainingModule):
         return self.net.apply(params, rng_key, x, is_training=is_training)
 
     def init_net_opt(self, data_module, key):
+        X, _ = data_module.train_dataset[:100]
         params, opt_state = init_net_opt(
-            self.net, self.opt, X=data_module.get_sample_X(), key=key
+            self.net, self.opt, X=X, key=key
         )
         return params, opt_state
 

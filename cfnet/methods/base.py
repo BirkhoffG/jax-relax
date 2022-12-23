@@ -3,7 +3,7 @@
 # %% ../../nbs/05_methods.base.ipynb 3
 from __future__ import annotations
 from ..import_essentials import *
-from ..datasets import TabularDataModule
+from ..data import TabularDataModule
 from ..train import TrainingConfigs
 from copy import deepcopy
 
@@ -12,30 +12,41 @@ __all__ = ['BaseCFModule', 'BaseParametricCFModule', 'BasePredFnCFModule']
 
 # %% ../../nbs/05_methods.base.ipynb 4
 class BaseCFModule(ABC):
-    cat_arrays = []
-    cat_idx = 0
+    """Base CF Explanation Module."""
+    _data_module: TabularDataModule
 
     @property
     @abstractmethod
     def name(self):
-        pass
+        """Name of the CF Explanation Module."""
+        raise NotImplementedError
+    
+    @property
+    def data_module(self) -> TabularDataModule:
+        """Binded `DataModule`."""
+        return self._data_module
 
     @abstractmethod
     def generate_cfs(
         self,
-        X: jnp.ndarray,
-        pred_fn: Callable = None
-    ) -> jnp.ndarray:
+        X: jnp.ndarray, # Input to be explained
+        pred_fn: Callable = None # Predictive function 
+    ) -> jnp.ndarray: # Generated counterfactuals
+        """Abstract method to generate counterfactuals"""
         pass
 
+    def hook_data_module(self, data_module: TabularDataModule):
+        """Bind `TabularDataModule` to `self._data_module`."""
+        self._data_module = data_module
+
+    @deprecated(removed_in='0.1.0', deprecated_in='0.0.11',
+        details="Avoid using this method!!!")
     def update_cat_info(self, data_module: TabularDataModule):
-        # TODO: need refactor
         self.cat_arrays = deepcopy(data_module.cat_arrays)
         self.cat_idx = data_module.cat_idx
         self.imutable_idx_list = deepcopy(data_module.imutable_idx_list)
 
-
-# %% ../../nbs/05_methods.base.ipynb 5
+# %% ../../nbs/05_methods.base.ipynb 9
 class BaseParametricCFModule(ABC):
     @abstractmethod
     def train(
@@ -48,7 +59,7 @@ class BaseParametricCFModule(ABC):
     @abstractmethod
     def _is_module_trained(self) -> bool: pass
 
-# %% ../../nbs/05_methods.base.ipynb 7
+# %% ../../nbs/05_methods.base.ipynb 11
 class BasePredFnCFModule(ABC):
     """Base class of CF Module with a predictive module."""
     @abstractmethod

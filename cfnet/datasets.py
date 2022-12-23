@@ -185,6 +185,8 @@ def _dispatch_datalaoder(backend: str):
 
 # %% ../nbs/01_datasets.ipynb 15
 class DataLoader(BaseDataLoader):
+    @deprecated(removed_in='0.1.0', deprecated_in='0.0.11',
+            details='Use `cfnet.data.DataLoader` instead.')
     def __init__(
         self,
         dataset,
@@ -208,6 +210,8 @@ class DataLoader(BaseDataLoader):
         )
 
 # %% ../nbs/01_datasets.ipynb 24
+@deprecated(removed_in='0.1.0', deprecated_in='0.0.11',
+            details='Use `cfnet.data.find_imutable_idx_list` instead.')
 def find_imutable_idx_list(
     imutable_col_names: List[str],
     discrete_col_names: List[str],
@@ -253,6 +257,8 @@ class TabularDataModule:
     backend: str = 'jax'
     data_name: str = ""
 
+    @deprecated(removed_in='0.1.0', deprecated_in='0.0.11',
+            details='Use `cfnet.data.TabularDataModule` instead.')
     def __init__(
         self, 
         data_config: dict | DataModuleConfigs, # Configurator of `TabularDataModule`
@@ -388,6 +394,8 @@ def _validate_dataname(data_name: str):
             f'but got data_name={data_name}.')
 
 # %% ../nbs/01_datasets.ipynb 32
+@deprecated(removed_in='0.1.0', deprecated_in='0.0.11',
+            details='Use `cfnet.data.load_data` instead.')
 def load_default_data(data_name: str) -> TabularDataModule:
     _validate_dataname(data_name)
 

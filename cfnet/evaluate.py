@@ -4,7 +4,7 @@
 from __future__ import annotations
 from .import_essentials import *
 from .train import train_model, TrainingConfigs
-from .datasets import TabularDataModule
+from .data import TabularDataModule
 from .utils import accuracy, proximity
 from .methods.base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
 from .methods.counternet import CounterNet
@@ -60,7 +60,7 @@ def _prepare_module(
     cf_module: BaseCFModule,
     datamodule: TabularDataModule
 ):
-    cf_module.update_cat_info(datamodule)
+    cf_module.hook_data_module(datamodule)
     return cf_module
 
 def _train_parametric_module(

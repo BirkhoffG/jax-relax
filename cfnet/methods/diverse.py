@@ -5,12 +5,11 @@ __all__ = ['DiverseCFConfig', 'DiverseCF']
 
 # %% ../../nbs/05b_methods.diverse.ipynb 3
 from ..import_essentials import *
-from ..interfaces import BaseCFExplanationModule, LocalCFExplanationModule
-from ..datasets import TabularDataModule
+from .base import BaseCFModule
+from ..data import TabularDataModule
 from cfnet.utils import (
     check_cat_info,
     validate_configs,
-    cat_normalize,
     dist,
     grad_update,
 )
@@ -70,9 +69,9 @@ def _diverse_cf(
     n_steps: int,
     lr: float,  # learning rate for each `cf` optimization step
     lambda_: float,  #  loss = validity_loss + lambda_params * cost
-    cat_arrays: List[List[str]],
-    cat_idx: int,
     key: jax.random.PRNGKey,
+    projection_fn: Callable,
+    regularization_fn: Callable
 ) -> jnp.DeviceArray:  # return `cf` shape: (k,)
     def loss_fn_1(cf_y: jnp.DeviceArray, y_prime: jnp.DeviceArray):
         return jnp.mean(hinge_loss(input=cf_y, target=y_prime))
@@ -83,8 +82,12 @@ def _diverse_cf(
     def loss_fn_3(cfs: jnp.DeviceArray, n_cfs: int):
         return dpp_style(cfs, n_cfs)
 
-    def loss_fn_4(cfs, cat_idx, cat_arrays, n_cfs):
-        return _compute_regularization_loss(cfs, cat_idx, cat_arrays, n_cfs)
+    def loss_fn_4(x: jnp.DeviceArray, cfs: jnp.DeviceArray):
+        # return _compute_regularization_loss(cfs, cat_idx, cat_arrays, n_cfs)
+        reg_loss = 0.
+        for i in range(n_cfs):
+            reg_loss += regularization_fn(x, cfs[i])
+        return reg_loss
 
     def loss_fn(
         cf: jnp.DeviceArray,  # `cf` shape: (k, n_cfs)
@@ -98,7 +101,7 @@ def _diverse_cf(
         loss_1 = loss_fn_1(cf_y, y_prime)
         loss_2 = loss_fn_2(x, cf)
         loss_3 = loss_fn_3(cf, n_cfs)
-        loss_4 = loss_fn_4(cf, cat_idx, cat_arrays, n_cfs)
+        loss_4 = loss_fn_4(x, cfs)
         return loss_1 + loss_2 + loss_3 + loss_4
 
     @jax.jit
@@ -107,7 +110,6 @@ def _diverse_cf(
     ) -> Tuple[jnp.DeviceArray, optax.OptState]:
         cf_grads = jax.grad(loss_fn)(cf, x, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
-        cf = cat_normalize(cf, cat_arrays=cat_arrays, cat_idx=cat_idx, hard=False)
         cf = jnp.clip(cf, 0.0, 1.0)
         return cf, opt_state
 
@@ -124,7 +126,7 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
     opt_state = opt.init(cfs)
     for _ in tqdm(range(n_steps)):
         cfs, opt_state = gen_cf_step(x, cfs, opt_state)
-    cf = cat_normalize(cfs[:1, :], cat_arrays=cat_arrays, cat_idx=cat_idx, hard=True)
+    cf = projection_fn(x, cfs[:1, :], hard=True)
     return cf.reshape(x_size)
 
 
@@ -142,17 +144,16 @@ class DiverseCFConfig(BaseParser):
 
 
 # %% ../../nbs/05b_methods.diverse.ipynb 10
-class DiverseCF(LocalCFExplanationModule):
+class DiverseCF(BaseCFModule):
     name = "DiverseCF"
 
     def __init__(
         self,
-        configs: Union[Dict[str, Any], DiverseCFConfig],
-        data_module: Optional[TabularDataModule] = None,
+        configs: Union[Dict[str, Any], DiverseCFConfig] = None,
     ):
+        if configs is None:
+            configs = DiverseCFConfig()
         self.configs = validate_configs(configs, DiverseCFConfig)
-        if data_module:
-            self.update_cat_info(data_module)
 
     def generate_cf(
         self,
@@ -166,12 +167,11 @@ class DiverseCF(LocalCFExplanationModule):
             n_steps=self.configs.n_steps,
             lr=self.configs.lr,  # learning rate for each `cf` optimization step
             lambda_=self.configs.lambda_,  #  loss = validity_loss + lambda_params * cost
-            cat_arrays=self.cat_arrays,
-            cat_idx=self.cat_idx,
             key=next(self.configs.keys),
+            projection_fn=self.data_module.apply_constraints,
+            regularization_fn=self.data_module.apply_regularization
         )
 
-    @check_cat_info
     def generate_cfs(
         self,
         X: jnp.DeviceArray,  # `x` shape: (b, k), where `b` is batch size, `k` is the number of features

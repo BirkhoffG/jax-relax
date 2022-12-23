@@ -6,11 +6,10 @@ from ..import_essentials import *
 from ..module import MLP, BaseTrainingModule
 from .base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
 from ..train import TrainingConfigs, train_model
-from ..datasets import TabularDataModule
+from ..data import TabularDataModule
 from cfnet.utils import (
     validate_configs,
     sigmoid,
-    cat_normalize,
     accuracy,
     proximity,
     make_model,
@@ -28,19 +27,18 @@ __all__ = ['CounterNetModel', 'partition_trainable_params', 'project_immutable_f
 class CounterNetModelConfigs(BaseParser):
     """Configurator of `CounterNetModel`."""
 
-    enc_sizes: List[int]
-    dec_sizes: List[int]
-    exp_sizes: List[int]
-    dropout_rate: float = 0.3
-
+    enc_sizes: List[int] = Field(description='Encoder sizes.')
+    dec_sizes: List[int] = Field(description='Predictor sizes.')
+    exp_sizes: List[int] = Field(description='CF generator sizes.')
+    dropout_rate: float = Field(0.3, description='Dropout rate.')
 
 # %% ../../nbs/05d_methods.counternet.ipynb 6
 class CounterNetModel(hk.Module):
     """CounterNet Model"""
     def __init__(
         self,
-        m_config: Dict[str, Any],  # Model configs which contain configs in `CounterNetModelConfigs`.
-        name: Optional[str] = None,  # Name of the module.
+        m_config: Dict | CounterNetModelConfigs,  # Model configs which contain configs in `CounterNetModelConfigs`.
+        name: str = None,  # Name of the module.
     ):
         """CounterNet model architecture."""
         super().__init__(name=name)
@@ -88,11 +86,12 @@ class CounterNetTrainingModuleConfigs(BaseParser):
     lambda_1: float = 1.0
     lambda_2: float = 0.2
     lambda_3: float = 0.1
-    use_immutable: bool = True
 
 
 # %% ../../nbs/05d_methods.counternet.ipynb 13
 class CounterNetTrainingModule(BaseTrainingModule):
+    _data_module: TabularDataModule
+
     def __init__(self, m_configs: Dict[str, Any]):
         self.save_hyperparameters(m_configs)
         self.net = make_model(m_configs, CounterNetModel)
@@ -101,16 +100,14 @@ class CounterNetTrainingModule(BaseTrainingModule):
         self.opt_1 = optax.adam(learning_rate=self.configs.lr)
         self.opt_2 = optax.adam(learning_rate=self.configs.lr)
 
-    def update_cat_info(self, data_module):
-        self.cat_arrays = deepcopy(data_module.cat_arrays)
-        self.cat_idx = data_module.cat_idx
-        self.imutable_idx_list = deepcopy(data_module.imutable_idx_list)
+    def init_net_opt(self, data_module: TabularDataModule, key):
+        # hook data_module
+        self._data_module = data_module
+        X, _ = data_module.train_dataset[:]
 
-    def init_net_opt(self, data_module, key):
-        self.update_cat_info(data_module)
         # manually init multiple opts
         params, opt_1_state = init_net_opt(
-            self.net, self.opt_1, X=data_module.get_sample_X(), key=key
+            self.net, self.opt_1, X=X[:100], key=key
         )
         trainable_params, _ = partition_trainable_params(
             params, trainable_name="counter_net_model/Explainer"
@@ -122,11 +119,8 @@ class CounterNetTrainingModule(BaseTrainingModule):
     def forward(self, params, rng_key, x, is_training: bool = True):
         # first forward to get y_pred and normalized cf
         y_pred, cf = self.net.apply(params, rng_key, x, is_training=is_training)
-        # cf = cf_res + x
-        cf = cat_normalize(cf, self.cat_arrays, self.cat_idx, hard=not is_training)
-        # project immutable features
-        if self.configs.use_immutable:
-            cf = project_immutable_features(x, cf, self.imutable_idx_list)
+        cf = self._data_module.apply_constraints(x, cf, hard=not is_training)
+
         # second forward to calulate cf_y
         cf_y, _ = self.net.apply(params, rng_key, cf, is_training=is_training)
         return y_pred, cf, cf_y
@@ -138,9 +132,7 @@ class CounterNetTrainingModule(BaseTrainingModule):
     def generate_cfs(self, X: chex.ArrayBatched, params, rng_key) -> chex.ArrayBatched:
         y_pred, cfs = self.net.apply(params, rng_key, X, is_training=False)
         # cfs = cfs + X
-        cfs = cat_normalize(cfs, self.cat_arrays, self.cat_idx, hard=True)
-        if self.configs.use_immutable:
-            cfs = project_immutable_features(X, cfs, self.imutable_idx_list)
+        cfs = self._data_module.apply_constraints(X, cfs, hard=True)
         return cfs
 
     def loss_fn_1(self, y_pred, y):
@@ -263,22 +255,38 @@ class CounterNetTrainingModule(BaseTrainingModule):
         self.log_dict(logs)
         return logs
 
-# %% ../../nbs/05d_methods.counternet.ipynb 17
+# %% ../../nbs/05d_methods.counternet.ipynb 18
 class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs):
     """Configurator of `CounterNet`."""
 
-    enc_sizes: List[int] = [50,10]
-    dec_sizes: List[int] = [10]
-    exp_sizes: List[int] = [50, 50]
-    dropout_rate: float = 0.3
-    lr: float = 0.003
-    lambda_1: float = 1.0
-    lambda_2: float = 0.2
-    lambda_3: float = 0.1
-    use_immutable: bool = True
+    enc_sizes: List[int] = Field(
+        [50,10], description="Sequence of layer sizes for encoder network."
+    )
+    dec_sizes: List[int] = Field(
+        [10], description="Sequence of layer sizes for predictor."
+    ) 
+    exp_sizes: List[int] = Field(
+        [50, 50], description="Sequence of layer sizes for CF generator."
+    )
+    
+    dropout_rate: float = Field(
+        0.3, description="Dropout rate."
+    )
+    lr: float = Field(
+        0.003, description="Learning rate for training `CounterNet`."
+    ) 
+    lambda_1: float = Field(
+        1.0, description=" $\lambda_1$ for balancing the prediction loss $\mathcal{L}_1$."
+    ) 
+    lambda_2: float = Field(
+        0.2, description=" $\lambda_2$ for balancing the prediction loss $\mathcal{L}_2$."
+    ) 
+    lambda_3: float = Field(
+        0.1, description=" $\lambda_3$ for balancing the prediction loss $\mathcal{L}_3$."
+    )
 
 
-# %% ../../nbs/05d_methods.counternet.ipynb 19
+# %% ../../nbs/05d_methods.counternet.ipynb 20
 class CounterNet(BaseCFModule, BaseParametricCFModule, BasePredFnCFModule):
     """API for CounterNet Explanation Module."""
     params: hk.Params = None
