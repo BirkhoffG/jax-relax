@@ -7,12 +7,13 @@ project:
 
 format:
   html:
-    theme: minty
+    theme: 
+      - cosmo
+      - theme.scss
     css: styles.css
-    font-size: 80%
     toc: true
     toc-depth: 4    
-    number-sections: true
+    number-sections: false
     number-depth: 2
     html-math-method: katex
 
