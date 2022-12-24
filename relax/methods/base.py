@@ -4,7 +4,7 @@
 from __future__ import annotations
 from ..import_essentials import *
 from ..data import TabularDataModule
-from ..train import TrainingConfigs
+from ..trainer import TrainingConfigs
 from copy import deepcopy
 
 # %% auto 0

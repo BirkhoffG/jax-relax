@@ -5,19 +5,10 @@ from __future__ import annotations
 from ..import_essentials import *
 from ..module import MLP, BaseTrainingModule
 from .base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
-from ..train import TrainingConfigs, train_model
+from ..trainer import TrainingConfigs, train_model
 from ..data import TabularDataModule
-from cfnet.utils import (
-    validate_configs,
-    sigmoid,
-    accuracy,
-    proximity,
-    make_model,
-    init_net_opt,
-    grad_update,
-)
+from ..utils import validate_configs, sigmoid, accuracy, proximity, make_model, init_net_opt, grad_update
 from functools import partial
-from copy import deepcopy
 
 # %% auto 0
 __all__ = ['CounterNetModel', 'partition_trainable_params', 'project_immutable_features', 'CounterNetTrainingModuleConfigs',

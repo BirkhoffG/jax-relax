@@ -6,13 +6,7 @@ __all__ = ['DiverseCFConfig', 'DiverseCF']
 # %% ../../nbs/05b_methods.diverse.ipynb 3
 from ..import_essentials import *
 from .base import BaseCFModule
-from ..data import TabularDataModule
-from cfnet.utils import (
-    check_cat_info,
-    validate_configs,
-    dist,
-    grad_update,
-)
+from ..utils import validate_configs, dist, grad_update
 
 # %% ../../nbs/05b_methods.diverse.ipynb 4
 def hinge_loss(input: jnp.DeviceArray, target: jnp.DeviceArray):

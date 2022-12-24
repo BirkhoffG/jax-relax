@@ -6,7 +6,7 @@ from ..import_essentials import *
 from .base import BaseCFModule, BaseParametricCFModule
 from ..data import TabularDataModule
 from ..module import BaseTrainingModule, MLP
-from ..train import train_model, TrainingConfigs
+from ..trainer import train_model, TrainingConfigs
 from ..utils import validate_configs, binary_cross_entropy, make_model, init_net_opt, grad_update
 from functools import partial
 

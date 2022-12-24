@@ -4,7 +4,6 @@
 from __future__ import annotations
 from ..import_essentials import *
 from .base import BaseCFModule
-from ..data import TabularDataModule
 from ..utils import validate_configs, binary_cross_entropy, grad_update
 
 # %% auto 0

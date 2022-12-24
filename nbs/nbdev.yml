@@ -2,8 +2,8 @@ project:
   output-dir: _docs
 
 website:
-  title: "cfnet"
+  title: "RELax"
   site-url: "https://birkhoffg.github.io/cfnet/"
-  description: "A counterfactual explanation library using Jax"
+  description: "Jax-based Recourse Explanation Library"
   repo-branch: master
   repo-url: "https://github.com/birkhoffg/cfnet/tree/master/"

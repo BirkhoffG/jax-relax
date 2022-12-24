@@ -5,7 +5,7 @@ __all__ = ['TrainingConfigs', 'train_model_with_states', 'train_model']
 
 # %% ../nbs/04_learning.ipynb 3
 from .import_essentials import *
-from .datasets import TabularDataModule
+from .data import TabularDataModule
 from .module import BaseTrainingModule
 from .logger import TensorboardLogger
 from .utils import validate_configs

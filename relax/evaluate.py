@@ -3,7 +3,7 @@
 # %% ../nbs/06_evaluate.ipynb 3
 from __future__ import annotations
 from .import_essentials import *
-from .train import train_model, TrainingConfigs
+from .trainer import TrainingConfigs
 from .data import TabularDataModule
 from .utils import accuracy, proximity
 from .methods.base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
@@ -14,7 +14,7 @@ from sklearn.neighbors import NearestNeighbors
 
 # %% auto 0
 __all__ = ['CFExplanationResults', 'METRICS', 'DEFAULT_METRICS', 'Explanation', 'generate_cf_explanations',
-           'generate_cf_results_local_exp', 'generate_cf_results_cfnet', 'BaseEvalMetrics', 'PredictiveAccuracy',
+           'generate_cf_results_local_exp', 'generate_cf_results_relax', 'BaseEvalMetrics', 'PredictiveAccuracy',
            'Validity', 'Proximity', 'Sparsity', 'ManifoldDist', 'Runtime', 'compute_so_validity',
            'compute_so_proximity', 'compute_so_sparsity', 'evaluate_cfs', 'benchmark_cfs']
 
@@ -162,7 +162,7 @@ def generate_cf_results_local_exp(
 
 
 @deprecated(removed_in='0.1.0', deprecated_in='0.0.9')
-def generate_cf_results_cfnet(
+def generate_cf_results_relax(
     cf_module: CounterNet,
     dm: TabularDataModule,
     params: hk.Params = None,  # params of `cf_module`
