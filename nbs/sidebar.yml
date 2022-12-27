@@ -19,6 +19,7 @@ website:
         - 04a_logger.ipynb
         - 04b_ckpt_manager.ipynb
         - 06_evaluate.ipynb
+        - 07_plotting.ipynb
         - section: Methods
           contents:
           - 05_methods.base.ipynb
