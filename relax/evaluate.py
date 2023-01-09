@@ -11,7 +11,6 @@ from .methods.counternet import CounterNet
 from copy import deepcopy
 from sklearn.neighbors import NearestNeighbors
 
-
 # %% auto 0
 __all__ = ['CFExplanationResults', 'METRICS', 'DEFAULT_METRICS', 'Explanation', 'generate_cf_explanations',
            'generate_cf_results_local_exp', 'generate_cf_results_relax', 'BaseEvalMetrics', 'PredictiveAccuracy',
@@ -173,6 +172,7 @@ def generate_cf_results_relax(
 
 # %% ../nbs/06_evaluate.ipynb 19
 class BaseEvalMetrics(ABC):
+    """Base evaluation metrics class."""
     def __call__(self, cf_explanations: Explanation) -> Any:
         raise NotImplementedError
 
@@ -188,6 +188,7 @@ def _compute_acc(
 
 # %% ../nbs/06_evaluate.ipynb 21
 class PredictiveAccuracy(BaseEvalMetrics):
+    """Compute the accuracy of the predict function."""
     def __call__(self, cf_explanations: Explanation) -> float:
         X, y = cf_explanations.data_module.test_dataset[:]
         return _compute_acc(X, y, cf_explanations.pred_fn)
@@ -205,6 +206,7 @@ def _compute_val(
 
 # %% ../nbs/06_evaluate.ipynb 23
 class Validity(BaseEvalMetrics):
+    """Compute fraction of input instances on which CF explanation methods output valid CF examples."""
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_val(
@@ -213,6 +215,7 @@ class Validity(BaseEvalMetrics):
 
 # %% ../nbs/06_evaluate.ipynb 24
 class Proximity(BaseEvalMetrics):
+    """Compute L1 norm distance between input datasets and CF examples divided by the number of features."""
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return proximity(X, cf_explanations.cfs)
@@ -233,6 +236,7 @@ def _compute_spar(
 
 # %% ../nbs/06_evaluate.ipynb 26
 class Sparsity(BaseEvalMetrics):
+    """Compute the number of feature changes between input datasets and CF examples."""
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_spar(X, cf_explanations.cfs, cf_explanations.cat_idx)
@@ -251,6 +255,7 @@ def _compute_manifold_dist(
 
 # %% ../nbs/06_evaluate.ipynb 28
 class ManifoldDist(BaseEvalMetrics):
+    """Compute the L1 distance to the n-nearest neighbor for all CF examples."""
     def __init__(self, n_neighbors: int = 1, p: int = 2):
         self.n_neighbors = n_neighbors
         self.p = p
@@ -263,6 +268,7 @@ class ManifoldDist(BaseEvalMetrics):
 
 # %% ../nbs/06_evaluate.ipynb 29
 class Runtime(BaseEvalMetrics):
+    """Get the running time to generate CF examples."""
     def __call__(self, cf_explanations: Explanation) -> float:
         return cf_explanations.total_time
 

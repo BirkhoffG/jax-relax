@@ -406,6 +406,8 @@ def load_data(
     return_config: bool = False, # Return `data_config `or not
     data_configs: dict = None # Data configs to override default configuration
 ) -> TabularDataModule | Tuple[TabularDataModule, TabularDataModuleConfigs]: 
+    """High-level util function for loading `data` and `data_config`."""
+    
     _validate_dataname(data_name)
 
     # get data/config urls
