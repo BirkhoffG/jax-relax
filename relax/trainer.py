@@ -52,7 +52,7 @@ def train_model_with_states(
     params: hk.Params,
     opt_state: optax.OptState,
     data_module: TabularDataModule,
-    t_configs: Union[Dict[str, Any], TrainingConfigs],
+    t_configs: Dict[str, Any] | TrainingConfigs,
 ) -> Tuple[hk.Params, optax.OptState]:
     """Train models with `params` and `opt_state`."""
 

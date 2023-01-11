@@ -40,10 +40,10 @@ website:
             href: https://github.com/birkhoffg/ReLax/issues
           - text: "Ask a Question"
             icon: chat-right-text
-            href: https://github.com/birkhoffg/cfnet/discussions/
+            href: https://github.com/birkhoffg/ReLax/discussions/
     right:
       - icon: github
-        href: "https://github.com/birkhoffg/cfnet"
+        href: "https://github.com/birkhoffg/ReLax"
     
 
 metadata-files: [nbdev.yml, sidebar.yml]

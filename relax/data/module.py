@@ -414,8 +414,8 @@ def load_data(
     _data_path = DEFAULT_DATA_CONFIGS[data_name]['data']
     _conf_path = DEFAULT_DATA_CONFIGS[data_name]['conf']
     
-    data_url = f"https://github.com/BirkhoffG/cfnet/raw/master/{_data_path}"
-    conf_url = f"https://github.com/BirkhoffG/cfnet/raw/master/{_conf_path}"
+    data_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_data_path}"
+    conf_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_conf_path}"
 
     # create new dir
     data_dir = Path(os.getcwd()) / "cf_data"

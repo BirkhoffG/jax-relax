@@ -3,7 +3,7 @@ project:
 
 website:
   title: "ReLax"
-  site-url: "https://birkhoffg.github.io/cfnet/"
+  site-url: "https://birkhoffg.github.io/ReLax/"
   description: "Jax-based Recourse Explanation Library"
   repo-branch: master
-  repo-url: "https://github.com/birkhoffg/cfnet/tree/master/"
+  repo-url: "https://github.com/birkhoffg/relax/tree/master/"
