@@ -151,7 +151,7 @@ def _proto_cf(
         cf_grads = jax.grad(loss_fn)(cf, x, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
         cf = apply_constraints_fn(x, cf, hard=False)
-        cf = jnp.clip(cf, 0., 1.)
+        # cf = jnp.clip(cf, 0., 1.)
         return cf, opt_state
 
     x_size = x.shape

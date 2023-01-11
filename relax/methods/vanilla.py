@@ -41,7 +41,7 @@ def _vanilla_cf(
         cf_grads = jax.grad(loss_fn)(cf, x, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
         cf = apply_fn(x, cf, hard=False)
-        cf = jnp.clip(cf, 0.0, 1.0)
+        # cf = jnp.clip(cf, 0.0, 1.0)
         return cf, opt_state
 
     x_size = x.shape
