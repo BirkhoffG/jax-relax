@@ -45,4 +45,4 @@ guidelines](https://github.com/google/jax#installation).
 
 ## An Example of using `ReLax`
 
-See [How to use RELax](tutorials/how_to_use_cfnet.ipynb).
+See [Getting Started with ReLax](tutorials/getting_started.ipynb).

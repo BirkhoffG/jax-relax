@@ -22,7 +22,7 @@ def validate_configs(
     return configs
 
 
-# %% ../nbs/00_utils.ipynb 13
+# %% ../nbs/00_utils.ipynb 14
 def _docment_parser(parser: BaseParser):
     p = parser.schema()['properties']
     anno = parser.__annotations__
@@ -38,13 +38,13 @@ def _docment_parser(parser: BaseParser):
     return d
 
 
-# %% ../nbs/00_utils.ipynb 14
+# %% ../nbs/00_utils.ipynb 15
 class ParserMarkdownRenderer(BasicMarkdownRenderer):
         def __init__(self, sym, name: str | None = None, title_level: int = 3):
             super().__init__(sym, name, title_level)
             self.dm.dm = _docment_parser(sym)
 
-# %% ../nbs/00_utils.ipynb 15
+# %% ../nbs/00_utils.ipynb 16
 def show_doc(
     sym # Symbol to document
 ):
@@ -55,7 +55,7 @@ def show_doc(
     else:
         return nbdev.show_doc(sym)
 
-# %% ../nbs/00_utils.ipynb 18
+# %% ../nbs/00_utils.ipynb 19
 def cat_normalize(
     cf: jnp.ndarray,  # Unnormalized counterfactual explanations `[n_samples, n_features]`
     cat_arrays: List[List[str]],  # A list of a list of each categorical feature name
@@ -82,7 +82,7 @@ def cat_normalize(
     return jnp.concatenate(normalized_cf, axis=-1)
 
 
-# %% ../nbs/00_utils.ipynb 32
+# %% ../nbs/00_utils.ipynb 33
 def make_model(
     m_configs: Dict[str, Any], model: hk.Module  # model configs
 ) -> hk.Transformed:
@@ -95,7 +95,7 @@ def make_model(
     return hk.transform(model_fn)
 
 
-# %% ../nbs/00_utils.ipynb 33
+# %% ../nbs/00_utils.ipynb 34
 def init_net_opt(
     net: hk.Transformed,
     opt: optax.GradientTransformation,
@@ -108,7 +108,7 @@ def init_net_opt(
     return params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 34
+# %% ../nbs/00_utils.ipynb 35
 def grad_update(
     grads: Dict[str, jnp.ndarray],
     params: hk.Params,
@@ -120,7 +120,7 @@ def grad_update(
     return upt_params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 35
+# %% ../nbs/00_utils.ipynb 36
 def check_cat_info(method):
     def inner(cf_module, *args, **kwargs):
         warning_msg = f"""This CFExplanationModule might not be updated with categorical information.
@@ -133,13 +133,13 @@ You should try `{cf_module.name}.update_cat_info(dm)` before generating cfs.
     return inner
 
 
-# %% ../nbs/00_utils.ipynb 37
+# %% ../nbs/00_utils.ipynb 38
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 38
+# %% ../nbs/00_utils.ipynb 39
 # https://github.com/d2l-ai/d2l-en/blob/d9a3f6ac0e86468159d7b69345a1732bbe3ce1c7/d2l/torch.py#L100
 def add_to_class(cls):
     warnings.warn("deprecated", DeprecationWarning)
@@ -150,18 +150,18 @@ def add_to_class(cls):
     return wrapper
 
 
-# %% ../nbs/00_utils.ipynb 40
+# %% ../nbs/00_utils.ipynb 41
 def binary_cross_entropy(y_pred: chex.Array, y: chex.Array) -> chex.Array:
     return -(y * jnp.log(y_pred + 1e-5) + (1 - y) * jnp.log(1 - y_pred + 1e-5))
 
 
-# %% ../nbs/00_utils.ipynb 41
+# %% ../nbs/00_utils.ipynb 42
 def sigmoid(x):
     # https://stackoverflow.com/a/68293931
     return 0.5 * (jnp.tanh(x / 2) + 1)
 
 
-# %% ../nbs/00_utils.ipynb 43
+# %% ../nbs/00_utils.ipynb 44
 def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
     y_true, y_pred = map(jnp.round, (y_true, y_pred))
     return jnp.mean(jnp.equal(y_true, y_pred))
