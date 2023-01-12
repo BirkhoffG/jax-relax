@@ -6,7 +6,8 @@ ReLax
 ![Python](https://img.shields.io/pypi/pyversions/jax-relax.svg) ![CI
 status](https://github.com/BirkhoffG/ReLax/actions/workflows/test.yaml/badge.svg)
 ![Docs](https://github.com/BirkhoffG/ReLax/actions/workflows/deploy.yaml/badge.svg)
-![pypi](https://img.shields.io/pypi/v/jax-relax.png)
+![pypi](https://img.shields.io/pypi/v/jax-relax.png) ![GitHub
+License](https://img.shields.io/github/license/BirkhoffG/ReLax.png)
 
 `ReLax` (**Re**course Explanation **L**ibrary in J**ax**) is a library
 built on top of `jax` to generate counterfactual and recourse
