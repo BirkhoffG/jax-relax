@@ -3,9 +3,10 @@
 # %% ../../nbs/01_data.loader.ipynb 3
 from __future__ import annotations
 from ..import_essentials import *
+from ..utils import get_config
 
 # %% auto 0
-__all__ = ['backend2dataloader', 'Dataset', 'BaseDataLoader', 'DataLoaderJax', 'DataLoaderPytorch', 'DataLoader']
+__all__ = ['Dataset', 'ArrayDataset', 'BaseDataLoader', 'JaxDataloader', 'TorchDataloader', 'DataloaderBackends', 'DataLoader']
 
 # %% ../../nbs/01_data.loader.ipynb 4
 try:
@@ -13,33 +14,42 @@ try:
 except ModuleNotFoundError:
     torch_data = None
 
-# %% ../../nbs/01_data.loader.ipynb 5
-class Dataset:
-    """A simple pytorch-like Numpy Dataset."""
-    def __init__(self, X: jnp.DeviceArray, y: jnp.DeviceArray):
-        self.X = X
-        self.y = y
-        assert self.X.shape[0] == self.y.shape[0]
+# %% ../../nbs/01_data.loader.ipynb 6
+class Dataset(ABC):
+    """A pytorch-like abstract Dataset class."""
+
+    def __getitem__(self, index):
+        raise NotImplementedError
+
+# %% ../../nbs/01_data.loader.ipynb 7
+class ArrayDataset(Dataset):
+    """Dataset wrapping tensors."""
+
+    def __init__(
+        self, 
+        *arrays: jnp.DeviceArray # Numpy array with same first dimension
+    ):
+        assert all(arrays[0].shape[0] == arr.shape[0] for arr in arrays), \
+            "All arrays must have the same dimension."
+        self.arrays = arrays
 
     def __len__(self):
-        return len(self.X)
+        return self.arrays[0].shape[0]
 
-    def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+    def __getitem__(self, index):
+        return tuple(arr[index] for arr in self.arrays)
 
-# %% ../../nbs/01_data.loader.ipynb 9
+# %% ../../nbs/01_data.loader.ipynb 12
 class BaseDataLoader(ABC):
     """Dataloader Interface"""
     def __init__(
         self, 
         dataset,
         backend: str,
-        *,
-        batch_size: int = 1,  # batch size
-        shuffle: bool = False,  # if true, dataloader shuffles before sampling each batch
-        num_workers: int = 0,
-        drop_last: bool = False,
-        **kwargs
+        batch_size: int = 1,    # Batch size
+        shuffle: bool = False,  # If true, dataloader shuffles before sampling each batch
+        drop_last: bool = False, # Drop last batches or not
+        **kwargs # Aux arguments
     ):
         pass 
     
@@ -52,59 +62,64 @@ class BaseDataLoader(ABC):
     def __iter__(self):
         raise NotImplementedError
 
-# %% ../../nbs/01_data.loader.ipynb 11
-class DataLoaderJax(BaseDataLoader):
-    """Dataloder in Vanilla Jax"""
+# %% ../../nbs/01_data.loader.ipynb 14
+class JaxDataloader(BaseDataLoader):
+    """Dataloder in vanilla Jax"""
+
     def __init__(
         self, 
         dataset: Dataset,
-        backend: str = 'jax', # positional argument
-        batch_size: int = 1,  # batch size
-        shuffle: bool = False,  # if true, dataloader shuffles before sampling each batch
-        num_workers: int = 0, # positional argument; 
-        drop_last: bool = False, # drop last batches or not
+        backend: str = 'jax', # Position argument
+        batch_size: int = 1,  # Batch size
+        shuffle: bool = False,  # If true, dataloader shuffles before sampling each batch
+        drop_last: bool = False, # Drop last batches or not
         **kwargs
     ):
-        # Attributes from pytorch data loader (implemented)
         self.dataset = dataset
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
 
-        self.data_len: int = len(dataset)  # Length of the dataset
-        self.indices: np.ndarray = np.arange(self.data_len) # available indices in the dataset
-        self.pose: int = 0  # record the current position in the dataset
+        self.keys = hk.PRNGSequence(get_config().global_seed)
+        self.data_len = len(dataset)  # Length of the dataset
+        self.indices = jnp.arange(self.data_len) # available indices in the dataset
+        self.pose = 0  # record the current position in the dataset
+        self._shuffle()
+
+    def _shuffle(self):
+        if self.shuffle:
+            self.indices = jax.random.permutation(next(self.keys), self.indices)
+        
+    def _stop_iteration(self):
+        self.pose = 0
+        self._shuffle()
+        raise StopIteration
 
     def __len__(self):
         if self.drop_last:
             batches = len(self.dataset) // self.batch_size  # get the floor of division
         else:
-            batches = -(
-                len(self.dataset) // -self.batch_size
-            )  # get the ceil of division
+            batches = -(len(self.dataset) // -self.batch_size)  # get the ceil of division
         return batches
 
     def __next__(self):
-        if self.pose <= self.data_len:
-            if self.shuffle:
-                self.indices = np.random.permutation(self.indices)
-            batch_data = self.dataset[self.indices[: self.batch_size]]
-            self.indices = self.indices[self.batch_size :]
-            if self.drop_last and len(self.indices) < self.batch_size:
-                self.pose = 0
-                self.indices = np.arange(self.data_len)
-                raise StopIteration
+        if self.pose + self.batch_size <= self.data_len:
+            batch_indices = self.indices[self.pose: self.pose + self.batch_size]
+            batch_data = self.dataset[batch_indices, ...]
+            self.pose += self.batch_size
+            return batch_data
+        elif self.pose < self.data_len and not self.drop_last:
+            batch_indices = self.indices[self.pose:]
+            batch_data = self.dataset[batch_indices, ...]
             self.pose += self.batch_size
             return batch_data
         else:
-            self.pose = 0
-            self.indices = np.arange(self.data_len)
-            raise StopIteration
+            self._stop_iteration()
 
     def __iter__(self):
         return self
 
-# %% ../../nbs/01_data.loader.ipynb 13
+# %% ../../nbs/01_data.loader.ipynb 16
 # copy from https://jax.readthedocs.io/en/latest/notebooks/Neural_Network_and_Data_Loading.html#data-loading-with-pytorch
 def _numpy_collate(batch):
     if isinstance(batch[0], np.ndarray):
@@ -116,16 +131,17 @@ def _numpy_collate(batch):
         return np.array(batch)
 
 def _convert_dataset_pytorch(dataset: Dataset):
-    class DatasetPytorch(torch_data.Dataset):
+    class _TorchDataset(torch_data.Dataset):
         def __init__(self, dataset: Dataset): self.dataset = dataset
         def __len__(self): return len(self.dataset)
         def __getitem__(self, idx): return self.dataset[idx]
     
-    return DatasetPytorch(dataset)
+    return _TorchDataset(dataset)
 
-# %% ../../nbs/01_data.loader.ipynb 14
-class DataLoaderPytorch(BaseDataLoader):
-    """Pytorch Dataloader"""
+# %% ../../nbs/01_data.loader.ipynb 17
+class TorchDataloader(BaseDataLoader):
+    """Use `Pytorch` to load batches. It requires [pytorch](https://pytorch.org/get-started/) to be installed."""
+    
     def __init__(
         self, 
         dataset: Dataset,
@@ -160,35 +176,42 @@ class DataLoaderPytorch(BaseDataLoader):
     def __iter__(self):
         return self.dataloader.__iter__()
 
-# %% ../../nbs/01_data.loader.ipynb 16
-backend2dataloader = {
-    'jax': DataLoaderJax,
-    'pytorch': DataLoaderPytorch,
-    'tensorflow': None,
-    'merlin': None,
-}
+# %% ../../nbs/01_data.loader.ipynb 20
+@dataclass(frozen=True)
+class DataloaderBackends:
+    jax: BaseDataLoader = JaxDataloader
+    pytorch: BaseDataLoader = TorchDataloader
+    tensorflow: BaseDataLoader = None
+    merlin: BaseDataLoader = None
 
-# %% ../../nbs/01_data.loader.ipynb 17
-def _supported_backends():
-    return [back for back, dl_cls in backend2dataloader.items() if dl_cls is not None ]
+    __all__ = dict(
+        jax=jax, pytorch=pytorch, tensorflow=tensorflow, merlin=merlin
+    )
 
-# %% ../../nbs/01_data.loader.ipynb 18
+    def __getitem__(self, key):
+        return self.__all__[key]
+
+    @classmethod
+    def supported(cls) -> List[str]:
+        return [
+            backend for backend, dl_cls in cls.__all__.items() if dl_cls is not None
+        ]
+
+# %% ../../nbs/01_data.loader.ipynb 21
 def _dispatch_dataloader(
     backend: str # dataloader backend
 ) -> BaseDataLoader:
     """Return Dataloader class based on given `backend`"""
-    dataloader_backends = backend2dataloader.keys()
-    if not backend in dataloader_backends:
-        raise ValueError(f"backend=`{backend}` is an invalid backend for dataloader. "
-            f"Should be one of {dataloader_backends}.")
+
+    backends = DataloaderBackends()
+    if not backend in DataloaderBackends.supported():
+        raise ValueError(f"backend=`{backend}` is either an invalid backend or not supported yet. "
+            f"Should be one of {backends.supported}.")
     
-    dataloader_cls = backend2dataloader[backend]
-    if dataloader_cls is None:
-        raise NotImplementedError(f'backend=`{backend}` is not supported yet.')
-    return dataloader_cls
+    dl_cls = backends[backend]
+    return dl_cls
 
-
-# %% ../../nbs/01_data.loader.ipynb 20
+# %% ../../nbs/01_data.loader.ipynb 24
 class DataLoader(BaseDataLoader):
     """Main Dataloader class to load Numpy data batches"""
     def __init__(

@@ -9,7 +9,8 @@ from nbdev.showdoc import BasicMarkdownRenderer
 
 # %% auto 0
 __all__ = ['validate_configs', 'show_doc', 'cat_normalize', 'make_model', 'init_net_opt', 'grad_update', 'check_cat_info',
-           'load_json', 'add_to_class', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity']
+           'load_json', 'add_to_class', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity',
+           'get_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -174,3 +175,19 @@ def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jnp.DeviceArray:
 
 def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jnp.DeviceArray:
     return dist(x, cf, ord=1)
+
+# %% ../nbs/00_utils.ipynb 47
+@dataclass
+class Config:
+    rng_reserve_size: int
+    global_seed: int
+
+    @classmethod
+    def default(cls) -> Config:
+        return cls(rng_reserve_size=1, global_seed=42)
+
+main_config = Config.default()
+
+# %% ../nbs/00_utils.ipynb 48
+def get_config() -> Config: 
+    return main_config

@@ -4,10 +4,10 @@
 from __future__ import annotations
 from ..import_essentials import *
 from ..utils import load_json, validate_configs, cat_normalize
-from .loader import Dataset, DataLoader, _supported_backends
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
 from sklearn.base import TransformerMixin
 from urllib.request import urlretrieve
+from .loader import Dataset, ArrayDataset, DataLoader, DataloaderBackends
 
 # %% auto 0
 __all__ = ['BaseDataModule', 'find_imutable_idx_list', 'TabularDataModuleConfigs', 'TabularDataModule', 'sample', 'load_data']
@@ -40,6 +40,9 @@ class BaseDataModule(ABC):
     @abstractmethod
     def test_dataset(self) -> Dataset:
         return
+
+    def dataset(self, name: str) -> Dataset:
+        raise NotImplementedError
 
     def train_dataloader(self, batch_size):
         raise NotImplementedError
@@ -184,6 +187,10 @@ def _init_scalar_encoder(
 
 
 # %% ../../nbs/01_data.module.ipynb 16
+def _supported_backends(): 
+    back = DataloaderBackends()
+    return back.supported
+
 class TabularDataModuleConfigs(BaseParser):
     """Configurator of `TabularDataModule`."""
 
@@ -257,8 +264,8 @@ class TabularDataModule(BaseDataModule):
             train_size = int(len(train_X) * self._configs.sample_frac)
             train_X, train_y = train_X[:train_size], train_y[:train_size]
         
-        self._train_dataset = Dataset(train_X, train_y)
-        self._val_dataset = Dataset(test_X, test_y)
+        self._train_dataset = ArrayDataset(train_X, train_y)
+        self._val_dataset = ArrayDataset(test_X, test_y)
         self._test_dataset = self.val_dataset
 
     @property
@@ -271,16 +278,24 @@ class TabularDataModule(BaseDataModule):
         return self._data
     
     @property
-    def train_dataset(self) -> Dataset:
+    def train_dataset(self) -> ArrayDataset:
         return self._train_dataset
     
     @property
-    def val_dataset(self) -> Dataset:
+    def val_dataset(self) -> ArrayDataset:
         return self._val_dataset
 
     @property
-    def test_dataset(self) -> Dataset:
+    def test_dataset(self) -> ArrayDataset:
         return self._test_dataset
+
+    def dataset(
+        self, name: str # Name of the dataset; should be one of ['train', 'val', 'test'].
+    ) -> ArrayDataset:
+        if name == 'train': return self._train_dataset
+        elif name == 'val': return self._val_dataset
+        elif name == 'test': return self._test_dataset
+        else: raise ValueError(f"`name` must be one of ['train', 'val', 'test'], but got {name}")
 
     def train_dataloader(self, batch_size):
         return DataLoader(self.train_dataset, self._configs.backend, 
