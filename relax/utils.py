@@ -152,15 +152,24 @@ def add_to_class(cls):
 
 
 # %% ../nbs/00_utils.ipynb 41
-def binary_cross_entropy(y_pred: chex.Array, y: chex.Array) -> chex.Array:
-    return -(y * jnp.log(y_pred + 1e-5) + (1 - y) * jnp.log(1 - y_pred + 1e-5))
+def binary_cross_entropy(
+    preds: jnp.DeviceArray, # The predicted values
+    labels: jnp.DeviceArray # The ground-truth labels
+) -> jnp.DeviceArray: # Loss value
+    """Per-sample binary cross-entropy loss function."""
 
+    # Clip the predictions to avoid NaNs in the log
+    preds = jnp.clip(preds, 1e-7, 1 - 1e-7)
+
+    # Compute the binary cross-entropy
+    loss = -labels * jnp.log(preds) - (1 - labels) * jnp.log(1 - preds)
+
+    return loss
 
 # %% ../nbs/00_utils.ipynb 42
 def sigmoid(x):
     # https://stackoverflow.com/a/68293931
     return 0.5 * (jnp.tanh(x / 2) + 1)
-
 
 # %% ../nbs/00_utils.ipynb 44
 def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:

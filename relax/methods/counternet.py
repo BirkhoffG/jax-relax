@@ -47,7 +47,7 @@ class CounterNetModel(hk.Module):
             z, is_training
         )
         y_hat = hk.Linear(1, name="Predictor")(pred)
-        y_hat = sigmoid(y_hat)
+        y_hat = jax.nn.sigmoid(y_hat)
 
         # explain
         z_exp = jnp.concatenate((z, pred), axis=-1)
