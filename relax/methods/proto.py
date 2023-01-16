@@ -219,17 +219,6 @@ class ProtoCF(BaseCFModule, BaseParametricCFModule):
     def _is_module_trained(self) -> bool: 
         return not (self._ae_params is None)
     
-    @deprecated(removed_in='0.1.0', deprecated_in='0.0.11')
-    def update_cat_info(self, data_module: TabularDataModule):
-        sampled_data, sampled_label = next(iter(data_module.train_dataloader()))
-        self.sampled_data, self.sampled_label = map(jnp.array, (sampled_data, sampled_label))
-
-        self.sampled_pos = self.sampled_data[(self.sampled_label == 1.).reshape(-1), :]
-        self.sampled_neg = self.sampled_data[(self.sampled_label == 0.).reshape(-1), :]
-        self.ae = AETrainingModule(self.configs.ae_configs)
-        self.ae_params, _ = train_model(self.ae, data_module, self.configs.ae_t_configs)
-        return super().update_cat_info(data_module)
-
     def generate_cf(
         self,
         x: jnp.ndarray, # `x` shape: (k,), where `k` is the number of features

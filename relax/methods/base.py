@@ -39,12 +39,6 @@ class BaseCFModule(ABC):
         """Bind `TabularDataModule` to `self._data_module`."""
         self._data_module = data_module
 
-    @deprecated(removed_in='0.1.0', deprecated_in='0.0.11',
-        details="Avoid using this method!!!")
-    def update_cat_info(self, data_module: TabularDataModule):
-        self.cat_arrays = deepcopy(data_module.cat_arrays)
-        self.cat_idx = data_module.cat_idx
-        self.imutable_idx_list = deepcopy(data_module.imutable_idx_list)
 
 # %% ../../nbs/05_methods.base.ipynb 9
 class BaseParametricCFModule(ABC):
