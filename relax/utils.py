@@ -8,9 +8,9 @@ from fastcore.basics import AttrDict
 from nbdev.showdoc import BasicMarkdownRenderer
 
 # %% auto 0
-__all__ = ['validate_configs', 'show_doc', 'cat_normalize', 'make_model', 'init_net_opt', 'grad_update', 'check_cat_info',
-           'load_json', 'add_to_class', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity',
-           'get_config']
+__all__ = ['validate_configs', 'show_doc', 'cat_normalize', 'make_model', 'make_hk_module', 'init_net_opt', 'grad_update',
+           'check_cat_info', 'load_json', 'add_to_class', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist',
+           'proximity', 'get_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -97,6 +97,19 @@ def make_model(
 
 
 # %% ../nbs/00_utils.ipynb 34
+def make_hk_module(
+    module: hk.Module, # haiku module 
+    *args, # haiku module arguments
+    **kargs, # haiku module arguments
+) -> hk.Transformed:
+
+    def model_fn(x, is_training: bool = True):
+        return module(*args, **kargs)(x, is_training)
+    
+    return hk.transform(model_fn)
+
+
+# %% ../nbs/00_utils.ipynb 35
 def init_net_opt(
     net: hk.Transformed,
     opt: optax.GradientTransformation,
@@ -109,7 +122,7 @@ def init_net_opt(
     return params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 35
+# %% ../nbs/00_utils.ipynb 36
 def grad_update(
     grads: Dict[str, jnp.ndarray],
     params: hk.Params,
@@ -121,7 +134,7 @@ def grad_update(
     return upt_params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 36
+# %% ../nbs/00_utils.ipynb 37
 def check_cat_info(method):
     def inner(cf_module, *args, **kwargs):
         warning_msg = f"""This CFExplanationModule might not be updated with categorical information.
@@ -134,13 +147,13 @@ You should try `{cf_module.name}.update_cat_info(dm)` before generating cfs.
     return inner
 
 
-# %% ../nbs/00_utils.ipynb 38
+# %% ../nbs/00_utils.ipynb 39
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 39
+# %% ../nbs/00_utils.ipynb 40
 # https://github.com/d2l-ai/d2l-en/blob/d9a3f6ac0e86468159d7b69345a1732bbe3ce1c7/d2l/torch.py#L100
 def add_to_class(cls):
     warnings.warn("deprecated", DeprecationWarning)
@@ -151,7 +164,7 @@ def add_to_class(cls):
     return wrapper
 
 
-# %% ../nbs/00_utils.ipynb 41
+# %% ../nbs/00_utils.ipynb 42
 def binary_cross_entropy(
     preds: jnp.DeviceArray, # The predicted values
     labels: jnp.DeviceArray # The ground-truth labels
@@ -166,12 +179,12 @@ def binary_cross_entropy(
 
     return loss
 
-# %% ../nbs/00_utils.ipynb 42
+# %% ../nbs/00_utils.ipynb 43
 def sigmoid(x):
     # https://stackoverflow.com/a/68293931
     return 0.5 * (jnp.tanh(x / 2) + 1)
 
-# %% ../nbs/00_utils.ipynb 44
+# %% ../nbs/00_utils.ipynb 45
 def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
     y_true, y_pred = map(jnp.round, (y_true, y_pred))
     return jnp.mean(jnp.equal(y_true, y_pred))
@@ -185,7 +198,7 @@ def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jnp.DeviceArray:
 def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jnp.DeviceArray:
     return dist(x, cf, ord=1)
 
-# %% ../nbs/00_utils.ipynb 47
+# %% ../nbs/00_utils.ipynb 48
 @dataclass
 class Config:
     rng_reserve_size: int
@@ -197,6 +210,6 @@ class Config:
 
 main_config = Config.default()
 
-# %% ../nbs/00_utils.ipynb 48
+# %% ../nbs/00_utils.ipynb 49
 def get_config() -> Config: 
     return main_config

@@ -5,7 +5,7 @@ from __future__ import annotations
 from .import_essentials import *
 from .data import TabularDataModule
 from .logger import TensorboardLogger
-from .utils import validate_configs, sigmoid, accuracy, make_model, init_net_opt, grad_update
+from .utils import validate_configs, sigmoid, accuracy, init_net_opt, grad_update, make_hk_module, show_doc as show_parser_doc
 from fastcore.basics import patch
 from functools import partial
 from abc import ABC, abstractmethod
@@ -77,16 +77,15 @@ class PredictiveModelConfigs(BaseParser):
 class PredictiveModel(hk.Module):
     def __init__(
         self,
-        m_config: Dict[
-            str, Any
-        ],  # Model configs which contain configs in `PredictiveModelConfigs`.
+        sizes: List[int], # Sequence of layer sizes.
+        dropout_rate: float = 0.3,  # Dropout rate.
         name: Optional[str] = None,  # Name of the module.
     ):
         """A basic predictive model for binary classification."""
         super().__init__(name=name)
-        self.configs = validate_configs(
-            m_config, PredictiveModelConfigs
-        )  # PredictiveModelConfigs(**m_config)
+        self.configs = PredictiveModelConfigs(
+            sizes=sizes, dropout_rate=dropout_rate
+        )
 
     def __call__(self, x: jnp.ndarray, is_training: bool = True) -> jnp.ndarray:
         x = MLP(sizes=self.configs.sizes, dropout_rate=self.configs.dropout_rate)(
@@ -98,7 +97,7 @@ class PredictiveModel(hk.Module):
         return x
 
 
-# %% ../nbs/03_training_module.ipynb 31
+# %% ../nbs/03_training_module.ipynb 28
 class BaseTrainingModule(ABC):
     hparams: Dict[str, Any]
     logger: TensorboardLogger | None
@@ -146,17 +145,22 @@ class BaseTrainingModule(ABC):
         pass
 
 
-# %% ../nbs/03_training_module.ipynb 33
+# %% ../nbs/03_training_module.ipynb 30
 class PredictiveTrainingModuleConfigs(BaseParser):
-    lr: float
+    lr: float = Field(description='Learning rate.')
+    sizes: List[int] = Field(description='Sequence of layer sizes.')
+    dropout_rate: float = Field(0.3, description='Dropout rate') 
 
-# %% ../nbs/03_training_module.ipynb 34
+# %% ../nbs/03_training_module.ipynb 31
 class PredictiveTrainingModule(BaseTrainingModule):
-    def __init__(self, m_configs: Dict[str, Any]):
+    def __init__(self, m_configs: Dict | PredictiveTrainingModuleConfigs):
         self.save_hyperparameters(m_configs)
-        self.net = make_model(m_configs, PredictiveModel)
         self.configs = validate_configs(m_configs, PredictiveTrainingModuleConfigs)
-        # self.configs = PredictiveTrainingModuleConfigs(**m_configs)
+        self.net = make_hk_module(
+            PredictiveModel, 
+            sizes=self.configs.sizes, 
+            dropout_rate=self.configs.dropout_rate
+        )
         self.opt = optax.adam(learning_rate=self.configs.lr)
 
     @partial(jax.jit, static_argnames=["self", "is_training"])
