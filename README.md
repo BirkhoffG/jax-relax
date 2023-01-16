@@ -6,8 +6,15 @@ ReLax
 ![Python](https://img.shields.io/pypi/pyversions/jax-relax.svg) ![CI
 status](https://github.com/BirkhoffG/ReLax/actions/workflows/test.yaml/badge.svg)
 ![Docs](https://github.com/BirkhoffG/ReLax/actions/workflows/deploy.yaml/badge.svg)
-![pypi](https://img.shields.io/pypi/v/jax-relax.png) ![GitHub
-License](https://img.shields.io/github/license/BirkhoffG/ReLax.png)
+![pypi](https://img.shields.io/pypi/v/jax-relax.svg) ![GitHub
+License](https://img.shields.io/github/license/BirkhoffG/ReLax.svg)
+
+[**Overview**](#overview) \| [**Installation**](#installation) \|
+[**Tutorials**](tutorials/getting_started.ipynb) \|
+[**Documentation**](https://birkhoffg.github.io/ReLax/) \| [**Citing
+ReLax**](#citing-relax)
+
+## Overview
 
 `ReLax` (**Re**course Explanation **L**ibrary in J**ax**) is a library
 built on top of `jax` to generate counterfactual and recourse
@@ -17,19 +24,16 @@ improvements in generating individual (or local) explanations.
 
 Some of the key features:
 
-- **Fast** recourse generation via `jax.jit`, `jax.vmap`/`jax.pmap`.
+- 🏃 **Fast** recourse generation via `jax.jit`, `jax.vmap`/`jax.pmap`.
 
-- **Accelerated** over *CPU*, *GPU*, and *TPU*.
+- 🚀 **Accelerated** over `cpu`, `gpu`, `tpu`.
 
-- **Extensive** recourse methods implemented for benchmarking.
+- 🪓 **Extensive** recourse methods implemented for benchmarking.
 
-- **Customizable** API to enable building entire modeling and
+- 👐 **Customizable** API to enable building entire modeling and
   interpreting pipeline.
 
 ## Installation
-
-`ReLax` is built on top of
-[Jax](https://jax.readthedocs.io/en/latest/index.html).
 
 The latest `ReLax` release can directly be installed from PyPI:
 
@@ -52,3 +56,17 @@ right version for GPU or TPU.
 ## An Example of using `ReLax`
 
 See [Getting Started with ReLax](tutorials/getting_started.ipynb).
+
+## Citing `ReLax`
+
+To cite this repository:
+
+``` latex
+@software{relax2023github,
+  author = {Hangzhi Guo and Xinchang Xiong and Amulya Yadav},
+  title = {{R}e{L}ax: Recourse Explanation Library in Jax},
+  url = {http://github.com/birkhoffg/ReLax},
+  version = {0.1.0},
+  year = {2023},
+}
+```
