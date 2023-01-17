@@ -57,7 +57,6 @@ def _diff(
             pd.concat([cat_diff, cf_inv.iloc[:, -1:]], axis=1)
     else:
         return cont_diff, cat_diff
-    # return pd.concat([cont_diff, cat_diff, cf_inv.iloc[:, -1:]], axis=1)
 
 
 # %% ../nbs/07_plotting.ipynb 7
@@ -105,28 +104,6 @@ def _stripplot(
     return ax
 
 # %% ../nbs/07_plotting.ipynb 9
-# def swarm_plot(
-#     exp: Explanation,
-#     sample_frac: float = 1.0,
-#     only_valid: bool = False
-# ):
-#     cont, cat = _diff(
-#         exp.X, exp.cfs, exp.pred_fn, exp.data_module, only_valid
-#     )
-#     return _swarmplot(cont.sample(frac=sample_frac))
-
-
-# def strip_plot(
-#     exp: Explanation,
-#     sample_frac: float = 1.0,
-#     only_valid: bool = False
-# ):
-#     cont, cat = _diff(
-#         exp.X, exp.cfs, exp.pred_fn, exp.data_module, only_valid
-#     )
-#     return _stripplot(cat.sample(frac=sample_frac))
-
-# %% ../nbs/07_plotting.ipynb 10
 def summary_plot(
     exp: Explanation, # Explanations to visualize
     sample_frac: float = 1.0, # Sample part of data for visualization
@@ -148,7 +125,7 @@ def summary_plot(
 
     return fig
 
-# %% ../nbs/07_plotting.ipynb 11
+# %% ../nbs/07_plotting.ipynb 10
 def _barplot(
     diff: pd.Series, ax
 ):
@@ -156,7 +133,7 @@ def _barplot(
         x=diff.values, y=diff.index, ax=ax
     ).set(title="Counterfactual Explanations for An Individual Sample")
 
-# %% ../nbs/07_plotting.ipynb 12
+# %% ../nbs/07_plotting.ipynb 11
 def individual_plot(
     exp: Explanation, # Explanations to visualize
     idx: int, # Index for visualization

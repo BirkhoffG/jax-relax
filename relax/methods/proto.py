@@ -49,7 +49,6 @@ class AETrainingModule(BaseTrainingModule):
         self.save_hyperparameters(m_configs)
         self.net = make_model(m_configs, AE)
         self.configs = validate_configs(m_configs, AEConfigs)
-        # self.configs = PredictiveTrainingModuleConfigs(**m_configs)
         self.opt = optax.adam(learning_rate=self.configs.lr)
 
     def init_net_opt(self, data_module, key):
@@ -139,8 +138,6 @@ def _proto_cf(
 
         y_prime_round = jnp.mean(jnp.round(y_prime))
 
-        # print(sampled_label.shape)
-        # print(y_prime.shape)
         return loss_fn_1(cf_y, y_prime) + loss_fn_2(x, cf) \
             + loss_fn_3(cf, sampled_data_pos) * y_prime_round + loss_fn_3(cf, sampled_data_neg) * (1 - y_prime_round)
 

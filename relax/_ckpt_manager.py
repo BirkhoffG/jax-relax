@@ -103,13 +103,3 @@ class CheckpointManager:
     def delete_net_opt(self, ckpt_name: str):
         ckpt_dir = self.log_dir / f"{ckpt_name}"
         shutil.rmtree(ckpt_dir)
-
-    # # deprecated
-    # def load_net_opt(self, ckpt_name: str):
-    #     ckpt_dir = self.log_dir / f"{ckpt_name}"
-    #     model_ckpt_dir = ckpt_dir / "model"
-    #     opt_ckpt_dir = ckpt_dir / "opt"
-    #     # load model and optimizer states
-    #     params = load_checkpoint(model_ckpt_dir)
-    #     opt_state = load_checkpoint(opt_ckpt_dir)
-    #     return params, opt_state
