@@ -16,6 +16,7 @@ format:
     number-sections: false
     number-depth: 2
     html-math-method: katex
+    highlight-style: flatly
 
 website:
   twitter-card: true
