@@ -17,10 +17,10 @@ class TrainingConfigs(BaseParser):
     """Configurator of `train_model`."""
     
     n_epochs: int = Field(
-        None, description="Number of epochs."
+        description="Number of epochs."
     )
     batch_size: int = Field(
-        None, description="Batch size."
+        description="Batch size."
     )
     monitor_metrics: Optional[str] = Field(
         None, description="Monitor metrics used to evaluate the training result after each epoch."
