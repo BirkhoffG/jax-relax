@@ -153,6 +153,9 @@ def generate_cf_explanations(
 # %% ../nbs/06_evaluate.ipynb 18
 class BaseEvalMetrics(ABC):
     """Base evaluation metrics class."""
+    def __str__(self) -> str:
+        raise NotImplementedError
+
     def __call__(self, cf_explanations: Explanation) -> Any:
         raise NotImplementedError
 
@@ -169,6 +172,9 @@ def _compute_acc(
 # %% ../nbs/06_evaluate.ipynb 20
 class PredictiveAccuracy(BaseEvalMetrics):
     """Compute the accuracy of the predict function."""
+    def __str__(self) -> str:
+        return "accuracy"
+
     def __call__(self, cf_explanations: Explanation) -> float:
         X, y = cf_explanations.data_module.test_dataset[:]
         return _compute_acc(X, y, cf_explanations.pred_fn)
@@ -187,6 +193,9 @@ def _compute_val(
 # %% ../nbs/06_evaluate.ipynb 22
 class Validity(BaseEvalMetrics):
     """Compute fraction of input instances on which CF explanation methods output valid CF examples."""
+    def __str__(self) -> str:
+        return "validity"
+    
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_val(
@@ -196,9 +205,12 @@ class Validity(BaseEvalMetrics):
 # %% ../nbs/06_evaluate.ipynb 23
 class Proximity(BaseEvalMetrics):
     """Compute L1 norm distance between input datasets and CF examples divided by the number of features."""
+    def __str__(self) -> str:
+        return "proximity"
+    
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
-        return proximity(X, cf_explanations.cfs)
+        return proximity(X, cf_explanations.cfs).item()
 
 # %% ../nbs/06_evaluate.ipynb 24
 def _compute_spar(
@@ -211,12 +223,15 @@ def _compute_spar(
     cont_sparsity = jnp.linalg.norm(
         jnp.abs(input[:, :cat_idx] - cfs[:, :cat_idx]), ord=0, axis=1
     ).mean()
-    return cont_sparsity + cat_sparsity
+    return (cont_sparsity + cat_sparsity).item()
 
 
 # %% ../nbs/06_evaluate.ipynb 25
 class Sparsity(BaseEvalMetrics):
     """Compute the number of feature changes between input datasets and CF examples."""
+    def __str__(self) -> str:
+        return "sparsity"
+    
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_spar(X, cf_explanations.cfs, cf_explanations.cat_idx)
@@ -239,6 +254,9 @@ class ManifoldDist(BaseEvalMetrics):
     def __init__(self, n_neighbors: int = 1, p: int = 2):
         self.n_neighbors = n_neighbors
         self.p = p
+    
+    def __str__(self) -> str:
+        return "manifold_dist"
     
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
@@ -325,6 +343,9 @@ def _get_metric(metric: str | callable, cf_exp: Explanation):
         res = metric(cf_exp)
     else:
         raise ValueError(f"{type(metric).__name__} is not supported as a metric.")
+    
+    if isinstance(res, jnp.ndarray) and res.shape == (1,):
+        res = res.item()
     return res
 
 # %% ../nbs/06_evaluate.ipynb 34
