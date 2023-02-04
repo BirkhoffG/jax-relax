@@ -6,6 +6,7 @@ from .import_essentials import *
 import nbdev
 from fastcore.basics import AttrDict
 from nbdev.showdoc import BasicMarkdownRenderer
+from inspect import isclass
 
 # %% auto 0
 __all__ = ['validate_configs', 'show_doc', 'cat_normalize', 'make_model', 'make_hk_module', 'init_net_opt', 'grad_update',
@@ -18,10 +19,17 @@ def validate_configs(
     config_cls: BaseParser,  # The desired configuration class.
 ) -> BaseParser:
     """return a valid configuration object."""
-    if not isinstance(configs, config_cls):
-        configs = config_cls(**configs)
-    return configs
 
+    assert isclass(config_cls), f"`config_cls` should be a class."
+    assert issubclass(config_cls, BaseParser), \
+        f"{config_cls} should be a subclass of `BaseParser`."
+    
+    if isinstance(configs, dict):
+        configs = config_cls(**configs)
+    if not isinstance(configs, config_cls):
+        raise TypeError(
+            f"configs should be either a `dict` or an instance of {config_cls.__name__}.")
+    return configs
 
 # %% ../nbs/00_utils.ipynb 14
 def _docment_parser(parser: BaseParser):
