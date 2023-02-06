@@ -10,11 +10,12 @@ from .methods.base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModu
 from .methods.counternet import CounterNet
 from copy import deepcopy
 from sklearn.neighbors import NearestNeighbors
+from fastcore.test import test_fail
 
 # %% auto 0
-__all__ = ['CFExplanationResults', 'METRICS', 'DEFAULT_METRICS', 'Explanation', 'generate_cf_explanations', 'BaseEvalMetrics',
-           'PredictiveAccuracy', 'Validity', 'Proximity', 'Sparsity', 'ManifoldDist', 'Runtime', 'compute_so_validity',
-           'compute_so_proximity', 'compute_so_sparsity', 'evaluate_cfs', 'benchmark_cfs']
+__all__ = ['CFExplanationResults', 'METRICS_CALLABLE', 'METRICS', 'DEFAULT_METRICS', 'Explanation', 'generate_cf_explanations',
+           'BaseEvalMetrics', 'PredictiveAccuracy', 'Validity', 'Proximity', 'Sparsity', 'ManifoldDist', 'Runtime',
+           'compute_so_validity', 'compute_so_proximity', 'compute_so_sparsity', 'evaluate_cfs', 'benchmark_cfs']
 
 # %% ../nbs/06_evaluate.ipynb 4
 @dataclass
@@ -153,8 +154,18 @@ def generate_cf_explanations(
 # %% ../nbs/06_evaluate.ipynb 18
 class BaseEvalMetrics(ABC):
     """Base evaluation metrics class."""
+
+    def __init__(self, name: str = None):
+        if name is None: name = type(self).__name__
+        self.name = name
+
     def __str__(self) -> str:
-        raise NotImplementedError
+        has_name = hasattr(self, 'name')
+        if not has_name:
+            raise ValidationError(
+                "EvalMetrics must have a name. Add the following as the first line in your "
+                f"__init__ method:\n\nsuper({self.__name__}, self).__init__()")
+        return self.name
 
     def __call__(self, cf_explanations: Explanation) -> Any:
         raise NotImplementedError
@@ -172,14 +183,15 @@ def _compute_acc(
 # %% ../nbs/06_evaluate.ipynb 20
 class PredictiveAccuracy(BaseEvalMetrics):
     """Compute the accuracy of the predict function."""
-    def __str__(self) -> str:
-        return "accuracy"
+    
+    def __init__(self, name: str = "accuracy"):
+        super().__init__(name=name)
 
     def __call__(self, cf_explanations: Explanation) -> float:
         X, y = cf_explanations.data_module.test_dataset[:]
         return _compute_acc(X, y, cf_explanations.pred_fn)
 
-# %% ../nbs/06_evaluate.ipynb 21
+# %% ../nbs/06_evaluate.ipynb 22
 def _compute_val(
     input: jnp.DeviceArray, # input dim: [N, k]
     cfs: jnp.DeviceArray, # cfs dim: [N, k]
@@ -190,11 +202,12 @@ def _compute_val(
     cf_y = pred_fn(cfs).reshape(-1, 1).round()
     return accuracy(y_prime, cf_y).item()
 
-# %% ../nbs/06_evaluate.ipynb 22
+# %% ../nbs/06_evaluate.ipynb 23
 class Validity(BaseEvalMetrics):
     """Compute fraction of input instances on which CF explanation methods output valid CF examples."""
-    def __str__(self) -> str:
-        return "validity"
+    
+    def __init__(self, name: str = "validity"):
+        super().__init__(name=name)
     
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
@@ -202,17 +215,17 @@ class Validity(BaseEvalMetrics):
             X, cf_explanations.cfs, cf_explanations.pred_fn
         )
 
-# %% ../nbs/06_evaluate.ipynb 23
+# %% ../nbs/06_evaluate.ipynb 24
 class Proximity(BaseEvalMetrics):
     """Compute L1 norm distance between input datasets and CF examples divided by the number of features."""
-    def __str__(self) -> str:
-        return "proximity"
+    def __init__(self, name: str = "proximity"):
+        super().__init__(name=name)
     
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return proximity(X, cf_explanations.cfs).item()
 
-# %% ../nbs/06_evaluate.ipynb 24
+# %% ../nbs/06_evaluate.ipynb 25
 def _compute_spar(
     input: jnp.DeviceArray,
     cfs: jnp.DeviceArray,
@@ -226,17 +239,18 @@ def _compute_spar(
     return (cont_sparsity + cat_sparsity).item()
 
 
-# %% ../nbs/06_evaluate.ipynb 25
+# %% ../nbs/06_evaluate.ipynb 26
 class Sparsity(BaseEvalMetrics):
     """Compute the number of feature changes between input datasets and CF examples."""
-    def __str__(self) -> str:
-        return "sparsity"
+
+    def __init__(self, name: str = "sparsity"):
+        super().__init__(name=name)
     
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_spar(X, cf_explanations.cfs, cf_explanations.cat_idx)
 
-# %% ../nbs/06_evaluate.ipynb 26
+# %% ../nbs/06_evaluate.ipynb 27
 def _compute_manifold_dist(
     input: jnp.DeviceArray,
     cfs: jnp.DeviceArray,
@@ -248,29 +262,30 @@ def _compute_manifold_dist(
     nearest_dist, nearest_points = knn.kneighbors(cfs, 1, return_distance=True)
     return jnp.mean(nearest_dist).item()
 
-# %% ../nbs/06_evaluate.ipynb 27
+# %% ../nbs/06_evaluate.ipynb 28
 class ManifoldDist(BaseEvalMetrics):
     """Compute the L1 distance to the n-nearest neighbor for all CF examples."""
-    def __init__(self, n_neighbors: int = 1, p: int = 2):
+    def __init__(self, n_neighbors: int = 1, p: int = 2, name: str = "manifold_dist"):
+        super().__init__(name=name)
         self.n_neighbors = n_neighbors
         self.p = p
-    
-    def __str__(self) -> str:
-        return "manifold_dist"
-    
+        
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_manifold_dist(
             X, cf_explanations.cfs, self.n_neighbors, self.p
         )
 
-# %% ../nbs/06_evaluate.ipynb 28
+# %% ../nbs/06_evaluate.ipynb 29
 class Runtime(BaseEvalMetrics):
     """Get the running time to generate CF examples."""
+    def __init__(self, name: str = "runtime"):
+        super().__init__(name=name)
+    
     def __call__(self, cf_explanations: Explanation) -> float:
         return cf_explanations.total_time
 
-# %% ../nbs/06_evaluate.ipynb 30
+# %% ../nbs/06_evaluate.ipynb 31
 def _create_second_order_cfs(cf_results: CFExplanationResults, threshold: float = 2.0):
     X, y = cf_results.data_module.test_dataset[:]
     cfs = cf_results.cfs
@@ -317,29 +332,58 @@ def compute_so_sparsity(cf_results: CFExplanationResults, threshold: float = 2.0
     return compute_sparsity(cf_results_so)
 
 
-# %% ../nbs/06_evaluate.ipynb 32
-METRICS = dict(
-    acc=PredictiveAccuracy(),
-    accuracy=PredictiveAccuracy(),
-    validity=Validity(),
-    proximity=Proximity(),
-    runtime=Runtime(),
-    manifold_dist=ManifoldDist(),
-    # validity=compute_so_validity,
-    # so_proximity=compute_so_proximity,
-    # so_sparsity=compute_so_sparsity
-)
+# %% ../nbs/06_evaluate.ipynb 33
+def fake_explanations():
+    """Generate sudo explanations for testing."""
+    from relax.data import load_data
+
+    dm = load_data("adult")
+    X, y = dm.test_dataset[:]
+    cfs = X
+    dn = dm.data_name
+    pred_fn = lambda x: jax.random.bernoulli(jax.random.PRNGKey(0), 0.5, (x.shape[0], 1)).astype(float)
+    assert y.shape == pred_fn(X).shape
+    return Explanation(
+        cf_name='sudo', data_module=dm, cfs=cfs, pred_fn=pred_fn, total_time=0.0, dataset_name=dn
+    )
+
+
+# %% ../nbs/06_evaluate.ipynb 34
+# METRICS = dict(
+#     acc=PredictiveAccuracy(),
+#     accuracy=PredictiveAccuracy(),
+#     validity=Validity(),
+#     proximity=Proximity(),
+#     runtime=Runtime(),
+#     manifold_dist=ManifoldDist(),
+#     # validity=compute_so_validity,
+#     # so_proximity=compute_so_proximity,
+#     # so_sparsity=compute_so_sparsity
+# )
+
+METRICS_CALLABLE = [
+    PredictiveAccuracy('acc'),
+    PredictiveAccuracy('accuracy'),
+    Validity(),
+    Proximity(),
+    Runtime(),
+    ManifoldDist(),
+]
+
+METRICS = { m.name: m for m in METRICS_CALLABLE }
 
 DEFAULT_METRICS = ["acc", "validity", "proximity"]
 
-# %% ../nbs/06_evaluate.ipynb 33
-def _get_metric(metric: str | callable, cf_exp: Explanation):
+# %% ../nbs/06_evaluate.ipynb 36
+def _get_metric(metric: str | BaseEvalMetrics, cf_exp: Explanation):
     if isinstance(metric, str):
-        try:
-            res = METRICS[metric](cf_exp)
-        except KeyError:
+        if metric not in METRICS.keys():
             raise ValueError(f"'{metric}' is not supported. Must be one of {METRICS.keys()}")
+        res = METRICS[metric](cf_exp)
     elif callable(metric):
+        # f(cf_exp) not supported for now
+        if not isinstance(metric, BaseEvalMetrics):
+            raise ValueError(f"metric needs to be a subclass of `BaseEvalMetrics`.")
         res = metric(cf_exp)
     else:
         raise ValueError(f"{type(metric).__name__} is not supported as a metric.")
@@ -348,10 +392,10 @@ def _get_metric(metric: str | callable, cf_exp: Explanation):
         res = res.item()
     return res
 
-# %% ../nbs/06_evaluate.ipynb 34
+# %% ../nbs/06_evaluate.ipynb 38
 def evaluate_cfs(
     cf_exp: Explanation, # CF Explanations
-    metrics: Iterable[Union[str, Callable]] = None, # A list of Metrics. Can be `str` or a subclass of `BaseEvalMetrics`
+    metrics: Iterable[Union[str, BaseEvalMetrics]] = None, # A list of Metrics. Can be `str` or a subclass of `BaseEvalMetrics`
     return_dict: bool = True, # return a dictionary or not (default: True)
     return_df: bool = False # return a pandas Dataframe or not (default: False)
 ):
@@ -363,7 +407,8 @@ def evaluate_cfs(
         metrics = DEFAULT_METRICS
 
     for metric in metrics:
-        result_dict[(data_name, cf_name)][metric] = _get_metric(metric, cf_exp)
+        metric_name = str(metric)
+        result_dict[(data_name, cf_name)][metric_name] = _get_metric(metric, cf_exp)
     result_df = pd.DataFrame.from_dict(result_dict, orient="index")
     
     if return_dict and return_df:
@@ -371,8 +416,7 @@ def evaluate_cfs(
     elif return_dict or return_df:
         return result_df if return_df else result_dict
 
-
-# %% ../nbs/06_evaluate.ipynb 35
+# %% ../nbs/06_evaluate.ipynb 40
 def benchmark_cfs(
     cf_results_list: Iterable[CFExplanationResults],
     metrics: Optional[Iterable[str]] = None,
