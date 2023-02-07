@@ -4,8 +4,8 @@ website:
       - index.ipynb
       - section: Tutorials
         contents:
-        - tutorials/getting_started.ipynb
         - tutorials/install.ipynb
+        - tutorials/getting_started.ipynb
         - tutorials/contribution.ipynb        
       - section: API
         contents:
