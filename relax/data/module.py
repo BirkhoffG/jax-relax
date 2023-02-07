@@ -12,7 +12,7 @@ from .loader import Dataset, ArrayDataset, DataLoader, DataloaderBackends
 # %% auto 0
 __all__ = ['BaseDataModule', 'find_imutable_idx_list', 'TabularDataModuleConfigs', 'TabularDataModule', 'sample', 'load_data']
 
-# %% ../../nbs/01_data.module.ipynb 5
+# %% ../../nbs/01_data.module.ipynb 6
 class BaseDataModule(ABC):
     """DataModule Interface"""
 
@@ -82,7 +82,7 @@ class BaseDataModule(ABC):
         raise NotImplementedError
 
 
-# %% ../../nbs/01_data.module.ipynb 7
+# %% ../../nbs/01_data.module.ipynb 8
 def find_imutable_idx_list(
     imutable_col_names: List[str],
     discrete_col_names: List[str],
@@ -103,93 +103,10 @@ def find_imutable_idx_list(
         cat_idx = cat_end_idx
     return imutable_idx_list
 
-# %% ../../nbs/01_data.module.ipynb 8
-def _check_cols(data: pd.DataFrame, configs: TabularDataModuleConfigs) -> pd.DataFrame:
-    data = data.astype({
-        col: float for col in configs.continous_cols
-    })
-    
-    cols = configs.continous_cols + configs.discret_cols
-    # check target columns
-    target_col = data.columns[-1]
-    assert not target_col in cols, \
-        f"continous_cols or discret_cols contains target_col={target_col}."
-    
-    # check imutable cols
-    for col in configs.imutable_cols:
-        assert col in cols, \
-            f"imutable_cols=[{col}] is not specified in `continous_cols` or `discret_cols`."
-    data = data[cols + [target_col]]
-    return data
-
-
 # %% ../../nbs/01_data.module.ipynb 9
-def _process_data(
-    df: pd.DataFrame | None, configs: TabularDataModuleConfigs
-) -> pd.DataFrame:
-    if df is None:
-        df = pd.read_csv(configs.data_dir)
-    elif isinstance(df, pd.DataFrame):
-        df = df
-    else:
-        raise ValueError(f"{type(df).__name__} is not supported as an input type for `TabularDataModule`.")
-
-    df = _check_cols(df, configs)
-    return df
-
-# %% ../../nbs/01_data.module.ipynb 10
-def _transform_df(
-    transformer: TransformerMixin,
-    data: pd.DataFrame,
-    cols: List[str] | None,
-):
-    return (
-        transformer.transform(data[cols])
-            if cols else np.array([[] for _ in range(len(data))])
-    )
-
-# %% ../../nbs/01_data.module.ipynb 12
-def _inverse_transform_np(
-    transformer: TransformerMixin,
-    x: jnp.DeviceArray,
-    cols: List[str] | None
-):
-    assert len(cols) <= x.shape[-1], \
-        f"x.shape={x.shape} probably will not match len(cols)={len(cols)}"
-    if cols:
-        data = transformer.inverse_transform(x)
-        return pd.DataFrame(data=data, columns=cols)
-    else:
-        return None
-
-
-# %% ../../nbs/01_data.module.ipynb 15
-def _init_scalar_encoder(
-    data: pd.DataFrame,
-    configs: TabularDataModuleConfigs
-):  
-    # fit scalar
-    if configs.normalizer:
-        scalar = configs.normalizer
-    else:
-        scalar = MinMaxScaler()
-        if configs.continous_cols:
-            scalar.fit(data[configs.continous_cols])
-    
-    # fit encoder
-    if configs.encoder:
-        encoder = configs.encoder
-    else:
-        encoder = OneHotEncoder(sparse=False)
-        if configs.discret_cols:
-            encoder.fit(data[configs.discret_cols])
-    return dict(scalar=scalar, encoder=encoder)
-
-
-# %% ../../nbs/01_data.module.ipynb 16
 def _supported_backends(): 
     back = DataloaderBackends()
-    return back.supported
+    return back.supported()
 
 class TabularDataModuleConfigs(BaseParser):
     """Configurator of `TabularDataModule`."""
@@ -220,7 +137,91 @@ class TabularDataModuleConfigs(BaseParser):
     )
 
 
-# %% ../../nbs/01_data.module.ipynb 20
+# %% ../../nbs/01_data.module.ipynb 13
+def _check_cols(data: pd.DataFrame, configs: TabularDataModuleConfigs) -> pd.DataFrame:
+    data = data.astype({
+        col: float for col in configs.continous_cols
+    })
+    
+    cols = configs.continous_cols + configs.discret_cols
+    # check target columns
+    target_col = data.columns[-1]
+    assert not target_col in cols, \
+        f"continous_cols or discret_cols contains target_col={target_col}."
+    
+    # check imutable cols
+    for col in configs.imutable_cols:
+        assert col in cols, \
+            f"imutable_cols=[{col}] is not specified in `continous_cols` or `discret_cols`."
+    data = data[cols + [target_col]]
+    return data
+
+
+# %% ../../nbs/01_data.module.ipynb 14
+def _process_data(
+    df: pd.DataFrame | None, configs: TabularDataModuleConfigs
+) -> pd.DataFrame:
+    if df is None:
+        df = pd.read_csv(configs.data_dir)
+    elif isinstance(df, pd.DataFrame):
+        df = df
+    else:
+        raise ValueError(
+            f"{type(df).__name__} is not supported as an input type for `TabularDataModule`.")
+
+    df = _check_cols(df, configs)
+    return df
+
+# %% ../../nbs/01_data.module.ipynb 16
+def _transform_df(
+    transformer: TransformerMixin,
+    data: pd.DataFrame,
+    cols: List[str] | None,
+):
+    return (
+        transformer.transform(data[cols])
+            if cols else np.array([[] for _ in range(len(data))])
+    )
+
+# %% ../../nbs/01_data.module.ipynb 18
+def _inverse_transform_np(
+    transformer: TransformerMixin,
+    x: jnp.DeviceArray,
+    cols: List[str] | None
+):
+    assert len(cols) <= x.shape[-1], \
+        f"x.shape={x.shape} probably will not match len(cols)={len(cols)}"
+    if cols:
+        data = transformer.inverse_transform(x)
+        return pd.DataFrame(data=data, columns=cols)
+    else:
+        return None
+
+
+# %% ../../nbs/01_data.module.ipynb 21
+def _init_scalar_encoder(
+    data: pd.DataFrame,
+    configs: TabularDataModuleConfigs
+):  
+    # fit scalar
+    if configs.normalizer:
+        scalar = configs.normalizer
+    else:
+        scalar = MinMaxScaler()
+        if configs.continous_cols:
+            scalar.fit(data[configs.continous_cols])
+    
+    # fit encoder
+    if configs.encoder:
+        encoder = configs.encoder
+    else:
+        encoder = OneHotEncoder(sparse=False)
+        if configs.discret_cols:
+            encoder.fit(data[configs.discret_cols])
+    return dict(scalar=scalar, encoder=encoder)
+
+
+# %% ../../nbs/01_data.module.ipynb 22
 class TabularDataModule(BaseDataModule):
     """DataModule for tabular data"""
     cont_scalar = None # scalar for normalizing continuous features
@@ -248,11 +249,14 @@ class TabularDataModule(BaseDataModule):
         self.cat_encoder = scalar_encoder_dict['encoder']
         X, y = self.transform(self.data)
 
+        self._cat_arrays = self.cat_encoder.categories_ \
+            if self._configs.discret_cols else []
+
         self._imutable_idx_list = find_imutable_idx_list(
             imutable_col_names=self._configs.imutable_cols,
             discrete_col_names=self._configs.discret_cols,
             continuous_col_names=self._configs.continous_cols,
-            cat_arrays=self.cat_encoder.categories_,
+            cat_arrays=self._cat_arrays,
         )
         
         # prepare train & test
@@ -357,10 +361,8 @@ class TabularDataModule(BaseDataModule):
         hard: bool = False # Apply hard constraints or not
     ) -> jnp.DeviceArray:
         """Apply categorical normalization and immutability constraints"""
-        cat_arrays = self.cat_encoder.categories_ \
-            if self._configs.discret_cols else []
         cf = cat_normalize(
-            cf, cat_arrays=cat_arrays, 
+            cf, cat_arrays=self._cat_arrays, 
             cat_idx=len(self._configs.continous_cols),
             hard=hard
         )
@@ -376,10 +378,9 @@ class TabularDataModule(BaseDataModule):
     ) -> float: # Return regularization loss
         """Apply categorical constraints by adding regularization terms"""
         reg_loss = 0.
-        cat_arrays = self.cat_encoder.categories_
         cat_idx = len(self._configs.continous_cols)
 
-        for col in cat_arrays:
+        for col in self._cat_arrays:
             cat_idx_end = cat_idx + len(col)
             reg_loss += jnp.power(
                 (jnp.sum(cf[cat_idx:cat_idx_end]) - 1.0), 2
@@ -387,13 +388,13 @@ class TabularDataModule(BaseDataModule):
         return reg_loss
 
 
-# %% ../../nbs/01_data.module.ipynb 41
+# %% ../../nbs/01_data.module.ipynb 43
 def sample(datamodule: BaseDataModule, frac: float = 1.0): 
     X, y = datamodule.train_dataset[:]
     size = int(len(X) * frac)
     return X[:size], y[:size]
 
-# %% ../../nbs/01_data.module.ipynb 46
+# %% ../../nbs/01_data.module.ipynb 47
 DEFAULT_DATA_CONFIGS = {
     'adult': {
         'data' :'assets/data/s_adult.csv',
@@ -409,13 +410,13 @@ DEFAULT_DATA_CONFIGS = {
     }
 }
 
-# %% ../../nbs/01_data.module.ipynb 47
+# %% ../../nbs/01_data.module.ipynb 48
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA_CONFIGS.keys():
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
             f'but got data_name={data_name}.')
 
-# %% ../../nbs/01_data.module.ipynb 48
+# %% ../../nbs/01_data.module.ipynb 49
 def load_data(
     data_name: str, # The name of data
     return_config: bool = False, # Return `data_config `or not
