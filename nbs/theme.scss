@@ -12,7 +12,13 @@ $code-block-bg: #f5f5f5;
 
 /*-- scss:rules --*/
 a{
-    &:hover{
-      color: $hover-color;
-    }  
+    &:link {
+      color: $primary;
+      text-decoration: none;
+    }
+    :hover{
+      // color: $hover-color;
+      text-decoration: underline;
+    }
+    
  }

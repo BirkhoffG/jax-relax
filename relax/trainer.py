@@ -46,7 +46,7 @@ class TrainingConfigs(BaseParser):
         return hk.PRNGSequence(self.seed)
 
 
-# %% ../nbs/04_learning.ipynb 6
+# %% ../nbs/04_learning.ipynb 5
 def train_model_with_states(
     training_module: BaseTrainingModule,
     params: hk.Params,
@@ -115,7 +115,7 @@ def train_model_with_states(
     return params, opt_state
 
 
-# %% ../nbs/04_learning.ipynb 7
+# %% ../nbs/04_learning.ipynb 6
 def train_model(
     training_module: BaseTrainingModule, # Training module
     data_module: TabularDataModule, # Data module

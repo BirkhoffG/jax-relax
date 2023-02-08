@@ -58,7 +58,7 @@ class CounterNetModel(hk.Module):
         return y_hat, cf
 
 
-# %% ../../nbs/05d_methods.counternet.ipynb 10
+# %% ../../nbs/05d_methods.counternet.ipynb 8
 def partition_trainable_params(params: hk.Params, trainable_name: str):
     trainable_params, non_trainable_params = hk.data_structures.partition(
         lambda m, n, p: trainable_name in m, params
@@ -66,12 +66,12 @@ def partition_trainable_params(params: hk.Params, trainable_name: str):
     return trainable_params, non_trainable_params
 
 
-# %% ../../nbs/05d_methods.counternet.ipynb 11
+# %% ../../nbs/05d_methods.counternet.ipynb 9
 def project_immutable_features(x, cf: jnp.DeviceArray, imutable_idx_list: List[int]):
     cf = cf.at[:, imutable_idx_list].set(x[:, imutable_idx_list])
     return cf
 
-# %% ../../nbs/05d_methods.counternet.ipynb 12
+# %% ../../nbs/05d_methods.counternet.ipynb 10
 class CounterNetTrainingModuleConfigs(BaseParser):
     lr: float = 0.003
     lambda_1: float = 1.0
@@ -79,7 +79,7 @@ class CounterNetTrainingModuleConfigs(BaseParser):
     lambda_3: float = 0.1
 
 
-# %% ../../nbs/05d_methods.counternet.ipynb 13
+# %% ../../nbs/05d_methods.counternet.ipynb 11
 class CounterNetTrainingModule(BaseTrainingModule):
     _data_module: TabularDataModule
 
@@ -246,7 +246,7 @@ class CounterNetTrainingModule(BaseTrainingModule):
         self.log_dict(logs)
         return logs
 
-# %% ../../nbs/05d_methods.counternet.ipynb 18
+# %% ../../nbs/05d_methods.counternet.ipynb 16
 class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs):
     """Configurator of `CounterNet`."""
 
@@ -277,7 +277,7 @@ class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs)
     )
 
 
-# %% ../../nbs/05d_methods.counternet.ipynb 20
+# %% ../../nbs/05d_methods.counternet.ipynb 17
 class CounterNet(BaseCFModule, BaseParametricCFModule, BasePredFnCFModule):
     """API for CounterNet Explanation Module."""
     params: hk.Params = None

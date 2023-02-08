@@ -10,6 +10,7 @@ website:
       - section: API
         contents:
         - 00_utils.ipynb
+        - 00_docs.ipynb
         - section: Data
           contents:
           - 01_data.loader.ipynb

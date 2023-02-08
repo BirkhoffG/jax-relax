@@ -51,3 +51,38 @@
     text-align: center;
   }
 
+.callout-captioned#docs {
+    font-size: 1.1rem;
+    /* font-weight: 500; */
+}
+
+.callout-body#docs {
+    font-size: 1.0rem;
+    font-weight: 500;
+}
+
+.callout-body > li.menu-item:not(:last-child) { 
+  display: flex;
+  margin-bottom: 5px;  
+  /* margin-bottom: em;   */
+}
+
+.callout-body > ul {
+  display: block;
+  list-style-type: disc;
+  margin-block-start: 1.2rem;
+  margin-block-end: 1.2rem;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  padding-inline-start: 40px;
+}
+
+div.doc-sig {
+  /* background-color: aqua; */
+  font-family: var(--bs-font-monospace);
+  border-left: .25rem solid #e9ecef;
+  padding: .625rem 1.0rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: 400;
+}

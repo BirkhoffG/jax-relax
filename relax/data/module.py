@@ -137,7 +137,7 @@ class TabularDataModuleConfigs(BaseParser):
     )
 
 
-# %% ../../nbs/01_data.module.ipynb 13
+# %% ../../nbs/01_data.module.ipynb 12
 def _check_cols(data: pd.DataFrame, configs: TabularDataModuleConfigs) -> pd.DataFrame:
     data = data.astype({
         col: float for col in configs.continous_cols
@@ -157,7 +157,7 @@ def _check_cols(data: pd.DataFrame, configs: TabularDataModuleConfigs) -> pd.Dat
     return data
 
 
-# %% ../../nbs/01_data.module.ipynb 14
+# %% ../../nbs/01_data.module.ipynb 13
 def _process_data(
     df: pd.DataFrame | None, configs: TabularDataModuleConfigs
 ) -> pd.DataFrame:
@@ -172,7 +172,7 @@ def _process_data(
     df = _check_cols(df, configs)
     return df
 
-# %% ../../nbs/01_data.module.ipynb 16
+# %% ../../nbs/01_data.module.ipynb 15
 def _transform_df(
     transformer: TransformerMixin,
     data: pd.DataFrame,
@@ -183,7 +183,7 @@ def _transform_df(
             if cols else np.array([[] for _ in range(len(data))])
     )
 
-# %% ../../nbs/01_data.module.ipynb 18
+# %% ../../nbs/01_data.module.ipynb 17
 def _inverse_transform_np(
     transformer: TransformerMixin,
     x: jnp.DeviceArray,
@@ -198,7 +198,7 @@ def _inverse_transform_np(
         return None
 
 
-# %% ../../nbs/01_data.module.ipynb 21
+# %% ../../nbs/01_data.module.ipynb 20
 def _init_scalar_encoder(
     data: pd.DataFrame,
     configs: TabularDataModuleConfigs
@@ -221,7 +221,7 @@ def _init_scalar_encoder(
     return dict(scalar=scalar, encoder=encoder)
 
 
-# %% ../../nbs/01_data.module.ipynb 22
+# %% ../../nbs/01_data.module.ipynb 21
 class TabularDataModule(BaseDataModule):
     """DataModule for tabular data"""
     cont_scalar = None # scalar for normalizing continuous features
@@ -388,13 +388,13 @@ class TabularDataModule(BaseDataModule):
         return reg_loss
 
 
-# %% ../../nbs/01_data.module.ipynb 43
+# %% ../../nbs/01_data.module.ipynb 42
 def sample(datamodule: BaseDataModule, frac: float = 1.0): 
     X, y = datamodule.train_dataset[:]
     size = int(len(X) * frac)
     return X[:size], y[:size]
 
-# %% ../../nbs/01_data.module.ipynb 47
+# %% ../../nbs/01_data.module.ipynb 46
 DEFAULT_DATA_CONFIGS = {
     'adult': {
         'data' :'assets/data/s_adult.csv',
@@ -410,13 +410,13 @@ DEFAULT_DATA_CONFIGS = {
     }
 }
 
-# %% ../../nbs/01_data.module.ipynb 48
+# %% ../../nbs/01_data.module.ipynb 47
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA_CONFIGS.keys():
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
             f'but got data_name={data_name}.')
 
-# %% ../../nbs/01_data.module.ipynb 49
+# %% ../../nbs/01_data.module.ipynb 48
 def load_data(
     data_name: str, # The name of data
     return_config: bool = False, # Return `data_config `or not

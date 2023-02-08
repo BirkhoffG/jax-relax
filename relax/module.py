@@ -25,13 +25,14 @@ class BaseNetwork(ABC):
 
 # %% ../nbs/03_training_module.ipynb 6
 class DenseBlock(hk.Module):
+    """A `DenseBlock` consists of a dense layer, followed by Leaky Relu and a dropout layer."""
+    
     def __init__(
         self,
         output_size: int,  # Output dimensionality.
         dropout_rate: float = 0.3,  # Dropout rate.
         name: str | None = None,  # Name of the Module
     ):
-        """A `DenseBlock` consists of a dense layer, followed by Leaky Relu and a dropout layer."""
         super().__init__(name=name)
         self.output_size = output_size
         self.dropout_rate = dropout_rate
@@ -46,15 +47,16 @@ class DenseBlock(hk.Module):
         return x
 
 
-# %% ../nbs/03_training_module.ipynb 8
+# %% ../nbs/03_training_module.ipynb 7
 class MLP(hk.Module):
+    """A `MLP` consists of a list of `DenseBlock` layers."""
+    
     def __init__(
         self,
         sizes: Iterable[int],  # Sequence of layer sizes.
         dropout_rate: float = 0.3,  # Dropout rate.
         name: str | None = None,  # Name of the Module
     ):
-        """A `MLP` consists of a list of `DenseBlock` layers."""
         super().__init__(name=name)
         self.sizes = sizes
         self.dropout_rate = dropout_rate
@@ -65,7 +67,7 @@ class MLP(hk.Module):
         return x
 
 
-# %% ../nbs/03_training_module.ipynb 11
+# %% ../nbs/03_training_module.ipynb 9
 class PredictiveModelConfigs(BaseParser):
     """Configurator of `PredictiveModel`."""
 
@@ -73,8 +75,10 @@ class PredictiveModelConfigs(BaseParser):
     dropout_rate: float = 0.3  # Dropout rate.
 
 
-# %% ../nbs/03_training_module.ipynb 12
+# %% ../nbs/03_training_module.ipynb 10
 class PredictiveModel(hk.Module):
+    """A basic predictive model for binary classification."""
+    
     def __init__(
         self,
         sizes: List[int], # Sequence of layer sizes.
@@ -97,7 +101,7 @@ class PredictiveModel(hk.Module):
         return x
 
 
-# %% ../nbs/03_training_module.ipynb 28
+# %% ../nbs/03_training_module.ipynb 25
 class BaseTrainingModule(ABC):
     hparams: Dict[str, Any]
     logger: TensorboardLogger | None
@@ -145,14 +149,18 @@ class BaseTrainingModule(ABC):
         pass
 
 
-# %% ../nbs/03_training_module.ipynb 30
+# %% ../nbs/03_training_module.ipynb 27
 class PredictiveTrainingModuleConfigs(BaseParser):
+    """Configurator of `PredictiveTrainingModule`."""
+    
     lr: float = Field(description='Learning rate.')
     sizes: List[int] = Field(description='Sequence of layer sizes.')
     dropout_rate: float = Field(0.3, description='Dropout rate') 
 
-# %% ../nbs/03_training_module.ipynb 31
+# %% ../nbs/03_training_module.ipynb 28
 class PredictiveTrainingModule(BaseTrainingModule):
+    """A training module for predictive models."""
+    
     def __init__(self, m_configs: Dict | PredictiveTrainingModuleConfigs):
         self.save_hyperparameters(m_configs)
         self.configs = validate_configs(m_configs, PredictiveTrainingModuleConfigs)
