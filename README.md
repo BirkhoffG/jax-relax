@@ -10,7 +10,7 @@ status](https://github.com/BirkhoffG/ReLax/actions/workflows/test.yaml/badge.svg
 License](https://img.shields.io/github/license/BirkhoffG/ReLax.svg)
 
 [**Overview**](#overview) \| [**Installation**](#installation) \|
-[**Tutorials**](tutorials/getting_started.ipynb) \|
+[**Tutorials**](https://birkhoffg.github.io/ReLax/tutorials/getting_started.html) \|
 [**Documentation**](https://birkhoffg.github.io/ReLax/) \| [**Citing
 ReLax**](#citing-relax)
 
@@ -55,7 +55,7 @@ right version for GPU or TPU.
 
 ## An Example of using `ReLax`
 
-See [Getting Started with ReLax](tutorials/getting_started.ipynb).
+See [Getting Started with ReLax](https://birkhoffg.github.io/ReLax/tutorials/getting_started.html).
 
 ## Citing `ReLax`
 
