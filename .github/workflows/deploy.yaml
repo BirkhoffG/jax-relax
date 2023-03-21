@@ -8,6 +8,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: fastai/workflows/quarto-ghp@master
-        with: 
-          version: ["3.7"]
-          pre: 1
+        with: {pre: 1}
