@@ -6,11 +6,13 @@ from ..import_essentials import *
 from ..utils import load_json, validate_configs, cat_normalize
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
 from sklearn.base import TransformerMixin
+from sklearn.utils.validation import check_is_fitted, NotFittedError
 from urllib.request import urlretrieve
 from .loader import Dataset, ArrayDataset, DataLoader, DataloaderBackends
 
 # %% auto 0
-__all__ = ['BaseDataModule', 'find_imutable_idx_list', 'TabularDataModuleConfigs', 'TabularDataModule', 'sample', 'load_data']
+__all__ = ['BaseDataModule', 'find_imutable_idx_list', 'TransformerMixinType', 'TabularDataModuleConfigs', 'TabularDataModule',
+           'sample', 'load_data']
 
 # %% ../../nbs/01_data.module.ipynb 6
 class BaseDataModule(ABC):
@@ -104,6 +106,19 @@ def find_imutable_idx_list(
     return imutable_idx_list
 
 # %% ../../nbs/01_data.module.ipynb 9
+class TransformerMixinType(TransformerMixin):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, TransformerMixin):
+            raise TypeError("`sklearn.base.TransformerMixin` required")
+        return v
+
+
+# %% ../../nbs/01_data.module.ipynb 10
 def _supported_backends(): 
     back = DataloaderBackends()
     return back.supported()
@@ -122,11 +137,15 @@ class TabularDataModuleConfigs(BaseParser):
     imutable_cols: List[str] = Field(
         [], description="Immutable features/columns in the data."
     )
-    normalizer: Optional[Any] = Field(
-        None, description="Fitted scalar for continuous features."
+    normalizer: Optional[TransformerMixinType] = Field(
+        MinMaxScaler(), description="Sklearn scalar for continuous features. Can be unfitted, fitted, or None."
+        "If not fitted, the `TabularDataModule` will fit using the training data. If fitted, no fitting will be applied. "
+        "If `None`, no transformation will be applied. Default to `MinMaxScaler`."
     )
-    encoder: Optional[Any] = Field(
-        None, description="Fitted encoder for categorical features."
+    encoder: Optional[TransformerMixinType] = Field(
+        OneHotEncoder(sparse=False), description="Fitted encoder for categorical features. Can be unfitted, fitted, or None."
+        "If not fitted, the `TabularDataModule` will fit using the training data. If fitted, no fitting will be applied. "
+        "If `None`, no transformation will be applied. Default to `OneHotEncoder`."
     )
     sample_frac: Optional[float] = Field(
         None, description="Sample fraction of the data. Default to use the entire data.", 
@@ -136,8 +155,7 @@ class TabularDataModuleConfigs(BaseParser):
         "jax", description=f"`Dataloader` backend. Currently supports: {_supported_backends()}"
     )
 
-
-# %% ../../nbs/01_data.module.ipynb 12
+# %% ../../nbs/01_data.module.ipynb 13
 def _check_cols(data: pd.DataFrame, configs: TabularDataModuleConfigs) -> pd.DataFrame:
     data = data.astype({
         col: float for col in configs.continous_cols
@@ -157,7 +175,7 @@ def _check_cols(data: pd.DataFrame, configs: TabularDataModuleConfigs) -> pd.Dat
     return data
 
 
-# %% ../../nbs/01_data.module.ipynb 13
+# %% ../../nbs/01_data.module.ipynb 14
 def _process_data(
     df: pd.DataFrame | None, configs: TabularDataModuleConfigs
 ) -> pd.DataFrame:
@@ -172,60 +190,74 @@ def _process_data(
     df = _check_cols(df, configs)
     return df
 
-# %% ../../nbs/01_data.module.ipynb 15
+# %% ../../nbs/01_data.module.ipynb 16
 def _transform_df(
-    transformer: TransformerMixin,
+    transformer: TransformerMixin | None,
     data: pd.DataFrame,
     cols: List[str] | None,
 ):
-    return (
-        transformer.transform(data[cols])
-            if cols else np.array([[] for _ in range(len(data))])
-    )
+    if transformer is None:
+        return data[cols].to_numpy() if cols else np.array([[] for _ in range(len(data))])
+    else:
+        return (
+            transformer.transform(data[cols])
+                if cols else np.array([[] for _ in range(len(data))])
+        )
 
-# %% ../../nbs/01_data.module.ipynb 17
+# %% ../../nbs/01_data.module.ipynb 18
 def _inverse_transform_np(
-    transformer: TransformerMixin,
-    x: jnp.DeviceArray,
+    transformer: TransformerMixin | None,
+    x: np.ndarray,
     cols: List[str] | None
 ):
     assert len(cols) <= x.shape[-1], \
         f"x.shape={x.shape} probably will not match len(cols)={len(cols)}"
+    
     if cols:
-        data = transformer.inverse_transform(x)
-        return pd.DataFrame(data=data, columns=cols)
+        data = transformer.inverse_transform(x) if transformer else x
+        df = pd.DataFrame(data=data, columns=cols)
     else:
-        return None
+        df = None
+    return df
 
 
 # %% ../../nbs/01_data.module.ipynb 20
 def _init_scalar_encoder(
     data: pd.DataFrame,
     configs: TabularDataModuleConfigs
-):  
+) -> Dict[str, TransformerMixin | None]: 
+    # The normlizer and encoder will be either None, fitted or not fitted.
+    # If the user has specified the normlizer and encoder, then we will use it.
+    # Otherwise, we will fit the normlizer and encoder.
     # fit scalar
-    if configs.normalizer:
+    if configs.normalizer is not None:
         scalar = configs.normalizer
+        try:
+            check_is_fitted(scalar)
+        except NotFittedError:
+            if configs.continous_cols:  scalar.fit(data[configs.continous_cols])
+            else:                       scalar = None
     else:
-        scalar = MinMaxScaler()
-        if configs.continous_cols:
-            scalar.fit(data[configs.continous_cols])
+        scalar = None
     
-    # fit encoder
-    if configs.encoder:
+    if configs.encoder is not None:
         encoder = configs.encoder
+        try:
+            check_is_fitted(encoder)
+        except NotFittedError:
+            if configs.discret_cols:    encoder.fit(data[configs.discret_cols])
+            else:                       encoder = None
     else:
-        encoder = OneHotEncoder(sparse=False)
-        if configs.discret_cols:
-            encoder.fit(data[configs.discret_cols])
+        encoder = None
     return dict(scalar=scalar, encoder=encoder)
 
 
-# %% ../../nbs/01_data.module.ipynb 21
+# %% ../../nbs/01_data.module.ipynb 22
 class TabularDataModule(BaseDataModule):
     """DataModule for tabular data"""
     cont_scalar = None # scalar for normalizing continuous features
     cat_encoder = None # encoder for encoding categorical features
+    __initialized = False
 
     def __init__(
         self, 
@@ -271,6 +303,19 @@ class TabularDataModule(BaseDataModule):
         self._train_dataset = ArrayDataset(train_X, train_y)
         self._val_dataset = ArrayDataset(test_X, test_y)
         self._test_dataset = self.val_dataset
+
+        self.__initialized = True
+
+    def __setattr__(self, attr: str, val: Any) -> None:
+        if self.__initialized and attr in (
+            '_data', 'cat_idx', '_imutable_idx_list', '_cat_arrays',
+            '_train_dataset', '_val_dataset', '_test_dataset',
+            'cont_scalar', 'cat_encoder'
+        ):
+            raise ValueError(f'{attr} attribute should not be set after '
+                             f'{self.__class__.__name__} is initialized')
+
+        super().__setattr__(attr, val)
 
     @property
     def data_name(self) -> str: 
@@ -388,13 +433,13 @@ class TabularDataModule(BaseDataModule):
         return reg_loss
 
 
-# %% ../../nbs/01_data.module.ipynb 42
+# %% ../../nbs/01_data.module.ipynb 43
 def sample(datamodule: BaseDataModule, frac: float = 1.0): 
     X, y = datamodule.train_dataset[:]
     size = int(len(X) * frac)
     return X[:size], y[:size]
 
-# %% ../../nbs/01_data.module.ipynb 46
+# %% ../../nbs/01_data.module.ipynb 47
 DEFAULT_DATA_CONFIGS = {
     'adult': {
         'data' :'assets/data/s_adult.csv',
@@ -410,13 +455,13 @@ DEFAULT_DATA_CONFIGS = {
     }
 }
 
-# %% ../../nbs/01_data.module.ipynb 47
+# %% ../../nbs/01_data.module.ipynb 48
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA_CONFIGS.keys():
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
             f'but got data_name={data_name}.')
 
-# %% ../../nbs/01_data.module.ipynb 48
+# %% ../../nbs/01_data.module.ipynb 49
 def load_data(
     data_name: str, # The name of data
     return_config: bool = False, # Return `data_config `or not
