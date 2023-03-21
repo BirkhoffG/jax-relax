@@ -9,6 +9,7 @@ from sklearn.base import TransformerMixin
 from sklearn.utils.validation import check_is_fitted, NotFittedError
 from urllib.request import urlretrieve
 from .loader import Dataset, ArrayDataset, DataLoader, DataloaderBackends
+from pydantic.fields import ModelField
 
 # %% auto 0
 __all__ = ['BaseDataModule', 'find_imutable_idx_list', 'TransformerMixinType', 'TabularDataModuleConfigs', 'TabularDataModule',
@@ -116,6 +117,13 @@ class TransformerMixinType(TransformerMixin):
         if not isinstance(v, TransformerMixin):
             raise TypeError("`sklearn.base.TransformerMixin` required")
         return v
+    
+    @classmethod
+    def __modify_schema__(
+        cls, field_schema: Dict[str, Any], field: Optional[ModelField]
+    ):
+        if field:
+            field_schema['type'] = 'TransformerMixin'
 
 
 # %% ../../nbs/01_data.module.ipynb 10
@@ -138,14 +146,16 @@ class TabularDataModuleConfigs(BaseParser):
         [], description="Immutable features/columns in the data."
     )
     normalizer: Optional[TransformerMixinType] = Field(
-        MinMaxScaler(), description="Sklearn scalar for continuous features. Can be unfitted, fitted, or None."
+        default_factory=lambda: MinMaxScaler(),
+        description="Sklearn scalar for continuous features. Can be unfitted, fitted, or None. "
         "If not fitted, the `TabularDataModule` will fit using the training data. If fitted, no fitting will be applied. "
-        "If `None`, no transformation will be applied. Default to `MinMaxScaler`."
+        "If `None`, no transformation will be applied. Default to `MinMaxScaler()`."
     )
     encoder: Optional[TransformerMixinType] = Field(
-        OneHotEncoder(sparse=False), description="Fitted encoder for categorical features. Can be unfitted, fitted, or None."
+        default_factory=lambda: OneHotEncoder(sparse=False),
+        description="Fitted encoder for categorical features. Can be unfitted, fitted, or None. "
         "If not fitted, the `TabularDataModule` will fit using the training data. If fitted, no fitting will be applied. "
-        "If `None`, no transformation will be applied. Default to `OneHotEncoder`."
+        "If `None`, no transformation will be applied. Default to `OneHotEncoder(sparse=False)`."
     )
     sample_frac: Optional[float] = Field(
         None, description="Sample fraction of the data. Default to use the entire data.", 
@@ -154,6 +164,11 @@ class TabularDataModuleConfigs(BaseParser):
     backend: str = Field(
         "jax", description=f"`Dataloader` backend. Currently supports: {_supported_backends()}"
     )
+
+    class Config:
+        json_encoders = {
+            TransformerMixinType: lambda v: f"{v.__class__.__name__}()",
+        }
 
 # %% ../../nbs/01_data.module.ipynb 13
 def _check_cols(data: pd.DataFrame, configs: TabularDataModuleConfigs) -> pd.DataFrame:
