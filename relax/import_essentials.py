@@ -22,11 +22,12 @@ from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pydantic import BaseModel as BaseParser, validator, ValidationError, Field
 from deprecation import deprecated
+from functools import partial
 
 # jax related
 import jax
-from jax import pmap, vmap, random, device_put, lax, jit
-import jax.numpy as jnp
+from jax import pmap, vmap, random, device_put, lax, jit, Array
+import jax.numpy as jnp, jax.random as jrand
 
 # nn related
 import haiku as hk
