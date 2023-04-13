@@ -9,9 +9,8 @@ from nbdev.showdoc import BasicMarkdownRenderer
 from inspect import isclass
 
 # %% auto 0
-__all__ = ['validate_configs', 'show_doc', 'cat_normalize', 'make_model', 'make_hk_module', 'init_net_opt', 'grad_update',
-           'check_cat_info', 'load_json', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity',
-           'get_config']
+__all__ = ['validate_configs', 'cat_normalize', 'make_model', 'make_hk_module', 'init_net_opt', 'grad_update', 'check_cat_info',
+           'load_json', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity', 'get_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(

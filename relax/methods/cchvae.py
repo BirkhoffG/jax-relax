@@ -10,7 +10,7 @@ from ..data import *
 from ..trainer import train_model, TrainingConfigs
 
 # %% auto 0
-__all__ = ['CCHVAEConfigs', 'CHVAE', 'CCHVAE']
+__all__ = ['CCHVAEConfigs', 'CCHVAE']
 
 # %% ../../nbs/05f_cchvae.ipynb 4
 class Encoder(hk.Module):
@@ -49,7 +49,7 @@ class Decoder(hk.Module):
         return mu_dec, logvar_dec
 
 # %% ../../nbs/05f_cchvae.ipynb 5
-class CCHVAEConfigs(BaseParser):
+class CHVAEConfigs(BaseParser):
     input_size: int
     enc_sizes: List[int] = [20, 16, 14, 12]
     dec_sizes: List[int] = [12, 14, 16, 20]
@@ -60,7 +60,7 @@ class CCHVAEConfigs(BaseParser):
 class CHVAE(BaseTrainingModule):
     def __init__(self, m_config: Dict):
         self.save_hyperparameters(m_config)
-        self.m_config = validate_configs(m_config, CCHVAEConfigs)
+        self.m_config = validate_configs(m_config, CHVAEConfigs)
         self.opt = optax.adam(self.m_config.lr)
 
     def init_net_opt(self, dm, key):
@@ -248,7 +248,7 @@ class CCHVAEConfigs(BaseParser):
     encoded_size: int = Field(5, description="Encoded size")
     lr: float = Field(0.001, description="Learning rate")
     max_steps: int = Field(1000, description="Max steps")
-    n_search_samples = Field(300, description="Number of generated candidate counterfactuals.")
+    n_search_samples: int = Field(300, description="Number of generated candidate counterfactuals.")
     step_size: float = Field(0.1, description="Step size")
 
 # %% ../../nbs/05f_cchvae.ipynb 10
