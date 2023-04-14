@@ -133,7 +133,7 @@ def _growing_spheres(
     candidate_cf, _, _ = lax.while_loop(cond_fn, body_fn, state)
     # if `inf` is found, return the original input
     candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
-    return candidate_cf
+    return candidate_cf.reshape(x_size)
 
 # %% ../../nbs/05e_sphere.ipynb 7
 def apply_immutable(x: Array, cf: Array, immutable_idx: List[int]):
@@ -144,7 +144,7 @@ def apply_immutable(x: Array, cf: Array, immutable_idx: List[int]):
 # %% ../../nbs/05e_sphere.ipynb 8
 class GSConfig(BaseParser):
     seed: int = 42
-    n_steps: int = 10
+    n_steps: int = 100
     n_samples: int = 1000
     step_size: float = 0.05
     p_norm: int = 2

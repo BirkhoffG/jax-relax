@@ -50,7 +50,6 @@ class Decoder(hk.Module):
 
 # %% ../../nbs/05f_cchvae.ipynb 5
 class CHVAEConfigs(BaseParser):
-    input_size: int
     enc_sizes: List[int] = [20, 16, 14, 12]
     dec_sizes: List[int] = [12, 14, 16, 20]
     encoded_size: int = 5
@@ -235,7 +234,7 @@ def _cchvae_generate(
     # while cond_fn(state):
     #     count, candidate_cf, rng_key = body_fn(state)
     # print(count)
-    return candidate_cf
+    return candidate_cf.reshape(x_size)
 
 # %% ../../nbs/05f_cchvae.ipynb 9
 class CCHVAEConfigs(BaseParser):

@@ -180,7 +180,7 @@ def _compute_acc(
     label = label.reshape(-1, 1)
     return accuracy(y_pred, label).item()
 
-# %% ../nbs/06_evaluate.ipynb 20
+# %% ../nbs/06_evaluate.ipynb 21
 class PredictiveAccuracy(BaseEvalMetrics):
     """Compute the accuracy of the predict function."""
     
@@ -191,7 +191,7 @@ class PredictiveAccuracy(BaseEvalMetrics):
         X, y = cf_explanations.data_module.test_dataset[:]
         return _compute_acc(X, y, cf_explanations.pred_fn)
 
-# %% ../nbs/06_evaluate.ipynb 22
+# %% ../nbs/06_evaluate.ipynb 23
 def _compute_val(
     input: jnp.DeviceArray, # input dim: [N, k]
     cfs: jnp.DeviceArray, # cfs dim: [N, k]
@@ -202,7 +202,7 @@ def _compute_val(
     cf_y = pred_fn(cfs).reshape(-1, 1).round()
     return accuracy(y_prime, cf_y).item()
 
-# %% ../nbs/06_evaluate.ipynb 23
+# %% ../nbs/06_evaluate.ipynb 25
 class Validity(BaseEvalMetrics):
     """Compute fraction of input instances on which CF explanation methods output valid CF examples."""
     
@@ -215,7 +215,15 @@ class Validity(BaseEvalMetrics):
             X, cf_explanations.cfs, cf_explanations.pred_fn
         )
 
-# %% ../nbs/06_evaluate.ipynb 24
+# %% ../nbs/06_evaluate.ipynb 26
+def _compute_proximity(
+    inputs: jnp.DeviceArray, # input dim: [N, k]
+    cfs: jnp.DeviceArray, # cfs dim: [N, k]
+):
+    prox = jnp.linalg.norm(inputs - cfs, ord=1, axis=1).mean()
+    return prox.item()
+
+# %% ../nbs/06_evaluate.ipynb 28
 class Proximity(BaseEvalMetrics):
     """Compute L1 norm distance between input datasets and CF examples divided by the number of features."""
     def __init__(self, name: str = "proximity"):
@@ -223,9 +231,9 @@ class Proximity(BaseEvalMetrics):
     
     def __call__(self, cf_explanations: Explanation) -> float:
         X, _ = cf_explanations.data_module.test_dataset[:]
-        return proximity(X, cf_explanations.cfs).item()
+        return _compute_proximity(X, cf_explanations.cfs)
 
-# %% ../nbs/06_evaluate.ipynb 25
+# %% ../nbs/06_evaluate.ipynb 29
 def _compute_spar(
     input: jnp.DeviceArray,
     cfs: jnp.DeviceArray,
@@ -239,7 +247,7 @@ def _compute_spar(
     return (cont_sparsity + cat_sparsity).item()
 
 
-# %% ../nbs/06_evaluate.ipynb 26
+# %% ../nbs/06_evaluate.ipynb 30
 class Sparsity(BaseEvalMetrics):
     """Compute the number of feature changes between input datasets and CF examples."""
 
@@ -250,7 +258,7 @@ class Sparsity(BaseEvalMetrics):
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_spar(X, cf_explanations.cfs, cf_explanations.cat_idx)
 
-# %% ../nbs/06_evaluate.ipynb 27
+# %% ../nbs/06_evaluate.ipynb 31
 def _compute_manifold_dist(
     input: jnp.DeviceArray,
     cfs: jnp.DeviceArray,
@@ -262,7 +270,7 @@ def _compute_manifold_dist(
     nearest_dist, nearest_points = knn.kneighbors(cfs, 1, return_distance=True)
     return jnp.mean(nearest_dist).item()
 
-# %% ../nbs/06_evaluate.ipynb 28
+# %% ../nbs/06_evaluate.ipynb 32
 class ManifoldDist(BaseEvalMetrics):
     """Compute the L1 distance to the n-nearest neighbor for all CF examples."""
     def __init__(self, n_neighbors: int = 1, p: int = 2, name: str = "manifold_dist"):
@@ -276,7 +284,7 @@ class ManifoldDist(BaseEvalMetrics):
             X, cf_explanations.cfs, self.n_neighbors, self.p
         )
 
-# %% ../nbs/06_evaluate.ipynb 29
+# %% ../nbs/06_evaluate.ipynb 33
 class Runtime(BaseEvalMetrics):
     """Get the running time to generate CF examples."""
     def __init__(self, name: str = "runtime"):
@@ -285,7 +293,7 @@ class Runtime(BaseEvalMetrics):
     def __call__(self, cf_explanations: Explanation) -> float:
         return cf_explanations.total_time
 
-# %% ../nbs/06_evaluate.ipynb 31
+# %% ../nbs/06_evaluate.ipynb 35
 def _create_second_order_cfs(cf_results: CFExplanationResults, threshold: float = 2.0):
     X, y = cf_results.data_module.test_dataset[:]
     cfs = cf_results.cfs
@@ -332,7 +340,7 @@ def compute_so_sparsity(cf_results: CFExplanationResults, threshold: float = 2.0
     return compute_sparsity(cf_results_so)
 
 
-# %% ../nbs/06_evaluate.ipynb 33
+# %% ../nbs/06_evaluate.ipynb 37
 def fake_explanations():
     """Generate sudo explanations for testing."""
     from relax.data import load_data
@@ -348,7 +356,7 @@ def fake_explanations():
     )
 
 
-# %% ../nbs/06_evaluate.ipynb 34
+# %% ../nbs/06_evaluate.ipynb 38
 # METRICS = dict(
 #     acc=PredictiveAccuracy(),
 #     accuracy=PredictiveAccuracy(),
@@ -374,7 +382,7 @@ METRICS = { m.name: m for m in METRICS_CALLABLE }
 
 DEFAULT_METRICS = ["acc", "validity", "proximity"]
 
-# %% ../nbs/06_evaluate.ipynb 36
+# %% ../nbs/06_evaluate.ipynb 40
 def _get_metric(metric: str | BaseEvalMetrics, cf_exp: Explanation):
     if isinstance(metric, str):
         if metric not in METRICS.keys():
@@ -392,7 +400,7 @@ def _get_metric(metric: str | BaseEvalMetrics, cf_exp: Explanation):
         res = res.item()
     return res
 
-# %% ../nbs/06_evaluate.ipynb 38
+# %% ../nbs/06_evaluate.ipynb 42
 def evaluate_cfs(
     cf_exp: Explanation, # CF Explanations
     metrics: Iterable[Union[str, BaseEvalMetrics]] = None, # A list of Metrics. Can be `str` or a subclass of `BaseEvalMetrics`
@@ -416,7 +424,7 @@ def evaluate_cfs(
     elif return_dict or return_df:
         return result_df if return_df else result_dict
 
-# %% ../nbs/06_evaluate.ipynb 40
+# %% ../nbs/06_evaluate.ipynb 44
 def benchmark_cfs(
     cf_results_list: Iterable[CFExplanationResults],
     metrics: Optional[Iterable[str]] = None,
