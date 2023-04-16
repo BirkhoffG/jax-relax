@@ -25,7 +25,9 @@ website:
         - section: Methods
           contents:
           - 05_methods.base.ipynb
-          - 05a_methods.vanilla.ipynb
-          - 05b_methods.diverse.ipynb
-          - 05c_methods.prototype.ipynb
-          - 05d_methods.counternet.ipynb
+          - methods/01_vanilla.ipynb
+          - methods/02_diverse.ipynb
+          - methods/03_prototype.ipynb
+          - methods/04_counternet.ipynb
+          - methods/05_sphere.ipynb
+          - methods/06_cchvae.ipynb
