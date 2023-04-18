@@ -65,7 +65,7 @@ def train_model_with_states(
         on_step=t_configs.log_on_step,
     )
     logger.save_hyperparams(t_configs.dict())
-    if training_module.hparams:
+    if hasattr(training_module, "hparams") and training_module.hparams is not None:
         logger.save_hyperparams(training_module.hparams)
 
     training_module.init_logger(logger)
