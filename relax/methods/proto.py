@@ -197,7 +197,8 @@ class ProtoCF(BaseCFModule, BaseParametricCFModule):
     def train(
         self, 
         data_module: TabularDataModule, # data module
-        t_configs: TrainingConfigs | dict = None # training configs
+        t_configs: TrainingConfigs | dict = None, # training configs
+        *args, **kwargs
     ):
         _default_t_configs = dict(n_epochs=10, batch_size=128)
         if t_configs is None: 

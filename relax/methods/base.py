@@ -46,7 +46,8 @@ class BaseParametricCFModule(ABC):
     def train(
         self, 
         datamodule: TabularDataModule, # data module
-        t_configs: TrainingConfigs | dict = None # training configs; see docs in `TrainingConfigs`
+        t_configs: TrainingConfigs | dict = None, # training configs; see docs in `TrainingConfigs`
+        pred_fn: Callable = None # predictive function
     ): 
         pass
 
