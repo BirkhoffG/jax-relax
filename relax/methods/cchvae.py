@@ -14,10 +14,10 @@ __all__ = ['CCHVAEConfigs', 'CCHVAE']
 
 # %% ../../nbs/methods/06_cchvae.ipynb 4
 class Encoder(hk.Module):
-    def __init__(self, sizes, encoded_size):
+    def __init__(self, sizes):
         super().__init__()
-        self.encoder = MLP(sizes, name="Encoder")
-        self.encoded_size = encoded_size
+        self.encoder = MLP(sizes[:-1], name="Encoder")
+        self.encoded_size = sizes[-1]
     
     def __call__(self, x: Array, is_training: bool):
         mu_enc = hk.Sequential([
@@ -29,10 +29,9 @@ class Encoder(hk.Module):
         return mu_enc, logvar_enc
 
 class Decoder(hk.Module):
-    def __init__(self, sizes, encoded_size, input_size):
+    def __init__(self, sizes, input_size):
         super().__init__()
         self.decoder = MLP(sizes, name="Decoder")
-        self.encoded_size = encoded_size
         self.input_size = input_size
     
     def __call__(self, z: Array, is_training: bool):
@@ -50,9 +49,8 @@ class Decoder(hk.Module):
 
 # %% ../../nbs/methods/06_cchvae.ipynb 5
 class CHVAEConfigs(BaseParser):
-    enc_sizes: List[int] = [20, 16, 14, 12]
+    enc_sizes: List[int] = [20, 16, 14, 12, 5]
     dec_sizes: List[int] = [12, 14, 16, 20]
-    encoded_size: int = 5
     lr = 0.001
 
 # %% ../../nbs/methods/06_cchvae.ipynb 6
@@ -68,11 +66,9 @@ class CHVAE(BaseTrainingModule):
 
         self.encoder = make_hk_module(
             Encoder, sizes=self.m_config.enc_sizes, 
-            encoded_size=self.m_config.encoded_size
         )
         self.decoder = make_hk_module(
             Decoder, sizes=self.m_config.dec_sizes,
-            encoded_size=self.m_config.encoded_size,
             input_size=X.shape[-1]
         )
 
