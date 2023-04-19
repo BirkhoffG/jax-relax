@@ -65,12 +65,13 @@ def _prepare_module(
 def _train_parametric_module(
     cf_module: BaseParametricCFModule,
     datamodule: TabularDataModule,
-    t_configs=None
+    t_configs=None,
+    pred_fn=None
 ):
     if not cf_module._is_module_trained():
         print(f'{type(cf_module).__name__} contains parametric models. '
             'Starts training before generating explanations...')
-        cf_module.train(datamodule, t_configs)
+        cf_module.train(datamodule, t_configs, pred_fn=pred_fn)
     return cf_module
 
 # %% ../nbs/06_evaluate.ipynb 9
@@ -127,7 +128,7 @@ def generate_cf_explanations(
 
     if isinstance(cf_module, BaseParametricCFModule):
         cf_module = _train_parametric_module(
-            cf_module, datamodule, t_configs=t_configs
+            cf_module, datamodule, t_configs=t_configs, pred_fn=pred_fn
         )
     X, _ = datamodule.test_dataset[:]
     

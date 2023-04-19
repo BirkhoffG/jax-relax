@@ -10,25 +10,34 @@ from ..data import *
 from ..trainer import train_model, TrainingConfigs
 
 # %% auto 0
-__all__ = []
+__all__ = ['VAECFConfigs', 'VAECF']
 
 # %% ../../nbs/methods/07_vaecf.ipynb 4
+@partial(jax.jit, static_argnums=(3,))
 def hindge_embedding_loss(
-    inputs: Array, targets: Array, margin: float = 1.0, 
+    inputs: Array, targets: Array, margin: float = 1.0, reduction: str = "mean"
 ):
     """Hinge embedding loss. (Reduce mean over batch)"""
     assert targets.shape == (1,)
-    if jnp.equal(targets, 1):
-        loss = inputs
-    elif jnp.equal(targets, -1):
-        loss = jax.nn.relu(margin - inputs)
+    # assert margin == 1. or margin == -1.
+    loss = jnp.where(
+        targets == 1,
+        inputs,
+        jax.nn.relu(margin - inputs)
+    )
+    if reduction is None:
+        return loss
+    elif reduction == "mean":
+        return jnp.mean(loss)
+    elif reduction == "sum":
+        return jnp.sum(loss)
     else:
-        raise ValueError(f"targets must be 1 or -1, got {targets}")
-    loss = jnp.mean(loss)
-    return loss   
+        raise ValueError(f"reduction must be one of [None, 'mean', 'sum'], but got {reduction}")
+    # loss = jnp.mean(loss)
+    # return loss   
 
 
-# %% ../../nbs/methods/07_vaecf.ipynb 7
+# %% ../../nbs/methods/07_vaecf.ipynb 10
 class Encoder(hk.Module):
     def __init__(self, sizes: List[int], dropout: float = 0.1):
         super().__init__()
@@ -62,7 +71,7 @@ class Decoder(hk.Module):
         mu_dec = jax.nn.sigmoid(mu_dec)
         return mu_dec
 
-# %% ../../nbs/methods/07_vaecf.ipynb 8
+# %% ../../nbs/methods/07_vaecf.ipynb 11
 class VAECFModuleConfigs(BaseParser):
     """Configurator of `VAECFModule`."""
     enc_sizes: List[int] = Field(
@@ -86,9 +95,202 @@ class VAECFModuleConfigs(BaseParser):
         42.0, description="Regularization for validity."
     )
 
-@dataclass
-class SampleOut:
-    """Output of `VAECFModule.sample`."""
-    em: Array
-    ev: Array
-    mu_x: Array
+# %% ../../nbs/methods/07_vaecf.ipynb 12
+class VAECFModule(BaseTrainingModule):
+    pred_fn: Callable
+
+    def __init__(self, m_configs: Dict = None):
+        if m_configs is None: m_configs = {}
+        self.save_hyperparameters(m_configs)
+        self.m_config = validate_configs(m_configs, VAECFModuleConfigs)
+        self.opt = optax.adam(self.m_config.lr)
+
+    def init_net_opt(self, dm, key):
+        self._data_module = dm
+        X, y = dm.train_dataset[:128]
+        Z = jnp.ones((X.shape[0], self.m_config.enc_sizes[-1]))
+        inputs = jnp.concatenate([X, y.reshape(-1, 1)], axis=-1)
+        latent = jnp.concatenate([Z, y.reshape(-1, 1)], axis=-1)
+
+        self.encoder = make_hk_module(
+            Encoder, sizes=self.m_config.enc_sizes, 
+            dropout=self.m_config.dropout_rate
+        )
+        self.decoder = make_hk_module(
+            Decoder, sizes=self.m_config.dec_sizes,
+            input_size=X.shape[-1], 
+            dropout=self.m_config.dropout_rate
+        )
+
+        enc_params = self.encoder.init(
+            key, inputs, is_training=True)
+        dec_params = self.decoder.init(
+            key, latent, is_training=True)
+        opt_state = self.opt.init((enc_params, dec_params))
+        return (enc_params, dec_params), opt_state
+    
+    @partial(jax.jit, static_argnums=(0, 4))
+    def encode(self, enc_params, rng_key, x, is_training=True):
+        mu_z, logvar_z = self.encoder.apply(
+            enc_params, rng_key, x, is_training=is_training)
+        return mu_z, logvar_z
+        
+    @partial(jax.jit, static_argnums=(0,))
+    def sample_latent_code(self, rng_key, mean, logvar):
+        eps = jax.random.normal(rng_key, logvar.shape)
+        return mean + eps * jnp.sqrt(logvar)
+    
+    @partial(jax.jit, static_argnums=(0, 4))
+    def decode(self, dec_params, rng_key, z, is_training=True):
+        mu_x = self.decoder.apply(
+            dec_params, rng_key, z, is_training=is_training)
+        return mu_x
+    
+    @partial(jax.jit, static_argnums=(0, 6))
+    def sample_step(
+        self, rng_key, dec_params, em, ev, c, is_training=True
+    ):
+        z = self.sample_latent_code(rng_key, em, ev)
+        z = jnp.concatenate([z, c.reshape(-1, 1)], axis=-1)
+        mu_x = self.decode(dec_params, rng_key, z, is_training=is_training)
+        return mu_x
+    
+    @partial(jax.jit, static_argnums=(0, 4, 5))
+    def sample(
+        self, params, rng_key, inputs, mc_samples, is_training=True
+    ): # Shape: (mc_samples, batch_size, input_size)
+        enc_params, dec_params = params
+        x, c = inputs[:, :-1], inputs[:, -1]
+        em, ev = self.encode(enc_params, rng_key, inputs)
+        keys = jax.random.split(rng_key, mc_samples)
+        
+        partial_sample_step = partial(
+            self.sample_step, dec_params=dec_params,
+            em=em, ev=ev, c=c
+        )
+        mu_x = jax.vmap(partial_sample_step)(keys)
+        # return SampleOut(em=em, ev=ev, mu_x=mu_x)
+        return (em, ev, mu_x)
+        
+    def compute_loss(self, params, rng_key, inputs, is_training=True):
+        def cf_loss(cf: Array, x: Array, y: Array):
+            assert cf.shape == x.shape, f"cf.shape ({cf.shape}) != x.shape ({x.shape}))"
+            # proximity loss
+            recon_err = jnp.sum(jnp.abs(cf - x), axis=1).mean()
+            # Sum to 1 over the categorical indexes of a feature
+            cat_error = self._data_module.apply_regularization(x, cf)
+            # validity loss
+            pred_prob = self.pred_fn(cf)
+            # This is same as the following:
+            # tempt_1, tempt_0 = pred_prob[y == 1], pred_prob[y == 0]
+            # validity_loss = hindge_embedding_loss(tempt_1 - (1. - tempt_1), -1, 0.165) + \
+            #     hindge_embedding_loss(1. - 2 * tempt_0, -1, 0.165)
+            target = jnp.array([-1])
+            hindge_loss_1 = hindge_embedding_loss(
+                jax.nn.sigmoid(pred_prob) - jax.nn.sigmoid(1. - pred_prob), target, 0.165, reduction=None)
+            hindge_loss_0 = hindge_embedding_loss(
+                jax.nn.sigmoid(1. - pred_prob) - jax.nn.sigmoid(pred_prob), target, 0.165, reduction=None)
+            tempt_1 = jnp.where(y == 1, hindge_loss_1, 0).sum() / y.sum()
+            tempt_0 = jnp.where(y == 0, hindge_loss_0, 0).sum() / (y.shape[0] - y.sum())
+            validity_loss = tempt_1 + tempt_0
+
+            return recon_err + cat_error, - validity_loss
+
+        em, ev, cfs = self.sample(
+            params, rng_key, inputs, self.m_config.mu_samples, 
+            is_training=is_training
+        )
+        X, y = inputs[:, :-1], inputs[:, -1]
+        # kl divergence
+        kl = 0.5 * jnp.mean(em**2 + ev - jnp.log(ev) - 1, axis=1)
+        cf_loss_partial = partial(cf_loss, x=X, y=y)
+        recon_err, validity_loss = jax.vmap(cf_loss_partial)(cfs)
+        # assert recon_err.shape == (self.m_config.mu_samples,), recon_err.shape
+        # assert cat_error.shape == (self.m_config.mu_samples,), cat_error.shape
+        # assert validity_loss.shape == (self.m_config.mu_samples,), validity_loss.shape
+        recon_err = jnp.mean(recon_err)
+        validity_loss = jnp.mean(validity_loss)
+        return jnp.mean(kl + recon_err) + validity_loss
+
+    @partial(jax.jit, static_argnums=(0,))
+    def _training_step(
+        self, 
+        params: Tuple[hk.Params, hk.Params],
+        opt_state: optax.OptState, 
+        rng_key: random.PRNGKey, 
+        batch: Tuple[jnp.array, jnp.array]
+    ) -> Tuple[hk.Params, optax.OptState]:
+        x, _ = batch
+        y = self.pred_fn(x).round().reshape(-1, 1)
+        loss, grads = jax.value_and_grad(self.compute_loss)(
+            params, rng_key, jnp.concatenate([x, y], axis=-1))
+        update_params, opt_state = grad_update(
+            grads, params, opt_state, self.opt)
+        return update_params, opt_state, loss
+    
+    def training_step(
+        self,
+        params: Tuple[hk.Params, hk.Params],
+        opt_state: optax.OptState,
+        rng_key: random.PRNGKey,
+        batch: Tuple[jnp.array, jnp.array]
+    ) -> Tuple[hk.Params, optax.OptState]:
+        params, opt_state, loss = self._training_step(params, opt_state, rng_key, batch)
+        self.log_dict({'train/loss': loss.item()})
+        return params, opt_state
+    
+    def validation_step(
+        self,
+        params: Tuple[hk.Params, hk.Params],
+        rng_key: random.PRNGKey,
+        batch: Tuple[jnp.array, jnp.array],
+    ) -> Tuple[hk.Params, optax.OptState]:
+        pass
+
+
+# %% ../../nbs/methods/07_vaecf.ipynb 13
+class VAECFConfigs(VAECFModuleConfigs):
+    pass
+
+# %% ../../nbs/methods/07_vaecf.ipynb 14
+class VAECF(BaseCFModule, BaseParametricCFModule):
+    params: Tuple[hk.Params, hk.Params] = None
+    module: VAECFModule
+    name: str = 'C-CHVAE'
+
+    def __init__(self, m_config: Dict | VAECFConfigs = None):
+        if m_config is None:
+            m_config = VAECFConfigs()
+        self.m_config = m_config
+        self.module = VAECFModule(m_config.dict())
+
+    def _is_module_trained(self) -> bool:
+        return not (self.params is None)
+    
+    def train(
+        self, 
+        datamodule: TabularDataModule, # data module
+        t_configs: TrainingConfigs | dict = None, # training configs
+        pred_fn: Callable = None, # prediction function
+    ):
+        if pred_fn is None:
+            raise ValueError('pred_fn must be provided')
+
+        _default_t_configs = dict(
+            n_epochs=10, batch_size=128
+        )
+        if t_configs is None: t_configs = _default_t_configs
+        
+        setattr(self.module, 'pred_fn', pred_fn)
+        params, _ = train_model(self.module, datamodule, t_configs)
+        self.params = params
+    
+    def generate_cfs(self, X: Array, pred_fn: Callable = None) -> jnp.ndarray:
+        y = pred_fn(X).round().reshape(-1, 1)
+        inputs = jnp.concatenate([X, y], axis=-1)
+        _, _, cfs = self.module.sample(
+            self.params, random.PRNGKey(0), inputs, self.m_config.mu_samples,
+            is_training=False
+        )
+        return self.data_module.apply_constraints(X, cfs[0], hard=False)
+        
