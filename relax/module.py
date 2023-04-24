@@ -174,6 +174,9 @@ class PredictiveTrainingModule(BaseTrainingModule):
     @partial(jax.jit, static_argnames=["self", "is_training"])
     def forward(self, params, rng_key, x, is_training: bool = True):
         return self.net.apply(params, rng_key, x, is_training=is_training)
+    
+    def pred_fn(self, x, params, rng_key):
+        return self.forward(params, rng_key, x, is_training=False)
 
     def init_net_opt(self, data_module, key):
         X, _ = data_module.train_dataset[:100]
@@ -182,6 +185,7 @@ class PredictiveTrainingModule(BaseTrainingModule):
         )
         return params, opt_state
 
+    @partial(jax.jit, static_argnames=["self", "is_training"])
     def loss_fn(self, params, rng_key, batch, is_training: bool = True):
         x, y = batch
         y_pred = self.net.apply(params, rng_key, x, is_training=is_training)
@@ -194,14 +198,12 @@ class PredictiveTrainingModule(BaseTrainingModule):
 
     @partial(jax.jit, static_argnames=["self"])
     def _training_step(self, params, opt_state, rng_key, batch):
-        grads = jax.grad(self.loss_fn)(params, rng_key, batch)
+        loss, grads = jax.value_and_grad(self.loss_fn)(params, rng_key, batch)
         upt_params, opt_state = grad_update(grads, params, opt_state, self.opt)
-        return upt_params, opt_state
+        return upt_params, opt_state, loss
 
     def training_step(self, params, opt_state, rng_key, batch):
-        params, opt_state = self._training_step(params, opt_state, rng_key, batch)
-
-        loss = self.loss_fn(params, rng_key, batch)
+        params, opt_state, loss = self._training_step(params, opt_state, rng_key, batch)
         self.log_dict({"train/train_loss_1": loss.item()})
         return params, opt_state
 
