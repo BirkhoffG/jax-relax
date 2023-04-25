@@ -8,9 +8,11 @@ from ..utils import *
 from ..module import MLP, BaseTrainingModule
 from ..data import *
 from ..trainer import train_model, TrainingConfigs
+from jax.scipy.stats.norm import logpdf as gaussian_logpdf
+
 
 # %% auto 0
-__all__ = ['Encoder', 'Decoder', 'VAEGaussCat']
+__all__ = ['Encoder', 'Decoder', 'kl_divergence', 'VAEGaussCatConfigs', 'VAEGaussCat']
 
 # %% ../../nbs/methods/08_clue.ipynb 4
 class Encoder(hk.Module):
@@ -45,6 +47,33 @@ class Decoder(hk.Module):
         mu_dec = hk.Linear(self.input_size, name='mu_x')(mu_dec)
         mu_dec = jax.nn.sigmoid(mu_dec)
         return mu_dec
+
+
+# %% ../../nbs/methods/08_clue.ipynb 5
+@jit
+def kl_divergence(p: Array, q: Array, eps: float = 2 ** -17) -> Array:
+    loss_pointwise = p * (jnp.log(p + eps) - jnp.log(q + eps))
+    return loss_pointwise
+
+# %% ../../nbs/methods/08_clue.ipynb 6
+class VAEGaussCatConfigs(BaseParser):
+    enc_sizes: List[int] = Field(
+        [20, 16, 14, 12],
+        description="Sequence of Encoder layer sizes."
+    )
+    dec_sizes: List[int] = Field(
+        [12, 14, 16, 20],
+        description="Sequence of Decoder layer sizes."
+    )
+    dropout_rate: float = Field(
+        0.1, description="Dropout rate."
+    )
+    lr: float = Field(
+        1e-3, description="Learning rate."
+    )
+    mu_samples: int = Field(
+        50, description="Number of samples for mu."
+    )
 
 
 # %% ../../nbs/methods/08_clue.ipynb 7
@@ -104,11 +133,11 @@ class VAEGaussCat(BaseTrainingModule):
         eps = jax.random.normal(rng_key, var.shape)
         return mean + eps * var
     
-    @partial(jax.jit, static_argnums=(0, 4))
-    def decode(self, dec_params, rng_key, z, is_training=True):
+    @partial(jax.jit, static_argnums=(0, 4, 5))
+    def decode(self, dec_params, rng_key, z, is_training=True,):
         reconstruct_x = self.decoder.apply(
             dec_params, rng_key, z, is_training=is_training)
-        return reconstruct_x
+        return reconstruct_x        
     
     @partial(jax.jit, static_argnums=(0, 5))
     def sample_step(
