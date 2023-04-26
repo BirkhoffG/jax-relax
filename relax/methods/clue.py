@@ -12,7 +12,7 @@ from jax.scipy.stats.norm import logpdf as gaussian_logpdf
 
 
 # %% auto 0
-__all__ = ['Encoder', 'Decoder', 'kl_divergence', 'VAEGaussCatConfigs', 'VAEGaussCat']
+__all__ = ['Encoder', 'Decoder', 'kl_divergence', 'VAEGaussCatConfigs', 'VAEGaussCat', 'CLUEConfigs', 'CLUE']
 
 # %% ../../nbs/methods/08_clue.ipynb 4
 class Encoder(hk.Module):
@@ -57,6 +57,7 @@ def kl_divergence(p: Array, q: Array, eps: float = 2 ** -17) -> Array:
 
 # %% ../../nbs/methods/08_clue.ipynb 6
 class VAEGaussCatConfigs(BaseParser):
+    lr: float = Field(0.001, description="Learning rate.")
     enc_sizes: List[int] = Field(
         [20, 16, 14, 12],
         description="Sequence of Encoder layer sizes."
@@ -68,12 +69,7 @@ class VAEGaussCatConfigs(BaseParser):
     dropout_rate: float = Field(
         0.1, description="Dropout rate."
     )
-    lr: float = Field(
-        1e-3, description="Learning rate."
-    )
-    mu_samples: int = Field(
-        50, description="Number of samples for mu."
-    )
+
 
 
 # %% ../../nbs/methods/08_clue.ipynb 7
@@ -133,7 +129,7 @@ class VAEGaussCat(BaseTrainingModule):
         eps = jax.random.normal(rng_key, var.shape)
         return mean + eps * var
     
-    @partial(jax.jit, static_argnums=(0, 4, 5))
+    @partial(jax.jit, static_argnums=(0, 4))
     def decode(self, dec_params, rng_key, z, is_training=True,):
         reconstruct_x = self.decoder.apply(
             dec_params, rng_key, z, is_training=is_training)
@@ -147,7 +143,7 @@ class VAEGaussCat(BaseTrainingModule):
         mu_x = self.decode(dec_params, rng_key, z, is_training=is_training)
         return mu_x
     
-    @partial(jax.jit, static_argnums=(0, 4, 5))
+    @partial(jax.jit, static_argnums=(0, 5))
     def sample(
         self, params, rng_key, x, mc_samples, is_training=True
     ): # Shape: (mc_samples, batch_size, input_size)
@@ -228,3 +224,136 @@ class VAEGaussCat(BaseTrainingModule):
     ) -> Tuple[hk.Params, optax.OptState]:
         pass
 
+
+# %% ../../nbs/methods/08_clue.ipynb 8
+def _clue_generate(
+    x: Array,
+    rng_key: jrand.PRNGKey,
+    pred_fn: Callable,
+    max_steps: int,
+    step_size: float,
+    vae_module: VAEGaussCat,
+    vae_params: Tuple[hk.Params, hk.Params],
+    uncertainty_weight: float,
+    aleatoric_weight: float,
+    prior_weight: float,
+    distance_weight: float,
+    validity_weight: float,
+    apply_fn: Callable
+) -> Array:
+    
+    @partial(jit, static_argnums=(2,))
+    def generate_from_z(
+        z: Array, 
+        dec_params: hk.Params,
+        hard: bool = False
+    ):
+        cf = vae_module.decode(
+            dec_params, rng_key, z, is_training=False)
+        cf = apply_fn(x, cf, hard=hard)
+        return cf
+
+    @jit
+    def uncertainty_from_z(z: Array, dec_params: hk.Params):
+        cfs = generate_from_z(z, vae_module, dec_params, hard=False)
+        prob = pred_fn(cfs)
+        total_uncertainty = -(prob * jnp.log(prob + 1e-10)).sum(-1)
+        return total_uncertainty, cfs, prob
+    
+    @jit
+    def compute_loss(z: Array, dec_params: hk.Params):
+        uncertainty, cfs, prob = uncertainty_from_z(z, dec_params)
+        loglik = gaussian_logpdf(z).sum(-1)
+        dist = jnp.abs(cfs - x).sum()
+        validity = binary_cross_entropy(preds=prob, targets=pred_fn(x)).mean()
+        loss = (
+            (uncertainty_weight + aleatoric_weight) * uncertainty 
+            + prior_weight * loglik
+            + distance_weight * dist
+            + validity_weight * validity
+        )
+        return loss
+    
+    @jit
+    def step(i, z_opt_state):
+        z, opt_state = z_opt_state
+        z_grad = jax.grad(compute_loss)(z, dec_params)
+        z, opt_state = grad_update(z_grad, z, opt_state, opt)
+        return z, opt_state
+    
+    enc_params, dec_params = vae_params
+    keys = jax.random.split(rng_key, 2)
+    # TODO: sample from x
+    z = jnp.zeros_like(vae_module.sample_prior(rng_key))
+    opt = optax.adam(step_size)
+    opt_state = opt.init(z)
+
+    # Write a loop to optimize z using lax.fori_loop
+    z, opt_state = lax.fori_loop(0, max_steps, step, (z, opt_state))
+    cf = generate_from_z(z, dec_params, hard=True)
+    return cf
+
+
+# %% ../../nbs/methods/08_clue.ipynb 9
+class CLUEConfigs(BaseParser):
+    enc_sizes: List[int] = Field(
+        [20, 16, 14, 12], description="Sequence of Encoder layer sizes."
+    )
+    dec_sizes: List[int] = Field(
+        [12, 14, 16, 20], description="Sequence of Decoder layer sizes."
+    )
+    encoded_size: int = Field(5, description="Encoded size")
+    lr: float = Field(0.001, description="Learning rate")
+    max_steps: int = Field(1000, description="Max steps")
+    vae_n_epochs: int = Field(10, description="Number of epochs for VAE")
+    vae_batch_size: int = Field(128, description="Batch size for VAE")
+
+
+# %% ../../nbs/methods/08_clue.ipynb 10
+class CLUE(BaseCFModule, BaseParametricCFModule):
+    params: Tuple[hk.Params, hk.Params] = None
+    module: VAEGaussCat
+    name: str = 'CLUE'
+
+    def __init__(self, m_config: Dict | CLUEConfigs = None):
+        if m_config is None: m_config = CLUEConfigs()
+        self.m_config = m_config
+        self.module = VAEGaussCat(m_config.dict())
+
+    def _is_module_trained(self) -> bool:
+        return not (self.params is None)
+    
+    def train(
+        self, 
+        datamodule: TabularDataModule, # data module
+        t_configs: TrainingConfigs | dict = None, # training configs
+        *args, **kwargs
+    ):
+        _default_t_configs = dict(
+            n_epochs=10, batch_size=128
+        )
+        if t_configs is None: t_configs = _default_t_configs
+        params, _ = train_model(self.module, datamodule, t_configs)
+        self.params = params
+
+    def generate_cf(self, x, rng_key, pred_fn: Callable = None) -> Array:
+        return _clue_generate(
+            x, rng_key=rng_key, pred_fn=pred_fn,
+            max_steps=self.m_config.max_steps,
+            step_size=self.m_config.step_size,
+            vae_module=self.module,
+            vae_params=self.params,
+            uncertainty_weight=1.0,
+            aleatoric_weight=0.0,
+            prior_weight=0.0,
+            distance_weight=1.0,
+            validity_weight=1.0,
+            apply_fn=self.data_module.apply_constraints,
+        )
+    
+    def generate_cfs(self, X: Array, pred_fn: Callable = None) -> jnp.ndarray:
+        generate_cf_partial = partial(
+            self.generate_cf, pred_fn=pred_fn
+        )
+        rngs = lax.broadcast(random.PRNGKey(0), (X.shape[0], ))
+        return jax.vmap(generate_cf_partial)(X, rngs)
