@@ -28,6 +28,7 @@ from functools import partial
 import jax
 from jax import pmap, vmap, random, device_put, lax, jit, Array
 import jax.numpy as jnp, jax.random as jrand
+from jax_tqdm import loop_tqdm, scan_tqdm
 
 # nn related
 import haiku as hk
