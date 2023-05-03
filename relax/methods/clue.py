@@ -84,6 +84,7 @@ class VAEGaussCat(BaseTrainingModule):
         cat_arrays = self._data_module._cat_arrays
         self._cat_info = {
             'cat_idx': self._data_module.cat_idx,
+            # 'cat_arr': jnp.array([len(cat_arr) for cat_arr in cat_arrays]),
             'cat_arr': [len(cat_arr) for cat_arr in cat_arrays],
         }
     
@@ -92,9 +93,7 @@ class VAEGaussCat(BaseTrainingModule):
         self._update_categorical_info()
         keys = jax.random.split(key, 3)
         X, y = dm.train_dataset[:128]
-        Z = jnp.ones((X.shape[0], self.m_config.enc_sizes[-1]))
-        inputs = jnp.concatenate([X, y.reshape(-1, 1)], axis=-1)
-        latent = jnp.concatenate([Z, y.reshape(-1, 1)], axis=-1)
+        Z = jnp.ones((X.shape[0], self.m_config.enc_sizes[-1] // 2))
 
         self.encoder = make_hk_module(
             Encoder, sizes=self.m_config.enc_sizes, 
@@ -107,9 +106,9 @@ class VAEGaussCat(BaseTrainingModule):
         )
 
         enc_params = self.encoder.init(
-            keys[0], inputs, is_training=True)
+            keys[0], X, is_training=True)
         dec_params = self.decoder.init(
-            key[1], latent, is_training=True)
+            keys[1], Z, is_training=True)
         opt_state = self.opt.init((enc_params, dec_params))
 
         # set prior for training latents
@@ -126,8 +125,10 @@ class VAEGaussCat(BaseTrainingModule):
     
     @partial(jax.jit, static_argnums=(0, ))
     def sample_latent(self, rng_key, mean, var):
-        eps = jax.random.normal(rng_key, var.shape)
-        return mean + eps * var
+        key, _ = jax.random.split(rng_key)
+        std = jnp.exp(0.5 * var)
+        eps = jax.random.normal(key, var.shape)
+        return mean + eps * std
     
     @partial(jax.jit, static_argnums=(0, 4))
     def decode(self, dec_params, rng_key, z, is_training=True,):
@@ -143,7 +144,7 @@ class VAEGaussCat(BaseTrainingModule):
         mu_x = self.decode(dec_params, rng_key, z, is_training=is_training)
         return mu_x
     
-    @partial(jax.jit, static_argnums=(0, 5))
+    @partial(jax.jit, static_argnums=(0, 4, 5))
     def sample(
         self, params, rng_key, x, mc_samples, is_training=True
     ): # Shape: (mc_samples, batch_size, input_size)
@@ -165,27 +166,39 @@ class VAEGaussCat(BaseTrainingModule):
         return prior
     
     def compute_loss(self, params, rng_key, x, is_training=True):
-        @partial(jax.jit, static_argnums=(2, 3))
+        # @partial(jax.jit, static_argnums=(2, 3))
         def reconstruct_loss(x: Array, cf: Array, cat_idx: int, cat_arr: List[int]):
             cont_loss = optax.l2_loss(x[:, :cat_idx], cf[:, :cat_idx])
             cat_loss = []
+
+            def _cat_loss_f(start_end_idx):
+                start_idx, end_idx = start_end_idx
+                return optax.softmax_cross_entropy(
+                    cf[:, start_idx: end_idx], x[:, start_idx: end_idx]
+                ).reshape(-1, 1)
+            
+            # for start_end_idx in start_end_indices:
             for i, cat in enumerate(cat_arr):
-                start_idx, end_idx = cat_idx + i * cat, cat_idx + (i + 1) * cat
-                cat_loss.append(
-                    optax.softmax_cross_entropy(
-                        cf[:, start_idx: end_idx], x[:, start_idx: end_idx]
-                    ).reshape(-1, 1)
-                )
+                start_end_idx = (cat_idx + i * cat, cat_idx + (i + 1) * cat)
+                cat_loss.append(_cat_loss_f(start_end_idx))
             cat_loss = jnp.concatenate(cat_loss, axis=-1)
+            
+            # cat_loss = jax.vmap(jit(_cat_loss_f))(start_indices, end_indices)
+            # cat_loss = jax.lax.scan(_cat_loss_f, 0., start_end_indices, len(start_end_indices))[1]
             return jnp.concatenate([cont_loss, cat_loss], axis=-1).sum(-1)
         
         keys = jax.random.split(rng_key, 2)
-        mean, var, reconstruct_x = self.sample(
+        mu_z, logvar_z, reconstruct_x = self.sample(
             params, keys[0], x, mc_samples=1, is_training=is_training
         )
-        kl = kl_divergence(jnp.concatenate([mean, var], axis=-1), self.sample_prior(keys[1])).sum(-1)
-        rec = reconstruct_loss(reconstruct_x, x, **self._cat_info).sum(-1)
-        batchwise_loss = (rec + kl) / x.shape[0]
+        kl_loss = -0.5 * (1 + logvar_z - jnp.power(mu_z, 2) - jnp.exp(logvar_z)).sum(-1)
+        
+        rec = reconstruct_loss(
+            x, reconstruct_x.reshape(x.shape), 
+            cat_idx=self._cat_info['cat_idx'],
+            cat_arr=self._cat_info['cat_arr']
+        ).sum(-1)
+        batchwise_loss = (rec + kl_loss) / x.shape[0]
         return batchwise_loss.mean()
 
     @partial(jax.jit, static_argnums=(0,))
@@ -194,10 +207,9 @@ class VAEGaussCat(BaseTrainingModule):
         params: Tuple[hk.Params, hk.Params],
         opt_state: optax.OptState, 
         rng_key: random.PRNGKey, 
-        batch: Tuple[jnp.array, jnp.array]
+        batch: Tuple[Array, Array]
     ) -> Tuple[hk.Params, optax.OptState]:
         x, _ = batch
-        # y = self.pred_fn(x).round().reshape(-1, 1)
         loss, grads = jax.value_and_grad(self.compute_loss)(
             params, rng_key, x)
         update_params, opt_state = grad_update(
@@ -242,6 +254,15 @@ def _clue_generate(
     apply_fn: Callable
 ) -> Array:
     
+    @jit
+    def sample_latent_from_x(
+        x: Array, enc_params: hk.Params, rng_key: jrand.PRNGKey
+    ):
+        key_1, key_2 = jrand.split(rng_key)
+        mean, var = vae_module.encode(enc_params, key_1, x, is_training=False)
+        z = vae_module.sample_latent(key_2, mean, var)
+        return z
+    
     @partial(jit, static_argnums=(2,))
     def generate_from_z(
         z: Array, 
@@ -255,7 +276,7 @@ def _clue_generate(
 
     @jit
     def uncertainty_from_z(z: Array, dec_params: hk.Params):
-        cfs = generate_from_z(z, vae_module, dec_params, hard=False)
+        cfs = generate_from_z(z, dec_params, hard=False)
         prob = pred_fn(cfs)
         total_uncertainty = -(prob * jnp.log(prob + 1e-10)).sum(-1)
         return total_uncertainty, cfs, prob
@@ -264,33 +285,41 @@ def _clue_generate(
     def compute_loss(z: Array, dec_params: hk.Params):
         uncertainty, cfs, prob = uncertainty_from_z(z, dec_params)
         loglik = gaussian_logpdf(z).sum(-1)
-        dist = jnp.abs(cfs - x).sum()
-        validity = binary_cross_entropy(preds=prob, targets=pred_fn(x)).mean()
+        dist = jnp.abs(cfs - x).mean()
+        validity = binary_cross_entropy(preds=prob, labels=y_targets).mean()
         loss = (
             (uncertainty_weight + aleatoric_weight) * uncertainty 
             + prior_weight * loglik
             + distance_weight * dist
             + validity_weight * validity
         )
-        return loss
+        return loss.mean()
     
-    @jit
     def step(i, z_opt_state):
         z, opt_state = z_opt_state
         z_grad = jax.grad(compute_loss)(z, dec_params)
         z, opt_state = grad_update(z_grad, z, opt_state, opt)
         return z, opt_state
     
+    x_size = x.shape
+    if len(x_size) > 1 and x_size[0] != 1:
+        raise ValueError(
+            f"Invalid Input Shape: Require `x.shape` = (1, k) or (k, ), "
+            f"but got `x.shape` = {x.shape}. This method expects a single input instance."
+        )
+    if len(x_size) == 1:
+        x = x.reshape(1, -1)
+    
     enc_params, dec_params = vae_params
-    keys = jax.random.split(rng_key, 2)
-    # TODO: sample from x
-    z = jnp.zeros_like(vae_module.sample_prior(rng_key))
+    key_1, _ = jax.random.split(rng_key)
+    z = sample_latent_from_x(x, enc_params, key_1)
     opt = optax.adam(step_size)
     opt_state = opt.init(z)
+    y_targets = 1 - pred_fn(x)
 
     # Write a loop to optimize z using lax.fori_loop
     z, opt_state = lax.fori_loop(0, max_steps, step, (z, opt_state))
-    cf = generate_from_z(z, dec_params, hard=True)
+    cf = generate_from_z(z, dec_params, hard=True).reshape(x_size)
     return cf
 
 
@@ -304,10 +333,10 @@ class CLUEConfigs(BaseParser):
     )
     encoded_size: int = Field(5, description="Encoded size")
     lr: float = Field(0.001, description="Learning rate")
-    max_steps: int = Field(1000, description="Max steps")
+    max_steps: int = Field(500, description="Max steps")
+    step_size: float = Field(0.01, description="Step size")
     vae_n_epochs: int = Field(10, description="Number of epochs for VAE")
     vae_batch_size: int = Field(128, description="Batch size for VAE")
-
 
 # %% ../../nbs/methods/08_clue.ipynb 10
 class CLUE(BaseCFModule, BaseParametricCFModule):
@@ -343,10 +372,10 @@ class CLUE(BaseCFModule, BaseParametricCFModule):
             step_size=self.m_config.step_size,
             vae_module=self.module,
             vae_params=self.params,
-            uncertainty_weight=1.0,
+            uncertainty_weight=.0,
             aleatoric_weight=0.0,
             prior_weight=0.0,
-            distance_weight=1.0,
+            distance_weight=.1,
             validity_weight=1.0,
             apply_fn=self.data_module.apply_constraints,
         )
