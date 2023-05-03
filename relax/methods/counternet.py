@@ -116,30 +116,36 @@ class CounterNetTrainingModule(BaseTrainingModule):
         cf_y, _ = self.net.apply(params, rng_key, cf, is_training=is_training)
         return y_pred, cf, cf_y
 
+    @partial(jax.jit, static_argnames=["self"])
     def predict(self, params, rng_key, x):
         y_pred, _ = self.net.apply(params, rng_key, x, is_training=False)
         return y_pred
 
-    def generate_cfs(self, X: chex.ArrayBatched, params, rng_key) -> chex.ArrayBatched:
+    def generate_cfs(self, X: Array, params, rng_key) -> chex.ArrayBatched:
         y_pred, cfs = self.net.apply(params, rng_key, X, is_training=False)
         # cfs = cfs + X
         cfs = self._data_module.apply_constraints(X, cfs, hard=True)
         return cfs
 
+    @partial(jax.jit, static_argnames=["self"])
     def loss_fn_1(self, y_pred, y):
         return jnp.mean(vmap(optax.l2_loss)(y_pred, y))
 
+    @partial(jax.jit, static_argnames=["self"])
     def loss_fn_2(self, cf_y, y_prime):
         return jnp.mean(vmap(optax.l2_loss)(cf_y, y_prime))
 
+    @partial(jax.jit, static_argnames=["self"])
     def loss_fn_3(self, x, cf):
         return jnp.mean(vmap(optax.l2_loss)(x, cf))
 
+    @partial(jax.jit, static_argnames=["self", "is_training"])
     def pred_loss_fn(self, params, rng_key, batch, is_training: bool = True):
         x, y = batch
         y_pred, cf = self.net.apply(params, rng_key, x, is_training=is_training)
         return self.configs.lambda_1 * self.loss_fn_1(y_pred, y)
 
+    @partial(jax.jit, static_argnames=["self", "is_training"])
     def exp_loss_fn(
         self,
         trainable_params,
@@ -156,11 +162,13 @@ class CounterNetTrainingModule(BaseTrainingModule):
         loss_2, loss_3 = self.loss_fn_2(cf_y, y_prime), self.loss_fn_3(x, cf)
         return self.configs.lambda_2 * loss_2 + self.configs.lambda_3 * loss_3
 
+    @partial(jax.jit, static_argnames=["self",])
     def _predictor_step(self, params, opt_state, rng_key, batch):
         grads = jax.grad(self.pred_loss_fn)(params, rng_key, batch)
         upt_params, opt_state = grad_update(grads, params, opt_state, self.opt_1)
         return upt_params, opt_state
 
+    @partial(jax.jit, static_argnames=["self",])
     def _explainer_step(self, params, opt_state, rng_key, batch):
         trainable_params, non_trainable_params = partition_trainable_params(
             params, trainable_name="counter_net_model/Explainer"
