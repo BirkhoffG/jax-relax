@@ -18,30 +18,33 @@ def _vanilla_cf(
     lambda_: float,  #  loss = validity_loss + lambda_params * cost
     apply_fn: Callable
 ) -> jnp.DeviceArray:  # return `cf` shape: (k,)
-    def loss_fn_1(cf_y: jnp.DeviceArray, y_prime: jnp.DeviceArray):
+    @jit
+    def loss_fn_1(cf_y: Array, y_prime: Array):
         return jnp.mean(binary_cross_entropy(preds=cf_y, labels=y_prime))
 
-    def loss_fn_2(x: jnp.DeviceArray, cf: jnp.DeviceArray):
+    @jit
+    def loss_fn_2(x: Array, cf: Array):
         return jnp.mean(optax.l2_loss(cf, x))
 
+    @partial(jit, static_argnums=(2,))
     def loss_fn(
-        cf: jnp.DeviceArray,  # `cf` shape: (k, 1)
-        x: jnp.DeviceArray,  # `x` shape: (k, 1)
-        pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray],
+        cf: Array,  # `cf` shape: (k, 1)
+        x: Array,  # `x` shape: (k, 1)
+        pred_fn: Callable[[Array], Array],
     ):
         y_pred = pred_fn(x)
         y_prime = 1.0 - y_pred
         cf_y = pred_fn(cf)
         return loss_fn_1(cf_y, y_prime) + lambda_ * loss_fn_2(x, cf)
 
-    @jax.jit
+    @loop_tqdm(n_steps)
     def gen_cf_step(
-        x: jnp.DeviceArray, cf: jnp.DeviceArray, opt_state: optax.OptState
+        i, cf_opt_state: Tuple[Array, optax.OptState] #x: Array, cf: Array, opt_state: optax.OptState
     ) -> Tuple[jnp.DeviceArray, optax.OptState]:
+        cf, opt_state = cf_opt_state
         cf_grads = jax.grad(loss_fn)(cf, x, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
         cf = apply_fn(x, cf, hard=False)
-        # cf = jnp.clip(cf, 0.0, 1.0)
         return cf, opt_state
 
     x_size = x.shape
@@ -55,8 +58,9 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
     cf = jnp.array(x, copy=True)
     opt = optax.rmsprop(lr)
     opt_state = opt.init(cf)
-    for _ in tqdm(range(n_steps)):
-        cf, opt_state = gen_cf_step(x, cf, opt_state)
+    # for _ in tqdm(range(n_steps)):
+    #     cf, opt_state = gen_cf_step(x, cf, opt_state)
+    cf, opt_state = lax.fori_loop(0, n_steps, gen_cf_step, (cf, opt_state))
 
     cf = apply_fn(x, cf, hard=True)
     return cf.reshape(x_size)

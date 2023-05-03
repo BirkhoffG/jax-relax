@@ -62,20 +62,22 @@ class AETrainingModule(BaseTrainingModule):
     def forward(self, params, rng_key, x, is_training: bool = True):
         return self.net.apply(params, rng_key, x, is_training = is_training)
 
+    @partial(jax.jit, static_argnames=['self', ])
     def encode(self, params, rng_key, x):
         _, z = self.forward(params, rng_key, x, is_training=False)
         return z
 
+    @partial(jax.jit, static_argnames=['self', 'is_training'])
     def loss_fn(self, params, rng_key, batch, is_training=True):
         x, y = batch
         x_hat, z = self.forward(params, rng_key, x, is_training)
         return jnp.mean(vmap(optax.l2_loss)(x, x_hat))
 
-    @partial(jax.jit, static_argnames=['self'])
+    @partial(jit, static_argnames=['self'])
     def _training_step(self, params, opt_state, rng_key, batch):
-        grads = jax.grad(self.loss_fn)(params, rng_key, batch)
+        loss, grads = jax.value_and_grad(self.loss_fn)(params, rng_key, batch)
         upt_params, opt_state = grad_update(grads, params, opt_state, self.opt)
-        return upt_params, opt_state
+        return loss, upt_params, opt_state
 
     def training_step(
         self,
@@ -84,13 +86,13 @@ class AETrainingModule(BaseTrainingModule):
         rng_key: random.PRNGKey,
         batch: Tuple[jnp.array, jnp.array]
     ) -> Tuple[hk.Params, optax.OptState]:
-        upt_params, opt_state = self._training_step(params, opt_state, rng_key, batch)
+        loss, upt_params, opt_state = self._training_step(params, opt_state, rng_key, batch)
 
-        loss = self.loss_fn(params, rng_key, batch)
+        # loss = self.loss_fn(params, rng_key, batch)
         self.log_dict({
             'train/train_loss_1': loss.item()
         })
-        return params, opt_state
+        return upt_params, opt_state
 
     def validation_step(self, params, rng_key, batch):
         x, y = batch
@@ -114,19 +116,24 @@ def _proto_cf(
     sampled_label: jnp.DeviceArray,
     apply_constraints_fn: Callable
 ) -> jnp.DeviceArray: # return `cf` shape: (k,)
+    @jit
     def proto(data):
         return ae.encode(ae_params, jax.random.PRNGKey(0), data)
 
+    @jit
     def loss_fn_1(cf_y: jnp.DeviceArray, y_prime: jnp.DeviceArray):
         return jnp.mean(binary_cross_entropy(preds=cf_y, labels=y_prime))
 
+    @jit
     def loss_fn_2(x: jnp.DeviceArray, cf: jnp.DeviceArray):
         return jnp.mean(optax.l2_loss(cf, x)) + 0.1 * jnp.mean(jnp.mean(jnp.abs(x - cf)))
 
+    @jit
     def loss_fn_3(cf, data):
         error = proto(cf) - proto(data)
         return jnp.mean(0.5 * (error) ** 2)
 
+    @partial(jit, static_argnames=['pred_fn'])
     def loss_fn(
         cf: jnp.DeviceArray, # `cf` shape: (k, 1)
         x: jnp.DeviceArray,  # `x` shape: (k, 1)
@@ -141,10 +148,11 @@ def _proto_cf(
         return loss_fn_1(cf_y, y_prime) + loss_fn_2(x, cf) \
             + loss_fn_3(cf, sampled_data_pos) * y_prime_round + loss_fn_3(cf, sampled_data_neg) * (1 - y_prime_round)
 
-    @jax.jit
+    @loop_tqdm(n_steps)
     def gen_cf_step(
-        x: jnp.DeviceArray, cf: jnp.DeviceArray, opt_state: optax.OptState
-    ) -> Tuple[jnp.DeviceArray, optax.OptState]:
+        i, cf_opt_state: Tuple[Array, optax.OptState]
+    ) -> Tuple[Array, optax.OptState]:
+        cf, opt_state = cf_opt_state
         cf_grads = jax.grad(loss_fn)(cf, x, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
         cf = apply_constraints_fn(x, cf, hard=False)
@@ -157,11 +165,14 @@ def _proto_cf(
 but got `x.shape` = {x.shape}. This method expects a single input instance.""")
     if len(x_size) == 1:
         x = x.reshape(1, -1)
+    
     cf = jnp.array(x, copy=True)
     opt = optax.rmsprop(lr)
     opt_state = opt.init(cf)
-    for _ in tqdm(range(n_steps)):
-        cf, opt_state = gen_cf_step(x, cf, opt_state)
+    
+    cf, opt_state = lax.fori_loop(0, n_steps, gen_cf_step, (cf, opt_state))
+    # for _ in tqdm(range(n_steps)):
+    #     cf, opt_state = gen_cf_step(x, cf, opt_state)
 
     cf = apply_constraints_fn(x, cf, hard=True)
     return cf.reshape(x_size)

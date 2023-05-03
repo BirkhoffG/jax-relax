@@ -67,26 +67,31 @@ def _diverse_cf(
     projection_fn: Callable,
     regularization_fn: Callable
 ) -> jnp.DeviceArray:  # return `cf` shape: (k,)
-    def loss_fn_1(cf_y: jnp.DeviceArray, y_prime: jnp.DeviceArray):
+    @jit
+    def loss_fn_1(cf_y: Array, y_prime: Array):
         return jnp.mean(hinge_loss(input=cf_y, target=y_prime))
 
-    def loss_fn_2(x: jnp.DeviceArray, cf: jnp.DeviceArray):
+    @jit
+    def loss_fn_2(x: Array, cf: Array):
         return jnp.mean(jnp.abs(cf - x))
 
+    @partial(jit, static_argnums=(1,))
     def loss_fn_3(cfs: jnp.DeviceArray, n_cfs: int):
         return dpp_style(cfs, n_cfs)
 
-    def loss_fn_4(x: jnp.DeviceArray, cfs: jnp.DeviceArray):
+    @jit
+    def loss_fn_4(x: Array, cfs: Array):
         # return _compute_regularization_loss(cfs, cat_idx, cat_arrays, n_cfs)
         reg_loss = 0.
         for i in range(n_cfs):
             reg_loss += regularization_fn(x, cfs[i])
         return reg_loss
 
+    @partial(jit, static_argnums=(2,))
     def loss_fn(
         cf: jnp.DeviceArray,  # `cf` shape: (k, n_cfs)
         x: jnp.DeviceArray,  # `x` shape: (k, 1)
-        pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray],
+        pred_fn: Callable[[Array], Array],
     ):
         y_pred = pred_fn(x)
         y_prime = 1.0 - y_pred
@@ -98,10 +103,11 @@ def _diverse_cf(
         loss_4 = loss_fn_4(x, cfs)
         return loss_1 + loss_2 + loss_3 + loss_4
 
-    @jax.jit
+    @loop_tqdm(n_steps)
     def gen_cf_step(
-        x: jnp.DeviceArray, cf: jnp.DeviceArray, opt_state: optax.OptState
-    ) -> Tuple[jnp.DeviceArray, optax.OptState]:
+        i, cf_opt_state: Tuple[Array, optax.OptState]
+    ) -> Tuple[Array, optax.OptState]:
+        cf, opt_state = cf_opt_state
         cf_grads = jax.grad(loss_fn)(cf, x, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
         return cf, opt_state
@@ -114,11 +120,14 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
         )
     if len(x_size) == 1:
         x = x.reshape(1, -1)
+    
+    key, subkey = jax.random.split(key)
     cfs = jax.random.normal(key, shape=(n_cfs, x.shape[-1]))
     opt = optax.rmsprop(lr)
     opt_state = opt.init(cfs)
-    for _ in tqdm(range(n_steps)):
-        cfs, opt_state = gen_cf_step(x, cfs, opt_state)
+    cfs, opt_state = lax.fori_loop(0, n_steps, gen_cf_step, (cfs, opt_state))
+    # for _ in tqdm(range(n_steps)):
+    #     cfs, opt_state = gen_cf_step(x, cfs, opt_state)
     cf = projection_fn(x, cfs[:1, :], hard=True)
     return cf.reshape(x_size)
 
