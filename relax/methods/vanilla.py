@@ -58,7 +58,7 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
     for _ in tqdm(range(n_steps)):
         cf, opt_state = gen_cf_step(x, cf, opt_state)
 
-    cf = apply_fn(x, cf, hard=False)
+    cf = apply_fn(x, cf, hard=True)
     return cf.reshape(x_size)
 
 
