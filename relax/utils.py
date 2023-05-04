@@ -7,10 +7,13 @@ import nbdev
 from fastcore.basics import AttrDict
 from nbdev.showdoc import BasicMarkdownRenderer
 from inspect import isclass
+from fastcore.test import *
+from jax.core import InconclusiveDimensionOperation
 
 # %% auto 0
-__all__ = ['validate_configs', 'cat_normalize', 'make_model', 'make_hk_module', 'init_net_opt', 'grad_update', 'check_cat_info',
-           'load_json', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity', 'get_config']
+__all__ = ['validate_configs', 'cat_normalize', 'auto_reshaping', 'make_model', 'make_hk_module', 'init_net_opt', 'grad_update',
+           'check_cat_info', 'load_json', 'binary_cross_entropy', 'sigmoid', 'accuracy', 'dist', 'proximity',
+           'get_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -91,6 +94,48 @@ def cat_normalize(
 
 
 # %% ../nbs/00_utils.ipynb 33
+def _reshape_x(x: Array):
+    x_size = x.shape
+    if len(x_size) > 1 and x_size[0] != 1:
+        raise ValueError(
+            f"""Invalid Input Shape: Require `x.shape` = (1, k) or (k, ),
+but got `x.shape` = {x.shape}. This method expects a single input instance."""
+        )
+    if len(x_size) == 1:
+        x = x.reshape(1, -1)
+    return x, x_size
+
+# %% ../nbs/00_utils.ipynb 34
+def auto_reshaping(reshape_argname: str):
+    """
+    Decorator to automatically reshape function's input into (1, k), 
+    and out to input's shape.
+    """
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            args = list(args)
+            if reshape_argname in kwargs:
+                reshaped_x, x_shape = _reshape_x(kwargs[reshape_argname])
+                kwargs[reshape_argname] = reshaped_x
+            else:
+                reshaped_x, x_shape = _reshape_x(args[0])
+                args[0] = reshaped_x
+            cf = func(*args, **kwargs)
+            if not isinstance(cf, Array): 
+                raise ValueError(
+                    f"Invalid return type: must be a `jax.Array`, but got `{type(cf).__name__}`.")
+            try: 
+                cf = cf.reshape(x_shape)
+            except InconclusiveDimensionOperation:
+                raise ValueError(
+                    f"Invalid return shape: Require `cf.shape` = {cf.shape} "
+                    f"is not compatible with `x.shape` = {x_shape}.")
+            return cf
+
+        return wrapper
+    return decorator
+
+# %% ../nbs/00_utils.ipynb 37
 def make_model(
     m_configs: Dict[str, Any], model: hk.Module  # model configs
 ) -> hk.Transformed:
@@ -103,7 +148,7 @@ def make_model(
     return hk.transform(model_fn)
 
 
-# %% ../nbs/00_utils.ipynb 34
+# %% ../nbs/00_utils.ipynb 38
 def make_hk_module(
     module: hk.Module, # haiku module 
     *args, # haiku module arguments
@@ -116,7 +161,7 @@ def make_hk_module(
     return hk.transform(model_fn)
 
 
-# %% ../nbs/00_utils.ipynb 35
+# %% ../nbs/00_utils.ipynb 39
 def init_net_opt(
     net: hk.Transformed,
     opt: optax.GradientTransformation,
@@ -129,7 +174,7 @@ def init_net_opt(
     return params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 36
+# %% ../nbs/00_utils.ipynb 40
 def grad_update(
     grads: Dict[str, jnp.ndarray],
     params: hk.Params,
@@ -141,7 +186,7 @@ def grad_update(
     return upt_params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 37
+# %% ../nbs/00_utils.ipynb 41
 def check_cat_info(method):
     def inner(cf_module, *args, **kwargs):
         warning_msg = f"""This CFExplanationModule might not be updated with categorical information.
@@ -154,13 +199,13 @@ You should try `{cf_module.name}.update_cat_info(dm)` before generating cfs.
     return inner
 
 
-# %% ../nbs/00_utils.ipynb 39
+# %% ../nbs/00_utils.ipynb 43
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 41
+# %% ../nbs/00_utils.ipynb 45
 def binary_cross_entropy(
     preds: jnp.DeviceArray, # The predicted values
     labels: jnp.DeviceArray # The ground-truth labels
@@ -175,12 +220,12 @@ def binary_cross_entropy(
 
     return loss
 
-# %% ../nbs/00_utils.ipynb 42
+# %% ../nbs/00_utils.ipynb 46
 def sigmoid(x):
     # https://stackoverflow.com/a/68293931
     return 0.5 * (jnp.tanh(x / 2) + 1)
 
-# %% ../nbs/00_utils.ipynb 44
+# %% ../nbs/00_utils.ipynb 48
 def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
     y_true, y_pred = map(jnp.round, (y_true, y_pred))
     return jnp.mean(jnp.equal(y_true, y_pred))
@@ -194,7 +239,7 @@ def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jnp.DeviceArray:
 def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jnp.DeviceArray:
     return dist(x, cf, ord=1)
 
-# %% ../nbs/00_utils.ipynb 47
+# %% ../nbs/00_utils.ipynb 51
 @dataclass
 class Config:
     rng_reserve_size: int
@@ -206,6 +251,6 @@ class Config:
 
 main_config = Config.default()
 
-# %% ../nbs/00_utils.ipynb 48
+# %% ../nbs/00_utils.ipynb 52
 def get_config() -> Config: 
     return main_config
