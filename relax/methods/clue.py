@@ -238,6 +238,7 @@ class VAEGaussCat(BaseTrainingModule):
 
 
 # %% ../../nbs/methods/08_clue.ipynb 8
+@auto_reshaping('x')
 def _clue_generate(
     x: Array,
     rng_key: jrand.PRNGKey,
@@ -301,15 +302,6 @@ def _clue_generate(
         z, opt_state = grad_update(z_grad, z, opt_state, opt)
         return z, opt_state
     
-    x_size = x.shape
-    if len(x_size) > 1 and x_size[0] != 1:
-        raise ValueError(
-            f"Invalid Input Shape: Require `x.shape` = (1, k) or (k, ), "
-            f"but got `x.shape` = {x.shape}. This method expects a single input instance."
-        )
-    if len(x_size) == 1:
-        x = x.reshape(1, -1)
-    
     enc_params, dec_params = vae_params
     key_1, _ = jax.random.split(rng_key)
     z = sample_latent_from_x(x, enc_params, key_1)
@@ -319,7 +311,7 @@ def _clue_generate(
 
     # Write a loop to optimize z using lax.fori_loop
     z, opt_state = lax.fori_loop(0, max_steps, step, (z, opt_state))
-    cf = generate_from_z(z, dec_params, hard=True).reshape(x_size)
+    cf = generate_from_z(z, dec_params, hard=True)
     return cf
 
 

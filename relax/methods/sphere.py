@@ -54,6 +54,7 @@ def cat_sample(
     return candidates
 
 # %% ../../nbs/methods/05_sphere.ipynb 6
+@auto_reshaping('x')
 def _growing_spheres(
     rng_key: jrand.PRNGKey, # Random number generator key
     x: Array, # Input instance. Shape: (n_features)
@@ -116,16 +117,6 @@ def _growing_spheres(
 
         return candidate_cf, count + 1, rng_key
     
-
-    x_size = x.shape
-    if len(x_size) > 1 and x_size[0] != 1:
-        raise ValueError(
-            f"Invalid Input Shape: Require `x.shape` = (1, k) or (k, ), "
-            f"but got `x.shape` = {x.shape}. This method expects a single input instance."
-        )
-    if len(x_size) == 1:
-        x = x.reshape(1, -1)
-
     y_pred = pred_fn(x).round().reshape(-1)
     candidate_cf = jnp.ones_like(x) * jnp.inf
     count = 0
@@ -133,7 +124,7 @@ def _growing_spheres(
     candidate_cf, _, _ = lax.while_loop(cond_fn, body_fn, state)
     # if `inf` is found, return the original input
     candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
-    return candidate_cf.reshape(x_size)
+    return candidate_cf
 
 # %% ../../nbs/methods/05_sphere.ipynb 7
 def apply_immutable(x: Array, cf: Array, immutable_idx: List[int]):
@@ -191,7 +182,7 @@ class GrowingSphere(BaseCFModule):
         X: Array, 
         pred_fn: Callable = None
     ) -> jnp.ndarray:
-        rng_keys = jrand.split(jrand.PRNGKey(self.configs.seed), X.shape[0])
+        rng_keys = jrand.split(jrand.PRNGKey(self.configs.seed), num=X.shape[0])
         generate_cf_partial = jit(partial(self.generate_cf, pred_fn=pred_fn))
         cfs = jax.vmap(generate_cf_partial)(X, rng_keys)
         # cfs = generate_cf_partial(X[0], rng_keys[0])

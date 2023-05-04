@@ -113,14 +113,14 @@ def auto_reshaping(reshape_argname: str):
     """
     def decorator(func):
         def wrapper(*args, **kwargs):
-            args = list(args)
+            kwargs = inspect.getcallargs(func, *args, **kwargs)
             if reshape_argname in kwargs:
                 reshaped_x, x_shape = _reshape_x(kwargs[reshape_argname])
                 kwargs[reshape_argname] = reshaped_x
             else:
-                reshaped_x, x_shape = _reshape_x(args[0])
-                args[0] = reshaped_x
-            cf = func(*args, **kwargs)
+                raise ValueError(
+                    f"Invalid argument name: `{reshape_argname}` is not a valid argument name.")
+            cf = func(**kwargs)
             if not isinstance(cf, Array): 
                 raise ValueError(
                     f"Invalid return type: must be a `jax.Array`, but got `{type(cf).__name__}`.")
@@ -135,7 +135,7 @@ def auto_reshaping(reshape_argname: str):
         return wrapper
     return decorator
 
-# %% ../nbs/00_utils.ipynb 37
+# %% ../nbs/00_utils.ipynb 39
 def make_model(
     m_configs: Dict[str, Any], model: hk.Module  # model configs
 ) -> hk.Transformed:
@@ -148,7 +148,7 @@ def make_model(
     return hk.transform(model_fn)
 
 
-# %% ../nbs/00_utils.ipynb 38
+# %% ../nbs/00_utils.ipynb 40
 def make_hk_module(
     module: hk.Module, # haiku module 
     *args, # haiku module arguments
@@ -161,7 +161,7 @@ def make_hk_module(
     return hk.transform(model_fn)
 
 
-# %% ../nbs/00_utils.ipynb 39
+# %% ../nbs/00_utils.ipynb 41
 def init_net_opt(
     net: hk.Transformed,
     opt: optax.GradientTransformation,
@@ -174,7 +174,7 @@ def init_net_opt(
     return params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 40
+# %% ../nbs/00_utils.ipynb 42
 def grad_update(
     grads: Dict[str, jnp.ndarray],
     params: hk.Params,
@@ -186,7 +186,7 @@ def grad_update(
     return upt_params, opt_state
 
 
-# %% ../nbs/00_utils.ipynb 41
+# %% ../nbs/00_utils.ipynb 43
 def check_cat_info(method):
     def inner(cf_module, *args, **kwargs):
         warning_msg = f"""This CFExplanationModule might not be updated with categorical information.
@@ -199,13 +199,13 @@ You should try `{cf_module.name}.update_cat_info(dm)` before generating cfs.
     return inner
 
 
-# %% ../nbs/00_utils.ipynb 43
+# %% ../nbs/00_utils.ipynb 45
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 45
+# %% ../nbs/00_utils.ipynb 47
 def binary_cross_entropy(
     preds: jnp.DeviceArray, # The predicted values
     labels: jnp.DeviceArray # The ground-truth labels
@@ -220,12 +220,12 @@ def binary_cross_entropy(
 
     return loss
 
-# %% ../nbs/00_utils.ipynb 46
+# %% ../nbs/00_utils.ipynb 48
 def sigmoid(x):
     # https://stackoverflow.com/a/68293931
     return 0.5 * (jnp.tanh(x / 2) + 1)
 
-# %% ../nbs/00_utils.ipynb 48
+# %% ../nbs/00_utils.ipynb 50
 def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
     y_true, y_pred = map(jnp.round, (y_true, y_pred))
     return jnp.mean(jnp.equal(y_true, y_pred))
@@ -239,7 +239,7 @@ def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jnp.DeviceArray:
 def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jnp.DeviceArray:
     return dist(x, cf, ord=1)
 
-# %% ../nbs/00_utils.ipynb 51
+# %% ../nbs/00_utils.ipynb 53
 @dataclass
 class Config:
     rng_reserve_size: int
@@ -251,6 +251,6 @@ class Config:
 
 main_config = Config.default()
 
-# %% ../nbs/00_utils.ipynb 52
+# %% ../nbs/00_utils.ipynb 54
 def get_config() -> Config: 
     return main_config
