@@ -62,7 +62,8 @@ class CHVAE(BaseTrainingModule):
 
     def init_net_opt(self, dm, key):
         X, _ = dm.train_dataset[:128]
-        Z = jnp.ones((X.shape[0], self.m_config.encoded_size))
+        encoded_size = self.m_config.enc_sizes[-1]
+        Z = jnp.ones((X.shape[0], encoded_size))
 
         self.encoder = make_hk_module(
             Encoder, sizes=self.m_config.enc_sizes, 
@@ -165,6 +166,7 @@ def _hyper_sphere_coordindates(
     return candidates
 
 # %% ../../nbs/methods/06_cchvae.ipynb 8
+@auto_reshaping('x')
 def _cchvae_generate(
     x: Array,
     rng_key: random.PRNGKey,
@@ -210,15 +212,6 @@ def _cchvae_generate(
 
         count += 1
         return count, candidate_cf, rng_key
-
-    x_size = x.shape
-    if len(x_size) > 1 and x_size[0] != 1:
-        raise ValueError(
-            f"Invalid Input Shape: Require `x.shape` = (1, k) or (k, ), "
-            f"but got `x.shape` = {x.shape}. This method expects a single input instance."
-        )
-    if len(x_size) == 1:
-        x = x.reshape(1, -1)
     
     y_pred = pred_fn(x).round().reshape(-1)
     z, _ = cchvae_module.encode(cchvae_params[0], rng_key, x)
@@ -230,7 +223,7 @@ def _cchvae_generate(
     # while cond_fn(state):
     #     count, candidate_cf, rng_key = body_fn(state)
     # print(count)
-    return candidate_cf.reshape(x_size)
+    return candidate_cf
 
 # %% ../../nbs/methods/06_cchvae.ipynb 9
 class CCHVAEConfigs(BaseParser):

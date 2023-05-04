@@ -7,7 +7,7 @@ from .base import BaseCFModule, BaseParametricCFModule
 from ..data import TabularDataModule
 from ..module import BaseTrainingModule, MLP
 from ..trainer import train_model, TrainingConfigs
-from ..utils import validate_configs, binary_cross_entropy, make_model, init_net_opt, grad_update
+from ..utils import *
 from functools import partial
 
 # %% auto 0
@@ -103,6 +103,7 @@ class AETrainingModule(BaseTrainingModule):
         self.log_dict(logs)
 
 # %% ../../nbs/methods/03_prototype.ipynb 6
+@auto_reshaping('x')
 def _proto_cf(
     x: jnp.DeviceArray, # `x` shape: (k,), where `k` is the number of features
     pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray], # y = pred_fn(x)
@@ -159,13 +160,6 @@ def _proto_cf(
         # cf = jnp.clip(cf, 0., 1.)
         return cf, opt_state
 
-    x_size = x.shape
-    if len(x_size) > 1 and x_size[0] != 1:
-        raise ValueError(f"""Invalid Input Shape: Require `x.shape` = (1, k) or (k, ),
-but got `x.shape` = {x.shape}. This method expects a single input instance.""")
-    if len(x_size) == 1:
-        x = x.reshape(1, -1)
-    
     cf = jnp.array(x, copy=True)
     opt = optax.rmsprop(lr)
     opt_state = opt.init(cf)
@@ -175,7 +169,7 @@ but got `x.shape` = {x.shape}. This method expects a single input instance.""")
     #     cf, opt_state = gen_cf_step(x, cf, opt_state)
 
     cf = apply_constraints_fn(x, cf, hard=True)
-    return cf.reshape(x_size)
+    return cf
 
 # %% ../../nbs/methods/03_prototype.ipynb 7
 class ProtoCFConfig(BaseParser):

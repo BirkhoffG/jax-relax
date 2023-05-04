@@ -292,5 +292,5 @@ class VAECF(BaseCFModule, BaseParametricCFModule):
             self.params, random.PRNGKey(0), inputs, self.m_config.mu_samples,
             is_training=False
         )
-        return self.data_module.apply_constraints(X, cfs[0], hard=False)
+        return self.data_module.apply_constraints(X, cfs[0], hard=True)
         

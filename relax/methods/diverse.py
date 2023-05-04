@@ -6,7 +6,7 @@ __all__ = ['DiverseCFConfig', 'DiverseCF']
 # %% ../../nbs/methods/02_diverse.ipynb 3
 from ..import_essentials import *
 from .base import BaseCFModule
-from ..utils import validate_configs, dist, grad_update
+from ..utils import *
 
 # %% ../../nbs/methods/02_diverse.ipynb 4
 def hinge_loss(input: jnp.DeviceArray, target: jnp.DeviceArray):
@@ -56,6 +56,7 @@ def _compute_regularization_loss(cfs, cat_idx, cat_arrays, n_cfs):
 
 
 # %% ../../nbs/methods/02_diverse.ipynb 8
+@auto_reshaping('x')
 def _diverse_cf(
     x: jnp.DeviceArray,  # `x` shape: (k,), where `k` is the number of features
     pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray],  # y = pred_fn(x)
@@ -112,15 +113,6 @@ def _diverse_cf(
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
         return cf, opt_state
 
-    x_size = x.shape
-    if len(x_size) > 1 and x_size[0] != 1:
-        raise ValueError(
-            f"""Invalid Input Shape: Require `x.shape` = (1, k) or (k, ),
-but got `x.shape` = {x.shape}. This method expects a single input instance."""
-        )
-    if len(x_size) == 1:
-        x = x.reshape(1, -1)
-    
     key, subkey = jax.random.split(key)
     cfs = jax.random.normal(key, shape=(n_cfs, x.shape[-1]))
     opt = optax.rmsprop(lr)
@@ -129,8 +121,7 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
     # for _ in tqdm(range(n_steps)):
     #     cfs, opt_state = gen_cf_step(x, cfs, opt_state)
     cf = projection_fn(x, cfs[:1, :], hard=True)
-    return cf.reshape(x_size)
-
+    return cf
 
 # %% ../../nbs/methods/02_diverse.ipynb 9
 class DiverseCFConfig(BaseParser):
