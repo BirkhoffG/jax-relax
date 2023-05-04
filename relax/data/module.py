@@ -467,6 +467,50 @@ DEFAULT_DATA_CONFIGS = {
     'oulad': {
         'data': 'assets/data/s_student.csv',
         'conf': 'assets/configs/data_configs/student.json'
+    },
+    'credit': {
+        'data': 'assets/data/extra/s_credit_card.csv',
+        'conf': 'assets/configs/data_configs/credit_card.json'
+    },
+    'cancer': {
+        'data': 'assets/data/extra/s_breast_cancer.csv',
+        'conf': 'assets/configs/data_configs/breast_cancer.json'
+    },
+    'student_performance': {
+        'data': 'assets/data/extra/s_student_performance.csv',
+        'conf': 'assets/configs/data_configs/student_performance.json'
+    },
+    'titanic': {
+        'data': 'assets/data/extra/s_titanic.csv',
+        'conf': 'assets/configs/data_configs/titanic.json'
+    },
+    'german': {
+        'data': 'assets/data/extra/s_german_credit.csv',
+        'conf': 'assets/configs/data_configs/german_credit.json'
+    },
+    'spam': {
+        'data': 'assets/data/s_spam.csv',
+        'conf': 'assets/configs/data_configs/spam.json'
+    },
+    'ozone': {
+        'data': 'assets/data/s_ozone.csv',
+        'conf': 'assets/configs/data_configs/ozone.json'
+    },
+    'qsar': {
+        'data': 'assets/data/s_qsar.csv',
+        'conf': 'assets/configs/data_configs/qsar.json'
+    },
+    'bioresponse': {
+        'data': 'assets/data/s_bioresponse.csv',
+        'conf': 'assets/configs/data_configs/bioresponse.json'
+    },
+    'churn': {
+        'data': 'assets/data/s_churn.csv',
+        'conf': 'assets/configs/data_configs/churn.json'
+    },
+    'road': {
+        'data': 'assets/data/s_road.csv',
+        'conf': 'assets/configs/data_configs/road.json'
     }
 }
 
@@ -499,6 +543,7 @@ def load_data(
         os.makedirs(data_dir)
     data_path = data_dir / f'{data_name}.csv'
     conf_path = data_dir / f'{data_name}.json'
+
 
     # download data/configs
     if not data_path.is_file():

@@ -1,6 +1,7 @@
 {
     "data_configs": {
         "data_dir": "assets/data/extra/s_credit_card.csv",
+        "data_name": "credit",
         "batch_size": 256,
         "continous_cols": [
             "LIMIT_BAL",

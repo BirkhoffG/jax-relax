@@ -2,7 +2,7 @@
     "data_configs": {
         "data_dir": "assets/data/s_spam.csv",
         "data_name": "spam",
-        "batch_size": 128,
+        "batch_size": 256,
         "continous_cols": [
             "word_freq_make",
             "word_freq_address",
@@ -62,6 +62,35 @@
             "capital_run_length_longest",
             "capital_run_length_total"
         ],
-        "discret_cols": []
+        "discret_cols": [],
+        "imutable_cols": []
+    },
+    "mlp_configs": {
+        "sizes": [
+            50,
+            10,
+            50
+        ],
+        "dropout_rate": 0.3,
+        "lr": 0.003
+    },
+    "cfnet_configs": {
+        "enc_sizes": [
+            50,
+            10
+        ],
+        "dec_sizes": [
+            10
+        ],
+        "exp_sizes": [
+            50,
+            50
+        ],
+        "dropout_rate": 0.3,
+        "lr": 0.003,
+        "lambda_1": 1.0,
+        "lambda_3": 0.1,
+        "lambda_2": 0.2,
+        "use_immutable": true
     }
 }

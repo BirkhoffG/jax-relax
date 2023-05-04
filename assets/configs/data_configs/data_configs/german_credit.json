@@ -1,0 +1,47 @@
+{
+    "data_configs": {
+        "data_dir": "assets/data/extra/s_german_credit.csv",
+        "data_name": "german",
+        "batch_size": 128,
+        "continous_cols": [
+            "duration",
+            "credit_amount",
+            "installment_rate",
+            "residence",
+            "age",
+            "credits",
+            "num_people_liable"
+        ],
+        "discret_cols": [
+            "status",
+            "history",
+            "purpose",
+            "savings",
+            "employment",
+            "sex",
+            "other_debtors",
+            "property",
+            "other_plan",
+            "housing",
+            "job",
+            "telephone",
+            "foreign_worker"
+        ]
+    },
+    "mlp_configs": {
+        "sizes": [50, 10, 50],
+        "dropout_rate": 0.3,
+        "lr": 0.003
+    },
+    "cfnet_configs": {
+        "enc_sizes": [50,10],
+        "dec_sizes": [10],
+        "exp_sizes": [50, 50],
+        "dropout_rate": 0.3,
+        "lr": 0.003,
+        "lambda_1": 1.0,
+        "lambda_3": 0.2,
+        "lambda_2": 1.0,
+        "use_immutable": true
+    }
+}

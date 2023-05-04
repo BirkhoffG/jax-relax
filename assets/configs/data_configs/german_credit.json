@@ -1,6 +1,7 @@
 {
     "data_configs": {
         "data_dir": "assets/data/extra/s_german_credit.csv",
+        "data_name": "german",
         "batch_size": 128,
         "continous_cols": [
             "duration",

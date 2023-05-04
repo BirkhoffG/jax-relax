@@ -1,0 +1,56 @@
+{
+    "data_configs": {
+        "data_dir": "assets/data/extra/s_breast_cancer.csv",
+        "data_name": "breast cancer",
+        "batch_size": 128,
+        "continous_cols": [
+            "X_1",
+            "X_2",
+            "X_3",
+            "X_4",
+            "X_5",
+            "X_6",
+            "X_7",
+            "X_8",
+            "X_9",
+            "X_10",
+            "X_11",
+            "X_12",
+            "X_13",
+            "X_14",
+            "X_15",
+            "X_16",
+            "X_17",
+            "X_18",
+            "X_19",
+            "X_20",
+            "X_21",
+            "X_22",
+            "X_23",
+            "X_24",
+            "X_25",
+            "X_26",
+            "X_27",
+            "X_28",
+            "X_29",
+            "X_30"
+        ],
+        "discret_cols": []
+    },
+    "mlp_configs": {
+        "sizes": [50, 10, 50],
+        "dropout_rate": 0.3,
+        "lr": 0.001
+    },
+    "cfnet_configs": {
+        "enc_sizes": [50,10],
+        "dec_sizes": [10],
+        "exp_sizes": [50, 50],
+        "dropout_rate": 0.3,    
+        "lr": 0.003,
+        "lambda_1": 1.0,
+        "lambda_3": 0.1,
+        "lambda_2": 0.2,
+        "use_immutable": false
+    }
+}
