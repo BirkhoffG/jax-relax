@@ -31,3 +31,5 @@ website:
           - methods/04_counternet.ipynb
           - methods/05_sphere.ipynb
           - methods/06_cchvae.ipynb
+          - methods/07_vaecf.ipynb
+          - methods/08_clue.ipynb
