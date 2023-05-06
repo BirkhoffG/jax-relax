@@ -13,9 +13,11 @@ from sklearn.neighbors import NearestNeighbors
 from fastcore.test import test_fail
 
 # %% auto 0
-__all__ = ['CFExplanationResults', 'METRICS_CALLABLE', 'METRICS', 'DEFAULT_METRICS', 'Explanation', 'generate_cf_explanations',
-           'BaseEvalMetrics', 'PredictiveAccuracy', 'Validity', 'Proximity', 'Sparsity', 'ManifoldDist', 'Runtime',
-           'compute_so_validity', 'compute_so_proximity', 'compute_so_sparsity', 'evaluate_cfs', 'benchmark_cfs']
+__all__ = ['CFExplanationResults', 'METRICS_CALLABLE', 'METRICS', 'DEFAULT_METRICS', 'Explanation', 'BaseGenerationStrategy',
+           'IterativeGenerationStrategy', 'VmapGenerationStrategy', 'PmapGenerationStrategy', 'StrategyFactory',
+           'generate_cf_explanations', 'BaseEvalMetrics', 'PredictiveAccuracy', 'Validity', 'Proximity', 'Sparsity',
+           'ManifoldDist', 'Runtime', 'compute_so_validity', 'compute_so_proximity', 'compute_so_sparsity',
+           'evaluate_cfs', 'benchmark_cfs']
 
 # %% ../nbs/06_evaluate.ipynb 4
 @dataclass
@@ -43,6 +45,120 @@ class Explanation:
 CFExplanationResults = Explanation
 
 # %% ../nbs/06_evaluate.ipynb 8
+class BaseGenerationStrategy:
+    """Base class for mapping strategy."""
+    
+    def __call__(
+        self, 
+        fn: Callable, # Function to generate cf for a single input
+        X: jnp.ndarray, # Input instances to be explained
+        pred_fn: Callable[[Array], Array],
+        **kwargs
+    ) -> Array: # Generated counterfactual explanations
+        raise NotImplementedError
+
+# %% ../nbs/06_evaluate.ipynb 9
+class IterativeGenerationStrategy(BaseGenerationStrategy):
+    """Iterativly generate counterfactuals."""
+
+    def __call__(
+        self, 
+        fn: Callable, # Function to generate cf for a single input
+        X: jnp.ndarray, # Input instances to be explained
+        pred_fn: Callable[[Array], Array],
+        **kwargs
+    ) -> Array: # Generated counterfactual explanations
+        
+        assert X.ndim == 2
+        cfs = jnp.stack([fn(X[i], pred_fn=pred_fn, **kwargs) for i in range(X.shape[0])])
+        assert X.shape == cfs.shape
+        return cfs
+
+# %% ../nbs/06_evaluate.ipynb 10
+class VmapGenerationStrategy(BaseGenerationStrategy):
+    """Generate counterfactuals via `jax.vmap`."""
+
+    def __call__(
+        self, 
+        fn: Callable, # Function to generate cf for a single input
+        X: jnp.ndarray, # Input instances to be explained
+        pred_fn: Callable[[Array], Array],
+        **kwargs
+    ) -> Array: # Generated counterfactual explanations
+        
+        assert X.ndim == 2
+        partial_fn = partial(fn, pred_fn=pred_fn, **kwargs)
+        cfs = jax.vmap(partial_fn)(X)
+        return cfs
+
+# %% ../nbs/06_evaluate.ipynb 11
+def _pad_divisible_X(
+    X: Array,
+    n_devices: int
+):
+    """Pad `X` to be divisible by `n_devices`."""
+    if X.shape[0] % n_devices != 0:
+        pad_size = n_devices - X.shape[0] % n_devices
+        X = jnp.concatenate([X, jnp.zeros((pad_size, *X.shape[1:]))])
+    X_padded = X.reshape(n_devices, -1, *X.shape[1:])
+    return X_padded
+
+# %% ../nbs/06_evaluate.ipynb 13
+class PmapGenerationStrategy(BaseGenerationStrategy):
+    def __init__(
+        self, 
+        n_devices: int = None, # Number of devices. If None, use all available devices
+        strategy: str = 'auto', # Strategy to generate counterfactuals
+        **kwargs
+    ):
+        self.strategy = strategy
+        self.n_devices = n_devices or jax.device_count()
+
+    def __call__(
+        self, 
+        fn: Callable, # Function to generate cf for a single input
+        X: jnp.ndarray, # Input instances to be explained
+        pred_fn: Callable[[Array], Array],
+        **kwargs
+    ) -> Array: # Generated counterfactual explanations
+        
+        assert X.ndim == 2
+        X_padded = _pad_divisible_X(X, self.n_devices)
+        partial_fn = partial(fn, pred_fn=pred_fn, **kwargs)
+        cfs = jax.pmap(jax.vmap(partial_fn))(X_padded)
+        cfs = cfs.reshape(-1, *cfs.shape[2:])
+        cfs = cfs[:X.shape[0]]
+        return cfs
+
+# %% ../nbs/06_evaluate.ipynb 19
+class StrategyFactory(object):
+    """Factory class for Parallelism Strategy."""
+
+    __strategy_map = {
+        'iter': IterativeGenerationStrategy(),
+        'vmap': VmapGenerationStrategy(),
+        'pmap': PmapGenerationStrategy(),
+    }
+
+    def __init__(self) -> None:
+        raise ValueError("This class should not be instantiated.")
+        
+    @staticmethod
+    def get_default_strategy() -> BaseGenerationStrategy:
+        """Get default strategy."""
+        return VmapGenerationStrategy()
+
+    @classmethod
+    def get_strategy(cls, strategy: str | BaseGenerationStrategy) -> BaseGenerationStrategy:
+        """Get strategy."""
+        if isinstance(strategy, BaseGenerationStrategy):
+            return strategy
+        elif isinstance(strategy, str) and strategy in cls.__strategy_map:
+            return cls.__strategy_map[strategy]
+        else:
+            raise ValueError(f"Invalid strategy: {strategy}")
+
+# %% ../nbs/06_evaluate.ipynb 22
 def _validate_configs(
     cf_module: BaseCFModule,
     datamodule: TabularDataModule,
@@ -74,7 +190,7 @@ def _train_parametric_module(
         cf_module.train(datamodule, t_configs, pred_fn=pred_fn)
     return cf_module
 
-# %% ../nbs/06_evaluate.ipynb 9
+# %% ../nbs/06_evaluate.ipynb 23
 def _check_aux_pred_fn_args(pred_fn_args: dict | None):
     if pred_fn_args is None:
         return dict()
@@ -113,11 +229,12 @@ def _check_pred_fn(
         pred_fn = cf_module.pred_fn
     return pred_fn
 
-# %% ../nbs/06_evaluate.ipynb 10
+# %% ../nbs/06_evaluate.ipynb 24
 def generate_cf_explanations(
     cf_module: BaseCFModule, # CF Explanation Module
     datamodule: TabularDataModule, # Data Module
     pred_fn: callable = None, # Predictive function
+    strategy: str | BaseGenerationStrategy = 'vmap', # Parallelism Strategy for generating CFs
     t_configs: TrainingConfigs = None, # training configs for `BaseParametricCFModule`
     pred_fn_args: dict = None # auxiliary arguments for `pred_fn` 
 ) -> Explanation:
@@ -136,10 +253,19 @@ def generate_cf_explanations(
     if pred_fn is not None:
         pred_fn = _AuxPredFn(pred_fn, pred_fn_args=pred_fn_args)
 
+    # Uncomment the following line after refactoring `BaseCFModule.generate_cfs`
+    # current_time = time.time()
+    # strategy = StrategyFactory.get_strategy(strategy)
+    # cfs = strategy(cf_module.generate_cf, X, pred_fn=pred_fn)
+    # total_time = time.time() - current_time
+
+    ##################### Deprecated #####################
     # generate cfs
     current_time = time.time()
     cfs = cf_module.generate_cfs(X, pred_fn=pred_fn)
     total_time = time.time() - current_time
+    ##################### Deprecated #####################
+
     # check pred_fn
     pred_fn = _check_pred_fn(pred_fn, cf_module)
 
@@ -152,7 +278,7 @@ def generate_cf_explanations(
     )
 
 
-# %% ../nbs/06_evaluate.ipynb 18
+# %% ../nbs/06_evaluate.ipynb 32
 class BaseEvalMetrics(ABC):
     """Base evaluation metrics class."""
 
@@ -171,7 +297,7 @@ class BaseEvalMetrics(ABC):
     def __call__(self, cf_explanations: Explanation) -> Any:
         raise NotImplementedError
 
-# %% ../nbs/06_evaluate.ipynb 19
+# %% ../nbs/06_evaluate.ipynb 33
 def _compute_acc(
     input: jnp.DeviceArray, # input dim: [N, k]
     label: jnp.DeviceArray, # label dim: [N] or [N, 1]
@@ -181,7 +307,7 @@ def _compute_acc(
     label = label.reshape(-1, 1)
     return accuracy(y_pred, label).item()
 
-# %% ../nbs/06_evaluate.ipynb 21
+# %% ../nbs/06_evaluate.ipynb 35
 class PredictiveAccuracy(BaseEvalMetrics):
     """Compute the accuracy of the predict function."""
     
@@ -192,7 +318,7 @@ class PredictiveAccuracy(BaseEvalMetrics):
         X, y = cf_explanations.data_module.test_dataset[:]
         return _compute_acc(X, y, cf_explanations.pred_fn)
 
-# %% ../nbs/06_evaluate.ipynb 23
+# %% ../nbs/06_evaluate.ipynb 37
 def _compute_val(
     input: jnp.DeviceArray, # input dim: [N, k]
     cfs: jnp.DeviceArray, # cfs dim: [N, k]
@@ -203,7 +329,7 @@ def _compute_val(
     cf_y = pred_fn(cfs).reshape(-1, 1).round()
     return accuracy(y_prime, cf_y).item()
 
-# %% ../nbs/06_evaluate.ipynb 25
+# %% ../nbs/06_evaluate.ipynb 39
 class Validity(BaseEvalMetrics):
     """Compute fraction of input instances on which CF explanation methods output valid CF examples."""
     
@@ -216,7 +342,7 @@ class Validity(BaseEvalMetrics):
             X, cf_explanations.cfs, cf_explanations.pred_fn
         )
 
-# %% ../nbs/06_evaluate.ipynb 26
+# %% ../nbs/06_evaluate.ipynb 40
 def _compute_proximity(
     inputs: jnp.DeviceArray, # input dim: [N, k]
     cfs: jnp.DeviceArray, # cfs dim: [N, k]
@@ -224,7 +350,7 @@ def _compute_proximity(
     prox = jnp.linalg.norm(inputs - cfs, ord=1, axis=1).mean()
     return prox.item()
 
-# %% ../nbs/06_evaluate.ipynb 28
+# %% ../nbs/06_evaluate.ipynb 42
 class Proximity(BaseEvalMetrics):
     """Compute L1 norm distance between input datasets and CF examples divided by the number of features."""
     def __init__(self, name: str = "proximity"):
@@ -234,7 +360,7 @@ class Proximity(BaseEvalMetrics):
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_proximity(X, cf_explanations.cfs)
 
-# %% ../nbs/06_evaluate.ipynb 29
+# %% ../nbs/06_evaluate.ipynb 43
 def _compute_spar(
     input: jnp.DeviceArray,
     cfs: jnp.DeviceArray,
@@ -248,7 +374,7 @@ def _compute_spar(
     return (cont_sparsity + cat_sparsity).item()
 
 
-# %% ../nbs/06_evaluate.ipynb 30
+# %% ../nbs/06_evaluate.ipynb 44
 class Sparsity(BaseEvalMetrics):
     """Compute the number of feature changes between input datasets and CF examples."""
 
@@ -259,7 +385,7 @@ class Sparsity(BaseEvalMetrics):
         X, _ = cf_explanations.data_module.test_dataset[:]
         return _compute_spar(X, cf_explanations.cfs, cf_explanations.cat_idx)
 
-# %% ../nbs/06_evaluate.ipynb 31
+# %% ../nbs/06_evaluate.ipynb 45
 def _compute_manifold_dist(
     input: jnp.DeviceArray,
     cfs: jnp.DeviceArray,
@@ -271,7 +397,7 @@ def _compute_manifold_dist(
     nearest_dist, nearest_points = knn.kneighbors(cfs, 1, return_distance=True)
     return jnp.mean(nearest_dist).item()
 
-# %% ../nbs/06_evaluate.ipynb 32
+# %% ../nbs/06_evaluate.ipynb 46
 class ManifoldDist(BaseEvalMetrics):
     """Compute the L1 distance to the n-nearest neighbor for all CF examples."""
     def __init__(self, n_neighbors: int = 1, p: int = 2, name: str = "manifold_dist"):
@@ -285,7 +411,7 @@ class ManifoldDist(BaseEvalMetrics):
             X, cf_explanations.cfs, self.n_neighbors, self.p
         )
 
-# %% ../nbs/06_evaluate.ipynb 33
+# %% ../nbs/06_evaluate.ipynb 47
 class Runtime(BaseEvalMetrics):
     """Get the running time to generate CF examples."""
     def __init__(self, name: str = "runtime"):
@@ -294,7 +420,7 @@ class Runtime(BaseEvalMetrics):
     def __call__(self, cf_explanations: Explanation) -> float:
         return cf_explanations.total_time
 
-# %% ../nbs/06_evaluate.ipynb 35
+# %% ../nbs/06_evaluate.ipynb 49
 def _create_second_order_cfs(cf_results: CFExplanationResults, threshold: float = 2.0):
     X, y = cf_results.data_module.test_dataset[:]
     cfs = cf_results.cfs
@@ -341,7 +467,7 @@ def compute_so_sparsity(cf_results: CFExplanationResults, threshold: float = 2.0
     return compute_sparsity(cf_results_so)
 
 
-# %% ../nbs/06_evaluate.ipynb 37
+# %% ../nbs/06_evaluate.ipynb 51
 def fake_explanations():
     """Generate sudo explanations for testing."""
     from relax.data import load_data
@@ -357,7 +483,7 @@ def fake_explanations():
     )
 
 
-# %% ../nbs/06_evaluate.ipynb 38
+# %% ../nbs/06_evaluate.ipynb 52
 # METRICS = dict(
 #     acc=PredictiveAccuracy(),
 #     accuracy=PredictiveAccuracy(),
@@ -383,7 +509,7 @@ METRICS = { m.name: m for m in METRICS_CALLABLE }
 
 DEFAULT_METRICS = ["acc", "validity", "proximity"]
 
-# %% ../nbs/06_evaluate.ipynb 40
+# %% ../nbs/06_evaluate.ipynb 54
 def _get_metric(metric: str | BaseEvalMetrics, cf_exp: Explanation):
     if isinstance(metric, str):
         if metric not in METRICS.keys():
@@ -401,7 +527,7 @@ def _get_metric(metric: str | BaseEvalMetrics, cf_exp: Explanation):
         res = res.item()
     return res
 
-# %% ../nbs/06_evaluate.ipynb 42
+# %% ../nbs/06_evaluate.ipynb 56
 def evaluate_cfs(
     cf_exp: Explanation, # CF Explanations
     metrics: Iterable[Union[str, BaseEvalMetrics]] = None, # A list of Metrics. Can be `str` or a subclass of `BaseEvalMetrics`
@@ -425,7 +551,7 @@ def evaluate_cfs(
     elif return_dict or return_df:
         return result_df if return_df else result_dict
 
-# %% ../nbs/06_evaluate.ipynb 44
+# %% ../nbs/06_evaluate.ipynb 58
 def benchmark_cfs(
     cf_results_list: Iterable[CFExplanationResults],
     metrics: Optional[Iterable[str]] = None,
