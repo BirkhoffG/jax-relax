@@ -15,7 +15,7 @@ DATASET_NAMES = ["adult","credit","heloc","oulad","student_performance","titanic
 CF_NAMES = ["VanillaCF","DiverseCF","ProtoCF","CounterNet","CCHVAE","CLUE","GrowingSphere","VAECF"]
 
 # Convert the input string into the class
-def class_list(class_names):
+def get_CF_classes(class_names):
     if class_names == 'all':
         # return a list of all available CF method classes
         names = CF_NAMES
@@ -36,7 +36,7 @@ def main(args):
         data_names = [args.data_name]
 
     # Convert the input string into CF class
-    cf_methods_list = class_list(args.cf_methods)
+    cf_methods_list = get_CF_classes(args.cf_methods)
 
     # Print benchmarking CF methods and dataset
     if args.cf_methods != "all":
@@ -74,12 +74,11 @@ def main(args):
                 dm, 
                 t_configs
             )
-            pred_fn = lambda x, params, prng_key: \
-                training_module.forward(params, prng_key, x, is_training=False)
+            pred_fn = training_module.pred_fn
             
             # Generate CFEs
             print("generate...")
-            cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, prng_key=random.PRNGKey(0)))
+            cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, rng_key=jrand.PRNGKey(0)))
             
             # Store CFEs
             exps.append(cf_exp)
