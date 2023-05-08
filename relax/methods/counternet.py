@@ -7,7 +7,7 @@ from ..module import MLP, BaseTrainingModule
 from .base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
 from ..trainer import TrainingConfigs, train_model
 from ..data import TabularDataModule
-from ..utils import validate_configs, sigmoid, accuracy, proximity, make_model, init_net_opt, grad_update
+from ..utils import *
 from functools import partial
 
 # %% auto 0
@@ -315,6 +315,10 @@ class CounterNet(BaseCFModule, BaseParametricCFModule, BasePredFnCFModule):
         if t_configs is None: t_configs = _default_t_configs
         params, _ = train_model(self.module, datamodule, t_configs)
         self.params = params
+
+    @auto_reshaping('x')
+    def generate_cf(self, x: jnp.ndarray, pred_fn = None) -> jnp.ndarray:
+        return self.module.generate_cfs(x, self.params, rng_key=jax.random.PRNGKey(0))
 
     def generate_cfs(self, X: jnp.ndarray, pred_fn = None) -> jnp.ndarray:
         return self.module.generate_cfs(X, self.params, rng_key=jax.random.PRNGKey(0))

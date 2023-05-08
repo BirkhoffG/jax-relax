@@ -253,18 +253,10 @@ def generate_cf_explanations(
     if pred_fn is not None:
         pred_fn = _AuxPredFn(pred_fn, pred_fn_args=pred_fn_args)
 
-    # Uncomment the following line after refactoring `BaseCFModule.generate_cfs`
-    # current_time = time.time()
-    # strategy = StrategyFactory.get_strategy(strategy)
-    # cfs = strategy(cf_module.generate_cf, X, pred_fn=pred_fn)
-    # total_time = time.time() - current_time
-
-    ##################### Deprecated #####################
-    # generate cfs
     current_time = time.time()
-    cfs = cf_module.generate_cfs(X, pred_fn=pred_fn)
+    strategy = StrategyFactory.get_strategy(strategy)
+    cfs = strategy(cf_module.generate_cf, X, pred_fn=pred_fn)
     total_time = time.time() - current_time
-    ##################### Deprecated #####################
 
     # check pred_fn
     pred_fn = _check_pred_fn(pred_fn, cf_module)

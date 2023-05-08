@@ -266,6 +266,20 @@ class CCHVAE(BaseCFModule, BaseParametricCFModule):
         if t_configs is None: t_configs = _default_t_configs
         params, _ = train_model(self.module, datamodule, t_configs)
         self.params = params
+
+    def generate_cf(self, x: Array, pred_fn: Callable = None) -> jnp.ndarray:
+        _cchvae_generate_fn_partial = partial(
+            _cchvae_generate,
+            pred_fn=pred_fn,
+            max_steps=self.m_config.max_steps,
+            n_search_samples=self.m_config.n_search_samples,
+            step_size=self.m_config.step_size,
+            cchvae_module=self.module,
+            cchvae_params=self.params,
+            apply_fn=self.data_module.apply_constraints,
+        )
+        rng = random.PRNGKey(0)
+        return _cchvae_generate_fn_partial(x, rng)
     
     def generate_cfs(self, X: Array, pred_fn: Callable = None) -> jnp.ndarray:
         _cchvae_generate_fn_partial = partial(
