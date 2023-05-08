@@ -243,15 +243,15 @@ def generate_cf_explanations(
     _validate_configs(cf_module, datamodule, pred_fn, t_configs)
     cf_module = _prepare_module(cf_module, datamodule)
 
+    # create `pred_fn` which only takes `x` as an input
+    if pred_fn is not None:
+        pred_fn = _AuxPredFn(pred_fn, pred_fn_args=pred_fn_args)
+
     if isinstance(cf_module, BaseParametricCFModule):
         cf_module = _train_parametric_module(
             cf_module, datamodule, t_configs=t_configs, pred_fn=pred_fn
         )
     X, _ = datamodule.test_dataset[:]
-    
-    # create `pred_fn` which only takes `x` as an input
-    if pred_fn is not None:
-        pred_fn = _AuxPredFn(pred_fn, pred_fn_args=pred_fn_args)
 
     current_time = time.time()
     strategy = StrategyFactory.get_strategy(strategy)
