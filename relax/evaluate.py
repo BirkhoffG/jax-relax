@@ -253,8 +253,8 @@ def generate_cf_explanations(
     if pred_fn is not None:
         pred_fn = _AuxPredFn(pred_fn, pred_fn_args=pred_fn_args)
 
-    current_time = time.time()
     strategy = StrategyFactory.get_strategy(strategy)
+    current_time = time.time()
     cfs = strategy(cf_module.generate_cf, X, pred_fn=pred_fn)
     total_time = time.time() - current_time
 

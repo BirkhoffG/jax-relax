@@ -285,8 +285,8 @@ class VAECF(BaseCFModule, BaseParametricCFModule):
         params, _ = train_model(self.module, datamodule, t_configs)
         self.params = params
     
-
     @auto_reshaping('x')
+    @partial(jax.jit, static_argnums=[0, 2])
     def generate_cf(
         self, 
         x: Array, 

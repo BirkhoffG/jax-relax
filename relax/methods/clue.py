@@ -329,6 +329,7 @@ class CLUEConfigs(BaseParser):
     step_size: float = Field(0.01, description="Step size")
     vae_n_epochs: int = Field(10, description="Number of epochs for VAE")
     vae_batch_size: int = Field(128, description="Batch size for VAE")
+    seed: int = Field(0, description="Seed for random number generator")
 
 # %% ../../nbs/methods/08_clue.ipynb 10
 class CLUE(BaseCFModule, BaseParametricCFModule):
@@ -340,7 +341,7 @@ class CLUE(BaseCFModule, BaseParametricCFModule):
         if m_config is None: m_config = CLUEConfigs()
         self.m_config = m_config
         self.module = VAEGaussCat(m_config.dict())
-        self.rng_key = random.PRNGKey(0)
+        self.rng_key = random.PRNGKey(self.m_config.seed)
 
     def _is_module_trained(self) -> bool:
         return not (self.params is None)

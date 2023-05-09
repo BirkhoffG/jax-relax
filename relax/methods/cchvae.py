@@ -238,6 +238,7 @@ class CCHVAEConfigs(BaseParser):
     max_steps: int = Field(1000, description="Max steps")
     n_search_samples: int = Field(300, description="Number of generated candidate counterfactuals.")
     step_size: float = Field(0.1, description="Step size")
+    seed: int = Field(0, description="Seed for random number generator")
 
 # %% ../../nbs/methods/06_cchvae.ipynb 10
 class CCHVAE(BaseCFModule, BaseParametricCFModule):
@@ -250,6 +251,7 @@ class CCHVAE(BaseCFModule, BaseParametricCFModule):
             m_config = CCHVAEConfigs()
         self.m_config = m_config
         self.module = CHVAE(m_config.dict())
+        self.rng_key = random.PRNGKey(self.m_config.seed)
 
     def _is_module_trained(self) -> bool:
         return not (self.params is None)
@@ -278,8 +280,7 @@ class CCHVAE(BaseCFModule, BaseParametricCFModule):
             cchvae_params=self.params,
             apply_fn=self.data_module.apply_constraints,
         )
-        rng = random.PRNGKey(0)
-        return _cchvae_generate_fn_partial(x, rng)
+        return _cchvae_generate_fn_partial(x, self.rng_key)
     
     def generate_cfs(self, X: Array, pred_fn: Callable = None) -> jnp.ndarray:
         _cchvae_generate_fn_partial = partial(
@@ -292,7 +293,7 @@ class CCHVAE(BaseCFModule, BaseParametricCFModule):
             cchvae_params=self.params,
             apply_fn=self.data_module.apply_constraints,
         )
-        rngs = lax.broadcast(random.PRNGKey(0), (X.shape[0], ))
+        rngs = lax.broadcast(self.rng_key, (X.shape[0], ))
         return jax.vmap(_cchvae_generate_fn_partial)(X, rngs)
         # for i in tqdm(range(X.shape[0])):
         #     rng = random.PRNGKey(i)
