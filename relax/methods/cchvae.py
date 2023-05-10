@@ -246,12 +246,12 @@ class CCHVAE(BaseCFModule, BaseParametricCFModule):
     module: CHVAE
     name: str = 'C-CHVAE'
 
-    def __init__(self, m_config: Dict | CCHVAEConfigs = None):
-        if m_config is None:
-            m_config = CCHVAEConfigs()
-        self.m_config = m_config
-        self.module = CHVAE(m_config.dict())
-        self.rng_key = random.PRNGKey(self.m_config.seed)
+    def __init__(self, configs: Dict | CCHVAEConfigs = None):
+        if configs is None:
+            configs = CCHVAEConfigs()
+        self.configs = validate_configs(configs, CCHVAEConfigs)
+        self.module = CHVAE(self.configs.dict())
+        self.rng_key = random.PRNGKey(self.configs.seed)
 
     def _is_module_trained(self) -> bool:
         return not (self.params is None)
@@ -273,9 +273,9 @@ class CCHVAE(BaseCFModule, BaseParametricCFModule):
         _cchvae_generate_fn_partial = partial(
             _cchvae_generate,
             pred_fn=pred_fn,
-            max_steps=self.m_config.max_steps,
-            n_search_samples=self.m_config.n_search_samples,
-            step_size=self.m_config.step_size,
+            max_steps=self.configs.max_steps,
+            n_search_samples=self.configs.n_search_samples,
+            step_size=self.configs.step_size,
             cchvae_module=self.module,
             cchvae_params=self.params,
             apply_fn=self.data_module.apply_constraints,
@@ -286,9 +286,9 @@ class CCHVAE(BaseCFModule, BaseParametricCFModule):
         _cchvae_generate_fn_partial = partial(
             _cchvae_generate,
             pred_fn=pred_fn,
-            max_steps=self.m_config.max_steps,
-            n_search_samples=self.m_config.n_search_samples,
-            step_size=self.m_config.step_size,
+            max_steps=self.configs.max_steps,
+            n_search_samples=self.configs.n_search_samples,
+            step_size=self.configs.step_size,
             cchvae_module=self.module,
             cchvae_params=self.params,
             apply_fn=self.data_module.apply_constraints,
