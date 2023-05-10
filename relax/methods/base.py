@@ -25,7 +25,18 @@ class BaseCFModule(ABC):
     def data_module(self) -> TabularDataModule:
         """Binded `DataModule`."""
         return self._data_module
+    
+    @abstractmethod
+    def generate_cf(
+        self, 
+        x: Array, # Input to be explained
+        pred_fn: Callable = None, # Predictive function 
+        **kwargs
+    ) -> jnp.ndarray: # Generated counterfactual
+        """Abstract method to generate one counterfactual"""
+        raise NotImplementedError
 
+    @deprecated(deprecated_in='0.1.4')
     @abstractmethod
     def generate_cfs(
         self,

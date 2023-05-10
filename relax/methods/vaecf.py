@@ -285,6 +285,22 @@ class VAECF(BaseCFModule, BaseParametricCFModule):
         params, _ = train_model(self.module, datamodule, t_configs)
         self.params = params
     
+    @auto_reshaping('x')
+    @partial(jax.jit, static_argnums=[0, 2])
+    def generate_cf(
+        self, 
+        x: Array, 
+        pred_fn: Callable = None
+    ) -> jnp.ndarray:
+        y = pred_fn(x).round().reshape(-1, 1)
+        inputs = jnp.concatenate([x, y], axis=-1)
+        _, _, cfs = self.module.sample(
+            self.params, random.PRNGKey(0), inputs, self.m_config.mu_samples,
+            is_training=False
+        )
+        return self.data_module.apply_constraints(x, cfs[0], hard=True)
+
+
     def generate_cfs(self, X: Array, pred_fn: Callable = None) -> jnp.ndarray:
         y = pred_fn(X).round().reshape(-1, 1)
         inputs = jnp.concatenate([X, y], axis=-1)

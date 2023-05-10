@@ -152,19 +152,18 @@ class GrowingSphere(BaseCFModule):
         if configs is None:
             configs = GSConfig()
         self.configs = validate_configs(configs, GSConfig)
+        self.rng = jrand.PRNGKey(self.configs.seed)
     
     def generate_cf(
         self,
         x: Array,
-        rng_key: jrand.PRNGKey,
         pred_fn: Callable,
     ):
-        # rng_key = jrand.PRNGKey(self.configs.seed)
         cat_idx = self.data_module.cat_idx
         apply_immutable_partial = partial(
             apply_immutable, immutable_idx=self.data_module._imutable_idx_list)
         cf = _growing_spheres(
-            rng_key,
+            self.rng,
             x,
             pred_fn,
             self.configs.n_steps,
