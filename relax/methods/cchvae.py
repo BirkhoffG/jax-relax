@@ -109,7 +109,7 @@ class CHVAE(BaseTrainingModule):
         recon_loss = jnp.mean(optax.l2_loss(mu_x, x))
         # kl_loss = -0.5 * jnp.sum(1 + logvar_z - mu_z**2 - jnp.exp(logvar_z))
         kl_loss = -0.5 * jnp.sum(1 + logvar_z - jnp.power(mu_z, 2) - jnp.exp(logvar_z))
-        loss = recon_loss + kl_loss
+        loss = recon_loss + 0.3 * kl_loss
         return loss
 
     @partial(jax.jit, static_argnums=(0,))
@@ -178,13 +178,12 @@ def _cchvae_generate(
     cchvae_params: Tuple[hk.Params, hk.Params],
     apply_fn: Callable,
 ):
-    @jit
     def cond_fn(state):
         count, cf, _ = state
         return jnp.logical_and(count < max_steps, jnp.array_equal(x, cf))
     
-    @jit
-    def body_fn(state):
+    @loop_tqdm(max_steps)
+    def body_fn(i, state):
         count, candidate_cf, rng = state
         rng_key, subkey_1, subkey_2 = jrand.split(rng, num=3)
         low, high = step_size * count, step_size * (count + 1)
@@ -202,10 +201,12 @@ def _cchvae_generate(
         y_candidates = pred_fn(x_ce).round().reshape(-1)
         indices = jnp.where(y_candidates != y_pred, 1, 0).astype(bool)
         distances = jnp.where(indices, distances, jnp.inf)
+
+        best_candidate_cf = x_ce[jnp.argmin(distances)].reshape(1, -1)
         
         candidate_cf = lax.cond(
-            jnp.any(indices),
-            lambda _: x_ce[jnp.argmin(distances)].reshape(1, -1),
+            distances.min() < jnp.abs(x - candidate_cf).sum(axis=1).min(),
+            lambda _: best_candidate_cf,
             lambda _: candidate_cf,
             None
         )
@@ -218,8 +219,11 @@ def _cchvae_generate(
     # z_rep = jnp.repeat(z.reshape(1, -1), n_search_samples, axis=0)
     z_rep = z.reshape(1, -1)
     rng_key, _ = jrand.split(rng_key)
-    state = (0, x, rng_key) # (count, candidate_cf, rng_key)
-    count, candidate_cf, rng_key = jax.lax.while_loop(cond_fn, body_fn, state)
+    # candidate_cf = jnp.array(x, copy=True)
+    candidate_cf = jnp.ones_like(x) * jnp.inf
+    state = (0, candidate_cf, rng_key) # (count, candidate_cf, rng_key)
+    # count, candidate_cf, rng_key = jax.lax.while_loop(cond_fn, body_fn, state)
+    count, candidate_cf, rng_key = lax.fori_loop(0, max_steps, body_fn, state)
     # while cond_fn(state):
     #     count, candidate_cf, rng_key = body_fn(state)
     # print(count)
@@ -235,9 +239,9 @@ class CCHVAEConfigs(BaseParser):
     )
     encoded_size: int = Field(5, description="Encoded size")
     lr: float = Field(0.001, description="Learning rate")
-    max_steps: int = Field(1000, description="Max steps")
+    max_steps: int = Field(100, description="Max steps")
     n_search_samples: int = Field(300, description="Number of generated candidate counterfactuals.")
-    step_size: float = Field(0.1, description="Step size")
+    step_size: float = Field(1, description="Step size")
     seed: int = Field(0, description="Seed for random number generator")
 
 # %% ../../nbs/methods/06_cchvae.ipynb 10

@@ -296,6 +296,7 @@ def _clue_generate(
         )
         return loss.mean()
     
+    @loop_tqdm(max_steps)
     def step(i, z_opt_state):
         z, opt_state = z_opt_state
         z_grad = jax.grad(compute_loss)(z, dec_params)
