@@ -7,9 +7,10 @@ from .base import BaseCFModule
 from ..utils import *
 
 # %% auto 0
-__all__ = ['hyper_sphere_coordindates', 'cat_sample', 'apply_immutable', 'GSConfig', 'GrowingSphere']
+__all__ = ['hyper_sphere_coordindates', 'sample_categorical', 'cat_sample', 'apply_immutable', 'GSConfig', 'GrowingSphere']
 
 # %% ../../nbs/methods/05_sphere.ipynb 4
+@partial(jit, static_argnums=(2, 5))
 def hyper_sphere_coordindates(
     rng_key: jrand.PRNGKey, # Random number generator key
     x: Array, # Input instance with only continuous features. Shape: (1, n_features)
@@ -31,26 +32,27 @@ def hyper_sphere_coordindates(
     return candidates
 
 # %% ../../nbs/methods/05_sphere.ipynb 5
+@partial(jit, static_argnums=(1, 2))
+def sample_categorical(rng_key: jrand.PRNGKey, col_size: int, n_samples: int):
+    rng_key, subkey = jrand.split(rng_key)
+    prob = jnp.ones(col_size) / col_size
+    cat_sample = jax.nn.one_hot(
+        jrand.categorical(rng_key, prob, shape=(n_samples,)), num_classes=col_size
+    )
+    return subkey, cat_sample
+
+
 def cat_sample(
     rng_key: jrand.PRNGKey, # Random number generator key
-    x: Array, # Input instance with only categorical features. Shape: (1, n_features)
-    cat_arrays: List[List[str]],  # A list of a list of each categorical feature name
+    cat_array_sizes: List[int],  # A list of the number of categories for each categorical feature
     n_samples: int,  # Number of samples to sample
-): 
-    def sample_categorical(rng_key: jrand.PRNGKey, col: np.ndarray):
-        rng_key, subkey = jrand.split(rng_key)
-        prob = jnp.ones(len(col)) / len(col)
-        cat_sample = jax.nn.one_hot(
-            jrand.categorical(rng_key, prob, shape=(n_samples,)), num_classes=len(col)
-        )
-        return rng_key, cat_sample
-    
+):  
     candidates = []
-    # We cannot use lax.scan here because cat_arrays is List[List[str]], not and can't ben an Array
-    for col in cat_arrays:
-        rng_key, cat_sample = sample_categorical(rng_key, col)
+    for col in cat_array_sizes:
+        rng_key, cat_sample = sample_categorical(rng_key, col, n_samples)
         candidates.append(cat_sample)
     candidates = jnp.concatenate(candidates, axis=1)
+    
     return candidates
 
 # %% ../../nbs/methods/05_sphere.ipynb 6
@@ -66,62 +68,56 @@ def _growing_spheres(
     step_size: float, # Step size
     p_norm: int, # Norm
     apply_fn: Callable # Apply immutable constraints
-):
+):  
     @jit
-    def cond_fn(state):
-        candidate_cf, count, _ = state
-        return (jnp.any(jnp.isinf(candidate_cf))) & (count < n_steps)
-        # return (not candidate_cf) & (count < n_steps)
+    def dist_fn(x, cf):
+        if p_norm == 1:
+            return jnp.abs(cf - x).sum(axis=1)
+        elif p_norm == 2:
+            return jnp.linalg.norm(cf - x, ord=2, axis=1)
+        else:
+            raise ValueError("Only p_norm = 1 or 2 is supported")
     
-    @jit
-    def body_fn(state):
+    @loop_tqdm(n_steps)
+    def step(i, state):
         candidate_cf, count, rng_key = state
         rng_key, subkey_1, subkey_2 = jrand.split(rng_key, num=3)
         low, high = step_size * count, step_size * (count + 1)
         # Sample around x
         cont_candidates = hyper_sphere_coordindates(subkey_1, x[:, :cat_idx], n_samples, high, low, p_norm)
-        cat_candidates = cat_sample(subkey_2, x[:, cat_idx:], cat_arrays, n_samples)
+        cat_candidates = cat_sample(subkey_2, cat_array_sizes, n_samples)
         candidates = jnp.concatenate([cont_candidates, cat_candidates], axis=1)
         # Apply immutable constraints
         candidates = apply_fn(x=x, cf=candidates)
         assert candidates.shape[1] == x.shape[1], f"candidates.shape = {candidates.shape}, x.shape = {x.shape}"
 
         # Calculate distance
-        if p_norm == 1:
-            dist = jnp.abs(candidates - x).sum(axis=1)
-        elif p_norm == 2:
-            dist = jnp.linalg.norm(candidates - x, ord=2, axis=1)
-        else:
-            raise ValueError("Only p_norm = 1 or 2 is supported")
+        dist = dist_fn(x, candidates)
 
         # Calculate counterfactual labels
         candidate_preds = pred_fn(candidates).round().reshape(-1)
-        # print(candidate_preds != y_pred)
         indices = jnp.where(candidate_preds != y_pred, 1, 0).astype(bool)
 
-        # candidates = candidates[indices]
-        # candidates = jnp.where(indices.reshape(-1, 1), 
         candidates = jnp.where(indices.reshape(-1, 1), 
                                candidates, jnp.ones_like(candidates) * jnp.inf)
-        # dist = dist[indices]
         dist = jnp.where(indices.reshape(-1, 1), dist, jnp.ones_like(dist) * jnp.inf)
 
-        # if len(candidates) > 0:
         closest_idx = dist.argmin()
-        candidate_cf = candidates[closest_idx].reshape(1, -1)
+        candidate_cf_update = candidates[closest_idx].reshape(1, -1)
 
-        # if jnp.any(jnp.logical_not(jnp.isinf(candidates))):
-        #     # Find the closest counterfactual
-        #     closest_idx = dist.argmin()
-        #     candidate_cf = candidates[closest_idx].reshape(1, -1)
-
+        candidate_cf = jnp.where(
+            dist[closest_idx].mean() < dist_fn(x, candidate_cf).mean(),
+            candidate_cf_update, 
+            candidate_cf
+        )
         return candidate_cf, count + 1, rng_key
     
     y_pred = pred_fn(x).round().reshape(-1)
     candidate_cf = jnp.ones_like(x) * jnp.inf
+    cat_array_sizes = [len(cat_array) for cat_array in cat_arrays]
     count = 0
     state = (candidate_cf, count, rng_key)
-    candidate_cf, _, _ = lax.while_loop(cond_fn, body_fn, state)
+    candidate_cf, _, _ = lax.fori_loop(0, n_steps, step, state)
     # if `inf` is found, return the original input
     candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
     return candidate_cf
