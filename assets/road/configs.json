@@ -1,0 +1,72 @@
+{
+    "data_configs": {
+        "data_dir": "assets/road/data.csv",
+        "data_name": "road",
+        "batch_size": 128,
+        "continous_cols": [
+            "Vehicle_Reference_df_res",
+            "Vehicle_Type",
+            "Vehicle_Manoeuvre",
+            "Vehicle_Location-Restricted_Lane",
+            "Hit_Object_in_Carriageway",
+            "Hit_Object_off_Carriageway",
+            "Age_of_Driver",
+            "Age_Band_of_Driver",
+            "Engine_Capacity_(CC)",
+            "Propulsion_Code",
+            "Age_of_Vehicle",
+            "Location_Easting_OSGR",
+            "Location_Northing_OSGR",
+            "Longitude",
+            "Latitude",
+            "Police_Force",
+            "Number_of_Vehicles",
+            "Number_of_Casualties",
+            "Local_Authority_(District)",
+            "1st_Road_Number",
+            "2nd_Road_Number",
+            "Vehicle_Reference_df",
+            "Casualty_Reference",
+            "Age_of_Casualty",
+            "Age_Band_of_Casualty",
+            "Pedestrian_Location",
+            "Pedestrian_Movement",
+            "Casualty_Type",
+            "Casualty_IMD_Decile"
+        ],
+        "discret_cols": [
+            "Was_Vehicle_Left_Hand_Drive?",
+            "Urban_or_Rural_Area",
+            "Sex_of_Casualty"
+        ],
+        "imutable_cols": []
+    },
+    "mlp_configs": {
+        "sizes": [
+            50,
+            10,
+            50
+        ],
+        "dropout_rate": 0.3,
+        "lr": 0.004
+    },
+    "cfnet_configs": {
+        "enc_sizes": [
+            50,
+            10
+        ],
+        "dec_sizes": [
+            10
+        ],
+        "exp_sizes": [
+            50,
+            50
+        ],
+        "dropout_rate": 0.3,
+        "lr": 0.003,
+        "lambda_1": 1.0,
+        "lambda_3": 0.1,
+        "lambda_2": 0.2,
+        "use_immutable": true
+    }
+}

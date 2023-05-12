@@ -3,11 +3,11 @@
 # %% ../nbs/04_learning.ipynb 3
 from __future__ import annotations
 from .import_essentials import *
-from .data import TabularDataModule
-from .module import BaseTrainingModule
+from .data import TabularDataModule, load_data
+from .module import BaseTrainingModule, PredictiveTrainingModule
 from .logger import TensorboardLogger
-from .utils import validate_configs
-from ._ckpt_manager import CheckpointManager
+from .utils import validate_configs, load_json
+from ._ckpt_manager import CheckpointManager, load_checkpoint
 
 # %% auto 0
 __all__ = ['TrainingConfigs', 'train_model_with_states', 'train_model']

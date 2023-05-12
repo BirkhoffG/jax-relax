@@ -5,15 +5,15 @@ from __future__ import annotations
 from .import_essentials import *
 from .data import TabularDataModule
 from .logger import TensorboardLogger
-from .utils import validate_configs, sigmoid, accuracy, init_net_opt, grad_update, make_hk_module, show_doc as show_parser_doc
+from .utils import validate_configs, sigmoid, accuracy, init_net_opt, grad_update, make_hk_module, show_doc as show_parser_doc, load_json
+from ._ckpt_manager import load_checkpoint
 from fastcore.basics import patch
 from functools import partial
 from abc import ABC, abstractmethod
 from copy import deepcopy
 
 # %% auto 0
-__all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'BaseTrainingModule', 'PredictiveTrainingModuleConfigs',
-           'PredictiveTrainingModule']
+__all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'BaseTrainingModule', 'PredictiveTrainingModuleConfigs', 'PredictiveTrainingModule', 'load_pred_model']
 
 # %% ../nbs/03_training_module.ipynb 5
 class BaseNetwork(ABC):
@@ -214,3 +214,16 @@ class PredictiveTrainingModule(BaseTrainingModule):
         logs = {"val/val_loss": loss.item(), "val/val_accuracy": accuracy(y, y_pred)}
         self.log_dict(logs)
 
+
+# %% ../nbs/04_learning.ipynb 7
+def load_pred_model(data_name: str) -> Tuple[hk.Params, PredictiveTrainingModule]:
+
+    # Fetch the sizes and lr from the configs file
+    data_dir = Path(os.getcwd()) / "cf_data" / data_name 
+    mlp_configs = load_json(data_dir / "configs.json" )['mlp_configs']
+    sizes = mlp_configs["sizes"]
+    lr = mlp_configs["lr"]
+
+    module = PredictiveTrainingModule({'sizes': sizes, 'lr': lr})
+    param = load_checkpoint(data_dir / "model")
+    return (param, module)
