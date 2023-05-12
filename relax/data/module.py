@@ -457,60 +457,74 @@ def sample(datamodule: BaseDataModule, frac: float = 1.0):
 # %% ../../nbs/01_data.module.ipynb 47
 DEFAULT_DATA_CONFIGS = {
     'adult': {
-        'data' :'assets/data/s_adult.csv',
-        'conf' :'assets/configs/data_configs/adult.json',
+        'data' :'assets/adult/data.csv',
+        'conf' :'assets/adult/configs.json',
+        'model' :'assets/adult/model'
     },
     'heloc': {
-        'data': 'assets/data/s_home.csv',
-        'conf': 'assets/configs/data_configs/home.json'
+        'data': 'assets/heloc/data.csv',
+        'conf': 'assets/heloc/configs.json',
+        'model' :'assets/heloc/model'
     },
     'oulad': {
-        'data': 'assets/data/s_student.csv',
-        'conf': 'assets/configs/data_configs/student.json'
+        'data': 'assets/oulad/data.csv',
+        'conf': 'assets/oulad/configs.json',
+        'model' :'assets/oulad/model'
     },
     'credit': {
-        'data': 'assets/data/extra/s_credit_card.csv',
-        'conf': 'assets/configs/data_configs/credit_card.json'
+        'data': 'assets/credit/data.csv',
+        'conf': 'assets/credit/configs.json',
+        'model' :'assets/credit/model'
     },
     'cancer': {
-        'data': 'assets/data/extra/s_breast_cancer.csv',
-        'conf': 'assets/configs/data_configs/breast_cancer.json'
+        'data': 'assets/cancer/data.csv',
+        'conf': 'assets/cancer/configs.json',
+        'model' :'assets/cancer/model'
     },
     'student_performance': {
-        'data': 'assets/data/extra/s_student_performance.csv',
-        'conf': 'assets/configs/data_configs/student_performance.json'
+        'data': 'assets/student_performance/data.csv',
+        'conf': 'assets/student_performance/configs.json',
+        'model' :'assets/student_performance/model'
     },
     'titanic': {
-        'data': 'assets/data/extra/s_titanic.csv',
-        'conf': 'assets/configs/data_configs/titanic.json'
+        'data': 'assets/titanic/data.csv',
+        'conf': 'assets/titanic/configs.json',
+        'model' :'assets/titanic/model'
     },
     'german': {
-        'data': 'assets/data/extra/s_german_credit.csv',
-        'conf': 'assets/configs/data_configs/german_credit.json'
+        'data': 'assets/german/data.csv',
+        'conf': 'assets/german/configs.json',
+        'model' :'assets/german/model'
     },
     'spam': {
-        'data': 'assets/data/s_spam.csv',
-        'conf': 'assets/configs/data_configs/spam.json'
+        'data': 'assets/spam/data.csv',
+        'conf': 'assets/spam/configs.json',
+        'model' :'assets/spam/model'
     },
     'ozone': {
-        'data': 'assets/data/s_ozone.csv',
-        'conf': 'assets/configs/data_configs/ozone.json'
+        'data': 'assets/ozone/data.csv',
+        'conf': 'assets/ozone/configs.json',
+        'model' :'assets/ozone/model'
     },
     'qsar': {
-        'data': 'assets/data/s_qsar.csv',
-        'conf': 'assets/configs/data_configs/qsar.json'
+        'data': 'assets/qsar/data.csv',
+        'conf': 'assets/qsar/configs.json',
+        'model' :'assets/qsar/model'
     },
     'bioresponse': {
-        'data': 'assets/data/s_bioresponse.csv',
-        'conf': 'assets/configs/data_configs/bioresponse.json'
+        'data': 'assets/bioresponse/data.csv',
+        'conf': 'assets/bioresponse/configs.json',
+        'model' :'assets/bioresponse/model'
     },
     'churn': {
-        'data': 'assets/data/s_churn.csv',
-        'conf': 'assets/configs/data_configs/churn.json'
+        'data': 'assets/churn/data.csv',
+        'conf': 'assets/churn/configs.json',
+        'model' :'assets/churn/model'
     },
     'road': {
-        'data': 'assets/data/s_road.csv',
-        'conf': 'assets/configs/data_configs/road.json'
+        'data': 'assets/road/data.csv',
+        'conf': 'assets/road/configs.json',
+        'model' :'assets/road/model'
     }
 }
 
@@ -530,26 +544,36 @@ def load_data(
     
     _validate_dataname(data_name)
 
-    # get data/config urls
+    # get data/config/model urls
     _data_path = DEFAULT_DATA_CONFIGS[data_name]['data']
     _conf_path = DEFAULT_DATA_CONFIGS[data_name]['conf']
+    _model_path = DEFAULT_DATA_CONFIGS[data_name]['model']
     
     data_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_data_path}"
     conf_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_conf_path}"
+    model_params_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/params.npy"
+    model_tree_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/tree.pkl"
 
     # create new dir
     data_dir = Path(os.getcwd()) / "cf_data"
     if not data_dir.exists():
         os.makedirs(data_dir)
-    data_path = data_dir / f'{data_name}.csv'
-    conf_path = data_dir / f'{data_name}.json'
+    data_path = data_dir / data_name / 'data.csv'
+    conf_path = data_dir / data_name / 'configs.json'
+    model_path = data_dir / data_name / "model"
+    if not model_path.exists():
+        os.makedirs(model_path)
 
-
-    # download data/configs
+    # download data/configs and trained model
     if not data_path.is_file():
         urlretrieve(data_url, data_path)    
     if not conf_path.is_file():
         urlretrieve(conf_url, conf_path)
+    params_path = os.path.join(model_path, "params.npy")
+    tree_path = os.path.join(model_path, "tree.pkl")
+    if not (os.path.isfile(params_path) and os.path.isfile(tree_path)):
+        urlretrieve(model_params_url, params_path)
+        urlretrieve(model_tree_url, tree_path)
 
     # read config
     config = load_json(conf_path)['data_configs']
