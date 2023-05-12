@@ -5,7 +5,8 @@ from __future__ import annotations
 from .import_essentials import *
 from .data import TabularDataModule
 from .logger import TensorboardLogger
-from .utils import validate_configs, sigmoid, accuracy, init_net_opt, grad_update, make_hk_module, show_doc as show_parser_doc
+from .utils import validate_configs, sigmoid, accuracy, init_net_opt, grad_update, make_hk_module, show_doc as show_parser_doc, load_json
+from ._ckpt_manager import load_checkpoint
 from fastcore.basics import patch
 from functools import partial
 from abc import ABC, abstractmethod
