@@ -3,14 +3,14 @@
 # %% ../nbs/04_learning.ipynb 3
 from __future__ import annotations
 from .import_essentials import *
-from .data import TabularDataModule
-from .module import BaseTrainingModule
+from .data import TabularDataModule, load_data
+from .module import BaseTrainingModule, PredictiveTrainingModule
 from .logger import TensorboardLogger
-from .utils import validate_configs
-from ._ckpt_manager import CheckpointManager
+from .utils import validate_configs, load_json
+from ._ckpt_manager import CheckpointManager, load_checkpoint
 
 # %% auto 0
-__all__ = ['TrainingConfigs', 'train_model_with_states', 'train_model']
+__all__ = ['TrainingConfigs', 'train_model_with_states', 'train_model', 'load_pred_model']
 
 # %% ../nbs/04_learning.ipynb 4
 class TrainingConfigs(BaseParser):
@@ -133,3 +133,16 @@ def train_model(
         data_module=data_module,
         t_configs=t_configs,
     )
+
+# %% ../nbs/04_learning.ipynb 7
+def load_pred_model(data_name: str) -> Tuple[hk.Params, PredictiveTrainingModule]:
+
+    # Fetch the sizes and lr from the configs file
+    data_dir = Path(os.getcwd()) / "cf_data" / data_name 
+    mlp_configs = load_json(data_dir / "configs.json" )['mlp_configs']
+    sizes = mlp_configs["sizes"]
+    lr = mlp_configs["lr"]
+
+    module = PredictiveTrainingModule({'sizes': sizes, 'lr': lr})
+    param = load_checkpoint(data_dir / "model")
+    return (param, module)
