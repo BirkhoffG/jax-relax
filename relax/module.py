@@ -225,11 +225,11 @@ def load_pred_model(
 
     # validate data name
     if data_name not in DATASET_NAMES:
-        raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
+        raise ValueError(f'`data_name` must be one of {DATASET_NAMES.keys()}, '
             f'but got data_name={data_name}.')
 
     # get data/config urls
-    _model_path = DEFAULT_DATA_CONFIGS[data_name]['model']
+    _model_path = f"assets/{data_name}/model"
 
     # create new dir
     data_dir = Path(os.getcwd()) / "cf_data"

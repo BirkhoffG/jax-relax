@@ -552,11 +552,11 @@ def load_data(
     conf_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_conf_path}"
 
     # create new dir
-    data_dir = Path(os.getcwd()) / "cf_data"
+    data_dir = Path(os.getcwd()) / "cf_data" / data_name
     if not data_dir.exists():
         os.makedirs(data_dir)
-    data_path = data_dir / data_name / 'data.csv'
-    conf_path = data_dir / data_name / 'configs.json'
+    data_path = data_dir / 'data.csv'
+    conf_path = data_dir / 'configs.json'
 
     # download data/configs
     if not data_path.is_file():
