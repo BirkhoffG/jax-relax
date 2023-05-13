@@ -544,15 +544,12 @@ def load_data(
     
     _validate_dataname(data_name)
 
-    # get data/config/model urls
+    # get data/config urls
     _data_path = DEFAULT_DATA_CONFIGS[data_name]['data']
     _conf_path = DEFAULT_DATA_CONFIGS[data_name]['conf']
-    _model_path = DEFAULT_DATA_CONFIGS[data_name]['model']
     
     data_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_data_path}"
     conf_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_conf_path}"
-    model_params_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/params.npy"
-    model_tree_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/tree.pkl"
 
     # create new dir
     data_dir = Path(os.getcwd()) / "cf_data"
@@ -560,20 +557,12 @@ def load_data(
         os.makedirs(data_dir)
     data_path = data_dir / data_name / 'data.csv'
     conf_path = data_dir / data_name / 'configs.json'
-    model_path = data_dir / data_name / "model"
-    if not model_path.exists():
-        os.makedirs(model_path)
 
-    # download data/configs and trained model
+    # download data/configs
     if not data_path.is_file():
         urlretrieve(data_url, data_path)    
     if not conf_path.is_file():
         urlretrieve(conf_url, conf_path)
-    params_path = os.path.join(model_path, "params.npy")
-    tree_path = os.path.join(model_path, "tree.pkl")
-    if not (os.path.isfile(params_path) and os.path.isfile(tree_path)):
-        urlretrieve(model_params_url, params_path)
-        urlretrieve(model_tree_url, tree_path)
 
     # read config
     config = load_json(conf_path)['data_configs']

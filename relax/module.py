@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 
 # %% auto 0
-__all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'BaseTrainingModule', 'PredictiveTrainingModuleConfigs', 'PredictiveTrainingModule', 'load_pred_model']
+__all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'BaseTrainingModule', 'PredictiveTrainingModuleConfigs', 'PredictiveTrainingModule', 'DATASET_NAMES', 'load_pred_model']
 
 # %% ../nbs/03_training_module.ipynb 5
 class BaseNetwork(ABC):
@@ -216,7 +216,37 @@ class PredictiveTrainingModule(BaseTrainingModule):
 
 
 # %% ../nbs/04_learning.ipynb 7
-def load_pred_model(data_name: str) -> Tuple[hk.Params, PredictiveTrainingModule]:
+DATASET_NAMES = ["adult","credit","heloc","oulad","student_performance","titanic","german","cancer","spam", "ozone", "qsar", "bioresponse", "churn", "road"]
+
+def load_pred_model(
+    data_name: str # The name of data
+    ) -> Tuple[hk.Params, PredictiveTrainingModule]:
+    """High-level util function for loading trained model."""
+
+    # validate data name
+    if data_name not in DATASET_NAMES:
+        raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
+            f'but got data_name={data_name}.')
+
+    # get data/config urls
+    _model_path = DEFAULT_DATA_CONFIGS[data_name]['model']
+
+    # create new dir
+    data_dir = Path(os.getcwd()) / "cf_data"
+    if not data_dir.exists():
+        os.makedirs(data_dir)
+    model_path = data_dir / data_name / "model"
+    if not model_path.exists():
+        os.makedirs(model_path)
+    model_params_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/params.npy"
+    model_tree_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/tree.pkl"
+
+    # download trained model
+    params_path = os.path.join(model_path, "params.npy")
+    tree_path = os.path.join(model_path, "tree.pkl")
+    if not (os.path.isfile(params_path) and os.path.isfile(tree_path)):
+        urlretrieve(model_params_url, params_path)
+        urlretrieve(model_tree_url, tree_path)
 
     # Fetch the sizes and lr from the configs file
     data_dir = Path(os.getcwd()) / "cf_data" / data_name 
