@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 
 # %% auto 0
-__all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'BaseTrainingModule', 'PredictiveTrainingModuleConfigs', 'PredictiveTrainingModule', 'DATASET_NAMES', 'load_pred_model']
+__all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'BaseTrainingModule', 'PredictiveTrainingModuleConfigs', 'PredictiveTrainingModule', 'load_pred_model', 'download_model']
 
 # %% ../nbs/03_training_module.ipynb 5
 class BaseNetwork(ABC):
@@ -216,19 +216,41 @@ class PredictiveTrainingModule(BaseTrainingModule):
 
 
 # %% ../nbs/04_learning.ipynb 7
-DATASET_NAMES = ["adult","credit","heloc","oulad","student_performance","titanic","german","cancer","spam", "ozone", "qsar", "bioresponse", "churn", "road"]
-
 def load_pred_model(
     data_name: str # The name of data
     ) -> Tuple[hk.Params, PredictiveTrainingModule]:
     """High-level util function for loading trained model."""
 
     # validate data name
-    if data_name not in DATASET_NAMES:
+    if data_name not in DEFAULT_DATA_CONFIGS.keys():
         raise ValueError(f'`data_name` must be one of {DATASET_NAMES.keys()}, '
             f'but got data_name={data_name}.')
 
-    # get data/config urls
+    # Download model
+    download_model(data_name)
+
+    # Fetch the sizes and lr from the configs file
+    data_dir = Path(os.getcwd()) / "cf_data" / data_name 
+    mlp_configs = load_json(data_dir / "configs.json" )['mlp_configs']
+    sizes = mlp_configs["sizes"]
+    lr = mlp_configs["lr"]
+
+    module = PredictiveTrainingModule({'sizes': sizes, 'lr': lr})
+    param = load_checkpoint(data_dir / "model")
+    return (param, module)
+
+
+def download_model(
+    data_name: str # The name of data
+    ):
+    """High-level util function for download trained model."""
+
+    # validate data name
+    if data_name not in DEFAULT_DATA_CONFIGS.keys():
+        raise ValueError(f'`data_name` must be one of {DATASET_NAMES.keys()}, '
+            f'but got data_name={data_name}.')
+
+    # get model urls
     _model_path = f"assets/{data_name}/model"
 
     # create new dir
@@ -244,16 +266,9 @@ def load_pred_model(
     # download trained model
     params_path = os.path.join(model_path, "params.npy")
     tree_path = os.path.join(model_path, "tree.pkl")
-    if not (os.path.isfile(params_path) and os.path.isfile(tree_path)):
+    if not os.path.isfile(params_path):
         urlretrieve(model_params_url, params_path)
+    if not os.path.isfile(tree_path):
         urlretrieve(model_tree_url, tree_path)
 
-    # Fetch the sizes and lr from the configs file
-    data_dir = Path(os.getcwd()) / "cf_data" / data_name 
-    mlp_configs = load_json(data_dir / "configs.json" )['mlp_configs']
-    sizes = mlp_configs["sizes"]
-    lr = mlp_configs["lr"]
-
-    module = PredictiveTrainingModule({'sizes': sizes, 'lr': lr})
-    param = load_checkpoint(data_dir / "model")
-    return (param, module)
+    return

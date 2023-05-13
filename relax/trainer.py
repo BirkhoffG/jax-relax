@@ -4,6 +4,7 @@
 from __future__ import annotations
 from .import_essentials import *
 from .data import TabularDataModule, load_data
+from .data.module import DEFAULT_DATA_CONFIGS
 from .module import BaseTrainingModule, PredictiveTrainingModule
 from .logger import TensorboardLogger
 from .utils import validate_configs, load_json
