@@ -94,9 +94,9 @@ if __name__ == "__main__":
                         default='vmap', 
                         choices=['iter' ,'vmap', 'pmap'])
     parser.add_argument('--to_csv', 
-                        type=str, 
-                        default=None, 
-                        choices=['csv'])
+                        type=bool, 
+                        default=False, 
+                        choices=[False,True])
     parser.add_argument('--csv_name', 
                         type=str, 
                         default='benchmark_results')
