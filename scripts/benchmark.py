@@ -6,6 +6,7 @@ from relax.methods import *
 from relax.evaluate import generate_cf_explanations, benchmark_cfs, _AuxPredFn
 from relax.import_essentials import *
 import argparse
+import copy
 
 
 # Datasets for benchmarking
@@ -52,7 +53,10 @@ def main(args):
     exps = []
 
     for data_name in data_names:
-        for cf in cf_methods_list:
+        for cf_method in cf_methods_list:
+
+            cf = copy.deepcopy(cf_method)
+                      
             # load data and data configs
             dm = load_data(data_name = data_name)
             
