@@ -47,6 +47,9 @@ def cat_sample(
     cat_array_sizes: List[int],  # A list of the number of categories for each categorical feature
     n_samples: int,  # Number of samples to sample
 ):  
+    if len(cat_array_sizes) == 0:
+        return jnp.empty((n_samples, 0))
+    
     candidates = []
     for col in cat_array_sizes:
         rng_key, cat_sample = sample_categorical(rng_key, col, n_samples)
@@ -55,7 +58,7 @@ def cat_sample(
     
     return candidates
 
-# %% ../../nbs/methods/05_sphere.ipynb 6
+# %% ../../nbs/methods/05_sphere.ipynb 7
 @auto_reshaping('x')
 def _growing_spheres(
     rng_key: jrand.PRNGKey, # Random number generator key
@@ -122,13 +125,13 @@ def _growing_spheres(
     candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
     return candidate_cf
 
-# %% ../../nbs/methods/05_sphere.ipynb 7
+# %% ../../nbs/methods/05_sphere.ipynb 8
 def apply_immutable(x: Array, cf: Array, immutable_idx: List[int]):
     if immutable_idx is not None:
         cf = cf.at[:, immutable_idx].set(x[:, immutable_idx])
     return cf
 
-# %% ../../nbs/methods/05_sphere.ipynb 8
+# %% ../../nbs/methods/05_sphere.ipynb 9
 class GSConfig(BaseParser):
     seed: int = 42
     n_steps: int = 100
@@ -137,7 +140,7 @@ class GSConfig(BaseParser):
     p_norm: int = 2
     
 
-# %% ../../nbs/methods/05_sphere.ipynb 9
+# %% ../../nbs/methods/05_sphere.ipynb 10
 class GrowingSphere(BaseCFModule):
     name = "Growing Sphere"
 
