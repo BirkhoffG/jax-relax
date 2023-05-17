@@ -9,6 +9,7 @@ from .module import BaseTrainingModule, PredictiveTrainingModule
 from .logger import TensorboardLogger
 from .utils import validate_configs, load_json
 from ._ckpt_manager import CheckpointManager, load_checkpoint
+from urllib.request import urlretrieve
 
 # %% auto 0
 __all__ = ['TrainingConfigs', 'train_model_with_states', 'train_model']

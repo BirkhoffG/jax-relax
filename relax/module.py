@@ -4,6 +4,7 @@
 from __future__ import annotations
 from .import_essentials import *
 from .data import TabularDataModule
+from .data.module import DEFAULT_DATA_CONFIGS
 from .logger import TensorboardLogger
 from .utils import validate_configs, sigmoid, accuracy, init_net_opt, grad_update, make_hk_module, show_doc as show_parser_doc, load_json
 from ._ckpt_manager import load_checkpoint
@@ -11,6 +12,7 @@ from fastcore.basics import patch
 from functools import partial
 from abc import ABC, abstractmethod
 from copy import deepcopy
+from urllib.request import urlretrieve
 
 # %% auto 0
 __all__ = ['BaseNetwork', 'DenseBlock', 'MLP', 'PredictiveModel', 'BaseTrainingModule', 'PredictiveTrainingModuleConfigs', 'PredictiveTrainingModule', 'load_pred_model', 'download_model']
@@ -223,7 +225,7 @@ def load_pred_model(
 
     # validate data name
     if data_name not in DEFAULT_DATA_CONFIGS.keys():
-        raise ValueError(f'`data_name` must be one of {DATASET_NAMES.keys()}, '
+        raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
             f'but got data_name={data_name}.')
 
     # Download model
@@ -247,7 +249,7 @@ def download_model(
 
     # validate data name
     if data_name not in DEFAULT_DATA_CONFIGS.keys():
-        raise ValueError(f'`data_name` must be one of {DATASET_NAMES.keys()}, '
+        raise ValueError(f'`data_name` must be one of {DEFAULT_DATA_CONFIGS.keys()}, '
             f'but got data_name={data_name}.')
 
     # get model urls

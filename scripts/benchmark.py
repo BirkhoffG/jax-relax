@@ -1,4 +1,4 @@
-from relax.module import PredictiveTrainingModule, PredictiveTrainingModuleConfigs
+from relax.module import PredictiveTrainingModule, PredictiveTrainingModuleConfigs, load_pred_model
 from relax.trainer import train_model
 from relax.utils import load_json
 from relax.data import TabularDataModule, load_data
@@ -45,44 +45,37 @@ def main(args):
         print("CF method(s): ", CF_NAMES)
     print("Dataset(s): ", data_names)
     
+    # strategy
+    strategy = args.strategy
+
     # list for storing generated CFEs
     exps = []
 
-    # training configs
-    t_configs = {
-        'n_epochs': 10,
-        'monitor_metrics': 'val/val_loss',
-        'seed': 42,
-        "batch_size": 128
-    }
-
-    # ML model configs
-    model_config = PredictiveTrainingModuleConfigs(
-        lr=0.01, # Learning rate
-        sizes=[50, 10, 50], # The sizes of the hidden layers
-        dropout_rate=0.3 # Dropout rate
-    )
     for data_name in data_names:
         for cf in cf_methods_list:
             # load data and data configs
             dm = load_data(data_name = data_name)
             
-            # train predict function
-            training_module = PredictiveTrainingModule(model_config)
-            params, opt_state = train_model(
-                training_module, 
-                dm, 
-                t_configs
-            )
+            # load predict function
+            params, training_module = load_pred_model(data_name)
             pred_fn = training_module.pred_fn
             
             # Generate CFEs
             print("generate...")
-            cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, rng_key=jrand.PRNGKey(0)))
+            cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, rng_key=jrand.PRNGKey(0)), strategy = strategy)
             
             # Store CFEs
             exps.append(cf_exp)
-    print(benchmark_cfs(exps))
+    
+    results = benchmark_cfs(exps)
+
+    # Output as csv
+    if args.to_csv:
+        csv_name = args.csv_name
+        results.to_csv(f'assets/{csv_name}.csv')
+    else:
+        print(results)
+        return None
 
 
 if __name__ == "__main__":
@@ -96,6 +89,17 @@ if __name__ == "__main__":
                         type=str, 
                         default='VanillaCF', 
                         choices=['all'] + CF_NAMES)
+    parser.add_argument('--strategy', 
+                        type=str, 
+                        default='vmap', 
+                        choices=['iter' ,'vmap', 'pmap'])
+    parser.add_argument('--to_csv', 
+                        type=bool, 
+                        default=False, 
+                        choices=[False,True])
+    parser.add_argument('--csv_name', 
+                        type=str, 
+                        default='benchmark_results')
     args = parser.parse_args()
     
     main(args)
