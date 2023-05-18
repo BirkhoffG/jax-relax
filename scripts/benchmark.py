@@ -20,12 +20,12 @@ def get_CF_classes(class_names):
     if class_names == 'all':
         # return a list of all available CF method classes
         names = CF_NAMES
-        classes = [globals()[name]() for name in names]
+        classes = [globals[name] for name in names]
         return classes
     else:
         # return a list of the specified CF method classes
         names = class_names.split(',')
-        classes = [globals()[name]() for name in names]
+        classes = [globals()[name] for name in names]
         return classes
 
 def main(args):
@@ -55,7 +55,7 @@ def main(args):
     for data_name in data_names:
         for cf_method in cf_methods_list:
 
-            cf = copy.deepcopy(cf_method)
+            cf = cf_method()
                       
             # load data and data configs
             dm = load_data(data_name = data_name)
