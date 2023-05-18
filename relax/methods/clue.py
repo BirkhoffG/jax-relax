@@ -178,9 +178,12 @@ class VAEGaussCat(BaseTrainingModule):
                 ).reshape(-1, 1)
             
             # for start_end_idx in start_end_indices:
+            start_idx = cat_idx
             for i, cat in enumerate(cat_arr):
-                start_end_idx = (cat_idx + i * cat, cat_idx + (i + 1) * cat)
+                end_idx = start_idx + cat
+                start_end_idx = (start_idx, end_idx)
                 cat_loss.append(_cat_loss_f(start_end_idx))
+                start_idx = end_idx
             cat_loss = jnp.concatenate(cat_loss, axis=-1)
             
             # cat_loss = jax.vmap(jit(_cat_loss_f))(start_indices, end_indices)
