@@ -168,26 +168,32 @@ class VAEGaussCat(BaseTrainingModule):
     def compute_loss(self, params, rng_key, x, is_training=True):
         # @partial(jax.jit, static_argnums=(2, 3))
         def reconstruct_loss(x: Array, cf: Array, cat_idx: int, cat_arr: List[int]):
-            cont_loss = optax.l2_loss(x[:, :cat_idx], cf[:, :cat_idx])
-            cat_loss = []
-
-            def _cat_loss_f(start_end_idx):
-                start_idx, end_idx = start_end_idx
-                return optax.softmax_cross_entropy(
-                    cf[:, start_idx: end_idx], x[:, start_idx: end_idx]
-                ).reshape(-1, 1)
             
-            # for start_end_idx in start_end_indices:
-            start_idx = cat_idx
-            for i, cat in enumerate(cat_arr):
-                end_idx = start_idx + cat
-                start_end_idx = (start_idx, end_idx)
-                cat_loss.append(_cat_loss_f(start_end_idx))
-                start_idx = end_idx
-            cat_loss = jnp.concatenate(cat_loss, axis=-1)
+            def compute_cat_loss(cat_arr):
+                if len(cat_arr) == 0: return jnp.zeros((x.shape[0], 0))
+                
+                cat_loss = []
+
+                def _cat_loss_f(start_end_idx):
+                    start_idx, end_idx = start_end_idx
+                    return optax.softmax_cross_entropy(
+                        cf[:, start_idx: end_idx], x[:, start_idx: end_idx]
+                    ).reshape(-1, 1)
+                
+                # for start_end_idx in start_end_indices:
+                start_idx = cat_idx
+                for i, cat in enumerate(cat_arr):
+                    end_idx = start_idx + cat
+                    start_end_idx = (start_idx, end_idx)
+                    cat_loss.append(_cat_loss_f(start_end_idx))
+                    start_idx = end_idx
+                cat_loss = jnp.concatenate(cat_loss, axis=-1)
+                return cat_loss
             
             # cat_loss = jax.vmap(jit(_cat_loss_f))(start_indices, end_indices)
             # cat_loss = jax.lax.scan(_cat_loss_f, 0., start_end_indices, len(start_end_indices))[1]
+            cont_loss = optax.l2_loss(x[:, :cat_idx], cf[:, :cat_idx])
+            cat_loss = compute_cat_loss(cat_arr)
             return jnp.concatenate([cont_loss, cat_loss], axis=-1).sum(-1)
         
         keys = jax.random.split(rng_key, 2)
