@@ -211,7 +211,7 @@ class PredictiveTrainingModule(BaseTrainingModule):
 
     def validation_step(self, params, rng_key, batch):
         x, y = batch
-        y_pred = self.net.apply(params, rng_key, x, is_training=False)
+        y_pred = self.forward(params, rng_key, x, is_training=False)
         loss = self.loss_fn(params, rng_key, batch, is_training=False)
         logs = {"val/val_loss": loss.item(), "val/val_accuracy": accuracy(y, y_pred)}
         self.log_dict(logs)
