@@ -20,7 +20,7 @@ def get_CF_classes(class_names):
     if class_names == 'all':
         # return a list of all available CF method classes
         names = CF_NAMES
-        classes = [globals[name] for name in names]
+        classes = [globals()[name] for name in names]
         return classes
     else:
         # return a list of the specified CF method classes
