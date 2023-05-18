@@ -256,7 +256,7 @@ class VAECFConfigs(VAECFModuleConfigs):
 class VAECF(BaseCFModule, BaseParametricCFModule):
     params: Tuple[hk.Params, hk.Params] = None
     module: VAECFModule
-    name: str = 'C-CHVAE'
+    name: str = 'VAECF'
 
     def __init__(self, m_config: Dict | VAECFConfigs = None):
         if m_config is None:
