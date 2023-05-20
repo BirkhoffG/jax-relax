@@ -348,9 +348,10 @@ class CLUE(BaseCFModule, BaseParametricCFModule):
     name: str = 'CLUE'
 
     def __init__(self, m_config: Dict | CLUEConfigs = None):
-        if m_config is None or not bool(m_config): m_config = CLUEConfigs()
-        self.m_config = m_config
-        self.module = VAEGaussCat(m_config.dict())
+        if m_config is None:
+            m_config = CLUEConfigs()
+        self.m_config = validate_configs(m_config, CLUEConfigs)
+        self.module = VAEGaussCat(self.m_config.dict())
         self.rng_key = random.PRNGKey(self.m_config.seed)
 
     def _is_module_trained(self) -> bool:
