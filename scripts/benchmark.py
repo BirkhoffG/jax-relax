@@ -2,31 +2,40 @@ from relax.module import PredictiveTrainingModule, PredictiveTrainingModuleConfi
 from relax.trainer import train_model
 from relax.utils import load_json
 from relax.data import TabularDataModule, load_data
+from relax.data.module import DEFAULT_DATA_CONFIGS
 from relax.methods import *
-from relax.evaluate import generate_cf_explanations, benchmark_cfs, _AuxPredFn
+from relax.evaluate import generate_cf_explanations, benchmark_cfs
 from relax.import_essentials import *
 import argparse
 import copy
 
 
 # Datasets for benchmarking
-DATASET_NAMES = ["adult","credit","heloc","oulad","student_performance","titanic","german","cancer","spam", "ozone", "qsar", "bioresponse", "churn", "road"]
+DATASET_NAMES = list(DEFAULT_DATA_CONFIGS.keys())
 
 # CFs for benchmarking
 CF_NAMES = ["VanillaCF","DiverseCF","ProtoCF","CounterNet","CCHVAE","CLUE","GrowingSphere","VAECF"]
 
-# Convert the input string into the class
-def get_CF_classes(class_names):
-    if class_names == 'all':
-        # return a list of all available CF method classes
-        names = CF_NAMES
-        classes = [globals()[name] for name in names]
-        return classes
-    else:
-        # return a list of the specified CF method classes
-        names = class_names.split(',')
-        classes = [globals()[name] for name in names]
-        return classes
+def load_cf_configs(
+    cf_method: str, # The name of cf method
+    data_name: str # The name of data
+    ) -> dict:
+
+    # validate data name and cf method
+    if data_name not in DATASET_NAMES:
+        raise ValueError(f'`data_name` must be one of {DATASET_NAMES}, '
+            f'but got data_name={data_name}.')
+    
+    if cf_method not in CF_NAMES:
+        raise ValueError(f'`data_name` must be one of {CF_NAMES}, '
+            f'but got data_name={cf_method}.')
+    
+    # Fetch the cf configs from the configs file
+    data_dir = Path(os.getcwd()) / "cf_data" / data_name 
+    cf_configs = load_json(data_dir / "configs.json" )['cf_configs']
+
+    return cf_configs[cf_method]
+
 
 def main(args):
     print("start...")
@@ -36,8 +45,10 @@ def main(args):
     else:
         data_names = [args.data_name]
 
-    # Convert the input string into CF class
-    cf_methods_list = get_CF_classes(args.cf_methods)
+    if args.cf_methods == "all":
+        cf_methods_list = CF_NAMES
+    else:
+        cf_methods_list = [args.cf_methods]
 
     # Print benchmarking CF methods and dataset
     if args.cf_methods != "all":
@@ -55,8 +66,9 @@ def main(args):
     for data_name in data_names:
         for cf_method in cf_methods_list:
 
-            cf = cf_method()
-                      
+            print("Benchmarking CF method:", cf_method)
+            print("Benchmarking dataset:", data_name)
+                                  
             # load data and data configs
             dm = load_data(data_name = data_name)
             
@@ -64,6 +76,11 @@ def main(args):
             params, training_module = load_pred_model(data_name)
             pred_fn = training_module.pred_fn
             
+            # get cf configs
+            cf_configs = load_cf_configs(cf_method, data_name)
+
+            cf = globals()[cf_method](cf_configs)
+
             # Generate CFEs
             print("generate...")
             cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, rng_key=jrand.PRNGKey(0)), strategy = strategy)
