@@ -88,7 +88,7 @@ def main(args):
             # Store CFEs
             exps.append(cf_exp)
     
-    results = benchmark_cfs(exps)
+    results = benchmark_cfs(cf_results_list=exps,metrics=["acc", "validity", "proximity","runtime"])
 
     # Output as csv
     if args.to_csv:
