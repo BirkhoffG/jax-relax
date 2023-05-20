@@ -18,9 +18,9 @@ __all__ = ['CounterNetModel', 'partition_trainable_params', 'project_immutable_f
 class CounterNetModelConfigs(BaseParser):
     """Configurator of `CounterNetModel`."""
 
-    enc_sizes: List[int] = Field(description='Encoder sizes.')
-    dec_sizes: List[int] = Field(description='Predictor sizes.')
-    exp_sizes: List[int] = Field(description='CF generator sizes.')
+    enc_sizes: List[int] = Field([50,10], description='Encoder sizes.')
+    dec_sizes: List[int] = Field([10], description='Predictor sizes.')
+    exp_sizes: List[int] = Field([50, 50], description='CF generator sizes.')
     dropout_rate: float = Field(0.3, description='Dropout rate.')
 
 # %% ../../nbs/methods/04_counternet.ipynb 6
@@ -33,6 +33,8 @@ class CounterNetModel(hk.Module):
     ):
         """CounterNet model architecture."""
         super().__init__(name=name)
+        if m_config is None:
+            m_config = CounterNetModelConfigs()
         self.configs = validate_configs(m_config, CounterNetModelConfigs)
 
     def __call__(self, x: jnp.ndarray, is_training: bool = True) -> jnp.ndarray:

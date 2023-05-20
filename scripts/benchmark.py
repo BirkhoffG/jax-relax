@@ -79,10 +79,7 @@ def main(args):
             # get cf configs
             cf_configs = load_cf_configs(cf_method, data_name)
 
-            if cf_configs != {}:
-                cf = globals()[cf_method](cf_configs)
-            else:
-                cf = globals()[cf_method]()
+            cf = globals()[cf_method](cf_configs)
 
             # Generate CFEs
             print("generate...")

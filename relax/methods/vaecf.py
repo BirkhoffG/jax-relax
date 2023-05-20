@@ -259,7 +259,7 @@ class VAECF(BaseCFModule, BaseParametricCFModule):
     name: str = 'VAECF'
 
     def __init__(self, m_config: Dict | VAECFConfigs = None):
-        if m_config is None:
+        if m_config is None or not bool(m_config):
             m_config = VAECFConfigs()
         self.m_config = m_config
         self.module = VAECFModule(m_config.dict())
