@@ -261,8 +261,8 @@ class VAECF(BaseCFModule, BaseParametricCFModule):
     def __init__(self, m_config: Dict | VAECFConfigs = None):
         if m_config is None:
             m_config = VAECFConfigs()
-        self.m_config = m_config
-        self.module = VAECFModule(m_config.dict())
+        self.m_config = validate_configs(m_config, VAECFConfigs)
+        self.module = VAECFModule(self.m_config.dict())
 
     def _is_module_trained(self) -> bool:
         return not (self.params is None)
