@@ -309,7 +309,7 @@ class TabularDataModule(BaseDataModule):
         # prepare train & test
         train_test_tuple = train_test_split(X, y, shuffle=False)
         train_X, test_X, train_y, test_y = map(
-             lambda x: x.astype(float), train_test_tuple
+             lambda x: x.astype(np.single), train_test_tuple
          )
         if self._configs.sample_frac:
             train_size = int(len(train_X) * self._configs.sample_frac)
