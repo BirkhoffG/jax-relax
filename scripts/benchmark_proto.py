@@ -82,7 +82,7 @@ def main():
     beta = .01
     c_init = 1.
     c_steps = 5
-    max_iterations = 500
+    max_iterations = 1000
     rng = (-1., 1.)  # scale features between -1 and 1
     rng_shape = (1,8)
     feature_range = ((np.ones(rng_shape) * rng[0]).astype(np.float32), 
