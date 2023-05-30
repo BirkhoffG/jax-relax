@@ -105,10 +105,12 @@ def main():
                              c_steps=c_steps
                             )
 
+    cf.fit(X_train, d_type='abdm',disc_perc=[25, 50, 75]);
+    
     start_time = time.time()
-    for x in X:
-        print(x)
-        cf.fit(x.reshape((1,) + X[0].shape), d_type='abdm',disc_perc=[25, 50, 75]);
+    for x in X_test:
+        x = x.reshape((1,) + X_test[0].shape)
+        explanation = cf.explain(x)
     total_time = time.time() - start_time
     print("total time:", total_time)
 
