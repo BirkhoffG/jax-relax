@@ -64,4 +64,3 @@ dice_exp = exp.generate_counterfactuals(X_test.head(num_instances), total_CFs=5,
 total_time = time.time() - start_time
 
 print(total_time)
-print(dice_exp.visualize_as_dataframe(show_only_changes=False))
