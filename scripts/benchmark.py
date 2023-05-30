@@ -4,10 +4,10 @@ from relax.utils import load_json
 from relax.data import TabularDataModule, load_data
 from relax.data.module import DEFAULT_DATA_CONFIGS
 from relax.methods import *
-from relax.evaluate import generate_cf_explanations, benchmark_cfs
+from relax.evaluate import generate_cf_explanations, benchmark_cfs, _compute_acc
 from relax.import_essentials import *
 import argparse
-import copy
+import gc
 
 
 # Datasets for benchmarking
@@ -39,6 +39,7 @@ def load_cf_configs(
 
 def main(args):
     print("start...")
+    print("devices: ", jax.devices())
 
     if args.data_name == "all":
         data_names = DATASET_NAMES
@@ -64,7 +65,7 @@ def main(args):
     exps = []
 
     for data_name in data_names:
-        for cf_method in cf_methods_list:
+        for i, cf_method in enumerate(cf_methods_list):
 
             print("Benchmarking CF method:", cf_method)
             print("Benchmarking dataset:", data_name)
@@ -75,6 +76,14 @@ def main(args):
             # load predict function
             params, training_module = load_pred_model(data_name)
             pred_fn = training_module.pred_fn
+
+            # warm-up
+            if i == 0:
+                print("warm-up...")
+                test_X, test_y = dm.test_dataset[:]
+                pred = pred_fn(test_X, params, jrand.PRNGKey(0)).reshape(-1, 1).round()
+                labels = test_y.reshape(-1, 1)
+                print(f"{data_name}'s accuracy: ", (pred == labels).mean())
             
             # get cf configs
             cf_configs = load_cf_configs(cf_method, data_name)
