@@ -8,6 +8,9 @@ import pandas as pd
 import time
 import dice_ml
 from dice_ml.utils import helpers  # helper functions
+from tensorflow import keras
+import tensorflow as tf
+
 
 df = pd.read_csv('assets/adult/data.csv')
 target = df["income"]
@@ -15,37 +18,50 @@ target = df["income"]
 continuous = ["age","hours_per_week"]
 categorical = ["workclass","education","marital_status","occupation","race","gender"]
 
-train_dataset, test_dataset, y_train, y_test = train_test_split(
+
+X_train, X_test, y_train, y_test = train_test_split(
                                                     df,
                                                     target,
                                                     test_size=0.2,
                                                     random_state=0,
                                                     stratify=target)
-x_train = train_dataset.drop('income', axis=1)
-x_test = df.drop('income', axis=1)
+
+X_num = X_train[continuous].astype(np.float32, copy=False)
+xmin, xmax = X_num.min(axis=0), X_num.max(axis=0)
+rng = (-1., 1.)
+X_num_scaled = (X_num - xmin) / (xmax - xmin) * (rng[1] - rng[0]) + rng[0]
+
+X_cat = X_train[categorical]
+ohe = OneHotEncoder(categories='auto', sparse=False).fit(X_cat)
+X_cat_ohe = ohe.transform(X_cat)
+
+X_train = np.c_[X_cat_ohe, X_num_scaled].astype(np.float32, copy=False)
 
 # Dataset for training an ML model
 d = dice_ml.Data(dataframe=df,
                  continuous_features=continuous,
                  outcome_name='income')
 
-categorical_transformer = Pipeline(steps=[
-    ('onehot', OneHotEncoder(handle_unknown='ignore'))])
-transformations = ColumnTransformer(
-    transformers=[
-        ('cat', categorical_transformer, categorical)])
+# Fitting a dense neural network model
+ann_model = keras.Sequential()
+ann_model.add(keras.layers.Dense(20, input_shape=(X_train.shape[1],), kernel_regularizer=keras.regularizers.l1(0.001), activation=tf.nn.relu))
+ann_model.add(keras.layers.Dense(1, activation=tf.nn.sigmoid))
+ann_model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=['accuracy'])
+ann_model.fit(X_train, y_train, validation_split=0.20, epochs=50, verbose=0, class_weight={0:1,1:2})
 
-clf = Pipeline(steps=[('preprocessor', transformations),
-                      ('classifier', RandomForestClassifier())])
-model = clf.fit(x_train, y_train)
-
-# Using sklearn backend
-m = dice_ml.Model(model=model, backend="sklearn")
+# Generate the DiCE model for explanation
+m = dice_ml.Model(model=ann_model,backend='TF2',func="ohe-min-max")
 # Using method=random for generating CFs
-exp = dice_ml.Dice(d, m, method="random")
+exp = dice_ml.Dice(d, m, method="gradient")
+
+df = df.drop('income', axis=1)
+# The number of instances for cf generation
+num_instances = 100
 
 start_time = time.time()
-exp.generate_counterfactuals(x_test[:], total_CFs=x_test.shape[0], desired_class="opposite")
+print("Start...")
+dice_exp = exp.generate_counterfactuals(df.head(num_instances), total_CFs=num_instances, desired_class="opposite")
 total_time = time.time() - start_time
 
 print(total_time)
+print(dice_exp.visualize_as_dataframe(show_only_changes=False))
