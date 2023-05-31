@@ -28,7 +28,7 @@ def main():
                         target='income')
 
     # load artificial neural network from catalog
-    model = MLModelCatalog(dataset, "linear", "pytorch", load_online=False)
+    model = MLModelCatalog(dataset, "ann", "pytorch", load_online=False)
 
     model.train(
         learning_rate=0.01,
