@@ -37,7 +37,7 @@ def main():
     )
 
     # get factuals from the data to generate counterfactual examples
-    factuals = dataset.df.iloc[:]
+    factuals = dataset.df_test.iloc[:]
 
     # load a recourse model and pass black box model
     # gs = Wachter(model, hyperparams={"binary_cat_features": False})
