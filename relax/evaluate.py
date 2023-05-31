@@ -321,7 +321,7 @@ def generate_cf_explanations(
 
     strategy = StrategyFactory.get_strategy(strategy)
     current_time = time.time()
-    cfs = strategy(cf_module.generate_cf, X, pred_fn=pred_fn)
+    cfs = strategy(cf_module.generate_cf, X, pred_fn=pred_fn).block_until_ready()
     total_time = time.time() - current_time
 
     # check pred_fn
