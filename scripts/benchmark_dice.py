@@ -46,20 +46,20 @@ ann_model = keras.Sequential()
 ann_model.add(keras.layers.Dense(20, input_shape=(X_train.shape[1],), kernel_regularizer=keras.regularizers.l1(0.001), activation=tf.nn.relu))
 ann_model.add(keras.layers.Dense(1, activation=tf.nn.sigmoid))
 ann_model.compile(loss='binary_crossentropy', optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=['accuracy'])
-ann_model.fit(X_train, y_train, validation_split=0.20, epochs=50, verbose=0, class_weight={0:1,1:2})
+ann_model.fit(X_train, y_train, validation_split=0.20, epochs=10, verbose=0, class_weight={0:1,1:2})
 
 # Generate the DiCE model for explanation
 m = dice_ml.Model(model=ann_model,backend='TF2',func="ohe-min-max")
 # Using method=random for generating CFs
 exp = dice_ml.Dice(d, m, method="gradient")
 
-df = df.drop('income', axis=1)
+X_test = X_test.drop('income', axis=1)
 # The number of instances for cf generation
 num_instances = 100
 
 start_time = time.time()
 print("Start...")
-dice_exp = exp.generate_counterfactuals(df.head(num_instances), total_CFs=5, desired_class="opposite")
+dice_exp = exp.generate_counterfactuals(X_test.head(num_instances), total_CFs=5, desired_class="opposite")
 total_time = time.time() - start_time
 
 print(total_time)
