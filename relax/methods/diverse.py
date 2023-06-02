@@ -70,7 +70,7 @@ def _diverse_cf(
 ) -> jnp.DeviceArray:  # return `cf` shape: (k,)
     @jit
     def loss_fn_1(cf_y: Array, y_prime: Array):
-        return jnp.mean(hinge_loss(input=cf_y, target=y_prime))
+        return optax.l2_loss(cf_y.mean(axis=0, keepdims=True), y_prime).mean()
 
     @jit
     def loss_fn_2(x: Array, cf: Array):
@@ -102,7 +102,7 @@ def _diverse_cf(
         loss_2 = loss_fn_2(x, cf)
         loss_3 = loss_fn_3(cf, n_cfs)
         loss_4 = loss_fn_4(x, cfs)
-        return loss_1 + loss_2 + loss_3 + loss_4
+        return loss_1 + 0.01 * loss_2 + loss_3 + 0.1 * loss_4
 
     @loop_tqdm(n_steps)
     def gen_cf_step(
@@ -115,7 +115,7 @@ def _diverse_cf(
 
     key, subkey = jax.random.split(key)
     cfs = jax.random.normal(key, shape=(n_cfs, x.shape[-1]))
-    opt = optax.rmsprop(lr)
+    opt = optax.adam(lr)
     opt_state = opt.init(cfs)
     cfs, opt_state = lax.fori_loop(0, n_steps, gen_cf_step, (cfs, opt_state))
     # for _ in tqdm(range(n_steps)):
