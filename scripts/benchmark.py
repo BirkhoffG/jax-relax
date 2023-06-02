@@ -130,8 +130,13 @@ if __name__ == "__main__":
     parser.add_argument('--csv_name', 
                         type=str, 
                         default='benchmark_results')
+    parser.add_argument('--disable_jit',
+                        type=bool,
+                        default=False)
     args = parser.parse_args()
     
+    if args.disable_jit:
+        jax.config.update("jax_disable_jit", True)
     main(args)
 
 
