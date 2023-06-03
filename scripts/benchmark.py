@@ -78,7 +78,7 @@ def main(args):
             pred_fn = training_module.pred_fn
 
             # warm-up
-            if i == 0:
+            if i == 0 and not args.disable_jit and strategy == "vmap":
                 print("warm-up...")
                 test_X, test_y = dm.test_dataset[:]
                 pred = pred_fn(test_X, params, jrand.PRNGKey(0)).reshape(-1, 1).round()
