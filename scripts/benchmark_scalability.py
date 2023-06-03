@@ -4,7 +4,8 @@ from relax.utils import load_json
 from relax.data import TabularDataModule, TabularDataModuleConfigs
 from relax.module import download_model
 from relax.methods import *
-from relax.evaluate import generate_cf_explanations, evaluate_cfs, BatchedVmapGenerationStrategy, BatchedPmapGenerationStrategy
+from relax.evaluate import generate_cf_explanations, evaluate_cfs
+from relax.evaluate import BatchedVmapGenerationStrategy, BatchedPmapGenerationStrategy, StrategyFactory
 from relax._ckpt_manager import load_checkpoint
 from relax.import_essentials import *
 import datasets as hfds
@@ -68,6 +69,27 @@ def hfds_to_dm(
     return dm
 
 
+def get_strategy(
+    dm: TabularDataModule,
+    batch_size: int,
+    args
+):
+    data_size = len(dm.test_dataset)    
+    if args.strategy == "vmap":
+        if data_size < batch_size:
+            strategy = StrategyFactory.get_strategy('vmap')
+        else:
+            strategy = BatchedVmapGenerationStrategy(batch_size)
+    elif args.strategy == "pmap":
+        if data_size < batch_size:
+            strategy = StrategyFactory.get_strategy('pmap')
+        else:
+            strategy = BatchedPmapGenerationStrategy(batch_size)
+    else:
+        strategy = StrategyFactory.get_strategy(args.strategy)
+    return strategy
+
+
 def main(args):
     print("start...")
 
@@ -111,10 +133,10 @@ def main(args):
         "DiverseCF":524288,
         "ProtoCF":1048576,
         "CounterNet":2097152,
-        "CCHVAE":8192,
+        "CCHVAE":32768,
         "CLUE":1048576,
-        "GrowingSphere":4096,
-        "VAECF":65536
+        "GrowingSphere":16384,
+        "VAECF":131072
     }
 
     # list for storing results
@@ -175,15 +197,7 @@ def main(args):
             # if cf_method not in results['cf_methods\\#instances']:
             #     results['cf_methods\\#instances'].append(cf_method)
 
-            # strategy
-            if args.strategy == "vmap":
-                batch_size = batch_sizes[cf_method]
-                strategy = BatchedVmapGenerationStrategy(batch_size)
-            elif args.strategy == "pmap":
-                batch_size = batch_sizes[cf_method]
-                strategy = BatchedPmapGenerationStrategy(batch_size)
-            else:
-                strategy = args.strategy
+            strategy = get_strategy(dm, batch_sizes[cf_method], args)
 
             # get cf configs
             cf_configs = cf_configs_dict[cf_method]
@@ -199,8 +213,11 @@ def main(args):
                 cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, rng_key=jrand.PRNGKey(0)), strategy=strategy)
 
             # Store benchmark results
-            runtime = evaluate_cfs(cf_exp=cf_exp, metrics=["runtime"], return_dict=True, return_df=False)[('forktable',cf_method)]["runtime"]
-            logger.update(cf_method, sample_frac, runtime)
+                        # results[len(dm.test_dataset)].append(evaluate_cfs(cf_exp=cf_exp, metrics=["runtime"], return_dict=True, return_df=False)[('forktable',cf_method)]["runtime"])
+
+            cf_method_name = cf.name
+            runtime = evaluate_cfs(cf_exp=cf_exp, metrics=["runtime"], return_dict=True, return_df=False)[('forktable', cf_method_name)]["runtime"]
+            logger.update(cf_method_name, sample_frac, runtime)
             if args.to_csv: logger.store()
             del cf_exp, cf, cf_configs
             gc.collect()
