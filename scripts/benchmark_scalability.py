@@ -97,12 +97,12 @@ def main(args):
     t_configs_dict = {
         "VanillaCF":{},
         "DiverseCF":{},
-        "ProtoCF":{"n_epochs":5, "batch_size":256},
-        "CounterNet":{"n_epochs":20, "batch_size":256},
-        "CCHVAE":{"n_epochs":10, "batch_size":256},
-        "CLUE":{"n_epochs":10, "batch_size":256},
+        "ProtoCF":{"n_epochs":1, "batch_size":256},
+        "CounterNet":{"n_epochs":2, "batch_size":1024},
+        "CCHVAE":{"n_epochs":1, "batch_size":256},
+        "CLUE":{"n_epochs":1, "batch_size":256},
         "GrowingSphere":{},
-        "VAECF":{"n_epochs":10, "batch_size":256}
+        "VAECF":{"n_epochs":1, "batch_size":256}
     }
 
     # batch size
