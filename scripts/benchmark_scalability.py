@@ -18,20 +18,55 @@ CF_NAMES = ["VanillaCF","DiverseCF","ProtoCF","CounterNet","CCHVAE","CLUE","Grow
 # list of sample fractions
 sample_fracs = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
+
+class BenchmarkLogger:
+    """A logger for storing the benchmarking results.
+    
+    Data format:
+        method | sample_frac | time
+        ---------------------------
+        VanillaCF | 0.01 | 0.1
+        VanillaCF | 0.05 | 0.2
+    """
+    def __init__(self, file_name: str) -> None:
+        # check if the file exists
+        self.file_name = file_name
+        if os.path.exists(file_name):
+            self.__result = pd.read_csv(file_name)\
+                               .set_index(['method', 'sample_frac'])\
+                               .to_dict("dict")
+            print(f"Result loaded from {file_name}")
+        else:
+            self.__result = {'time': {}}
+
+    def update(self, method: str, sample_frac: float, time: float) -> None:
+        self.__result['time'].update({
+            (method, sample_frac): time
+        })
+
+    def store(self):
+        pd.DataFrame(self.__result).to_csv(self.file_name, index_label=['method', 'sample_frac'])
+        print(f"Result updated in {self.file_name}")
+
+    def print(self):
+        print(pd.DataFrame(self.__result).to_string())
+
+
 def hfds_to_dm(
     dataset: hfds.Dataset, 
     configs: TabularDataModuleConfigs
 ) -> TabularDataModule:
     train_df = dataset["train"].to_pandas()
     test_df = dataset["test"].to_pandas()
-    size = int(len(test_df) * configs.sample_frac)
-    test_df = test_df.head(size)
     df = pd.concat([train_df, test_df])
+    size = int(len(df) * configs.sample_frac)
+    df = df.iloc[:size]
     if "__index_level_0__" in df.columns:
         df = df.drop(columns=["__index_level_0__"])
     print('df is loaded')
     dm = TabularDataModule(configs, df)
     return dm
+
 
 def main(args):
     print("start...")
@@ -62,7 +97,7 @@ def main(args):
     t_configs_dict = {
         "VanillaCF":{},
         "DiverseCF":{},
-        "ProtoCF":{"n_epochs":10, "batch_size":256},
+        "ProtoCF":{"n_epochs":5, "batch_size":256},
         "CounterNet":{"n_epochs":20, "batch_size":256},
         "CCHVAE":{"n_epochs":10, "batch_size":256},
         "CLUE":{"n_epochs":10, "batch_size":256},
@@ -118,6 +153,9 @@ def main(args):
         urlretrieve(model_tree_url, tree_path)    
     params = load_checkpoint(model_path)
     pred_fn = module.pred_fn
+    
+    # Init logger
+    logger = BenchmarkLogger(f'assets/{args.csv_name}.csv')
 
     for sample_frac in sample_fracs:
         data_configs = TabularDataModuleConfigs(
@@ -130,13 +168,12 @@ def main(args):
         dm = hfds_to_dm(ds, data_configs)     
         print("Number of instance in train dataset",len(dm.train_dataset))
         print("Number of instance in test dataset",len(dm.test_dataset))
-        results[len(dm.test_dataset)] = []
 
         for cf_method in cf_methods_list:
             print("Benchmarking CF method:", cf_method)
 
-            if cf_method not in results['cf_methods\\#instances']:
-                results['cf_methods\\#instances'].append(cf_method)
+            # if cf_method not in results['cf_methods\\#instances']:
+            #     results['cf_methods\\#instances'].append(cf_method)
 
             # strategy
             if args.strategy == "vmap":
@@ -162,18 +199,23 @@ def main(args):
                 cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, rng_key=jrand.PRNGKey(0)), strategy=strategy)
 
             # Store benchmark results
-            results[len(dm.test_dataset)].append(evaluate_cfs(cf_exp=cf_exp, metrics=["runtime"], return_dict=True, return_df=False)[('forktable',cf_method)]["runtime"])
-            del cf_exp
+            runtime = evaluate_cfs(cf_exp=cf_exp, metrics=["runtime"], return_dict=True, return_df=False)[('forktable',cf_method)]["runtime"]
+            logger.update(cf_method, sample_frac, runtime)
+            if args.to_csv: logger.store()
+            del cf_exp, cf, cf_configs
             gc.collect()
+        
+        del dm, data_configs
+        gc.collect()
 
     # Output as csv
-    if args.to_csv:
-        csv_name = args.csv_name
-        dfs = pd.DataFrame.from_dict(results)
-        dfs.to_csv(f'assets/{csv_name}.csv', index=False)
-    else:
-        print(results)
-        return None
+    # if args.to_csv:
+    #     csv_name = args.csv_name
+    #     dfs = pd.DataFrame.from_dict(results)
+    #     dfs.to_csv(f'assets/{csv_name}.csv', index=False)
+    # else:
+    #     print(results)
+    #     return None
 
 
 if __name__ == "__main__":
@@ -188,7 +230,8 @@ if __name__ == "__main__":
                         default='vmap', 
                         choices=['iter' ,'vmap', 'pmap'])
     parser.add_argument('--to_csv', 
-                        action='store_true')
+                        type=bool,
+                        default=True)
     parser.add_argument('--csv_name', 
                         type=str, 
                         default='forktable_scalability_results')
