@@ -23,8 +23,6 @@ def hfds_to_dm(
     configs: TabularDataModuleConfigs
 ) -> TabularDataModule:
     train_df = dataset["train"].to_pandas()
-    size = int(len(train_df) * configs.sample_frac)
-    train_df = train_df.head(size)
     test_df = dataset["test"].to_pandas()
     size = int(len(test_df) * configs.sample_frac)
     test_df = test_df.head(size)
