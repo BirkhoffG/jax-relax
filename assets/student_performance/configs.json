@@ -29,15 +29,14 @@
         "dropout_rate": 0.3,
         "lr": 0.003
     },
-    "cfnet_configs": {
-        "enc_sizes": [50,10],
-        "dec_sizes": [10],
-        "exp_sizes": [50, 50],
-        "dropout_rate": 0.3,    
-        "lr": 0.003,
-        "lambda_1": 1.0,
-        "lambda_3": 0.1,
-        "lambda_2": 0.2,
-        "use_immutable": false
+    "cf_configs":{
+        "VanillaCF":{},
+        "DiverseCF":{},
+        "ProtoCF":{},
+        "CounterNet":{},
+        "CCHVAE":{},
+        "CLUE":{},
+        "GrowingSphere":{},
+        "VAECF":{}
     }
 }

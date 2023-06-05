@@ -58,7 +58,10 @@ class CHVAE(BaseTrainingModule):
     def __init__(self, m_config: Dict):
         self.save_hyperparameters(m_config)
         self.m_config = validate_configs(m_config, CHVAEConfigs)
-        self.opt = optax.adam(self.m_config.lr)
+        self.opt = optax.chain(
+            optax.adaptive_grad_clip(0.05),
+            optax.adam(self.m_config.lr)
+        )
 
     def init_net_opt(self, dm, key):
         X, _ = dm.train_dataset[:128]
@@ -224,9 +227,8 @@ def _cchvae_generate(
     state = (0, candidate_cf, rng_key) # (count, candidate_cf, rng_key)
     # count, candidate_cf, rng_key = jax.lax.while_loop(cond_fn, body_fn, state)
     count, candidate_cf, rng_key = lax.fori_loop(0, max_steps, body_fn, state)
-    # while cond_fn(state):
-    #     count, candidate_cf, rng_key = body_fn(state)
-    # print(count)
+    # if `inf` is found, return the original input
+    candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
     return candidate_cf
 
 # %% ../../nbs/methods/06_cchvae.ipynb 9
@@ -241,7 +243,7 @@ class CCHVAEConfigs(BaseParser):
     lr: float = Field(0.001, description="Learning rate")
     max_steps: int = Field(100, description="Max steps")
     n_search_samples: int = Field(300, description="Number of generated candidate counterfactuals.")
-    step_size: float = Field(1, description="Step size")
+    step_size: float = Field(0.1, description="Step size")
     seed: int = Field(0, description="Seed for random number generator")
 
 # %% ../../nbs/methods/06_cchvae.ipynb 10

@@ -181,7 +181,7 @@ def grad_update(
     opt_state: optax.OptState,
     opt: optax.GradientTransformation,
 ) -> Tuple[hk.Params, optax.OptState]:
-    updates, opt_state = opt.update(grads, opt_state)
+    updates, opt_state = opt.update(grads, opt_state, params)
     upt_params = optax.apply_updates(params, updates)
     return upt_params, opt_state
 
