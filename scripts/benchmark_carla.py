@@ -19,11 +19,12 @@ def validity(factuals, counterfactuals, mlmodel):
 
 def proximity(factuals, counterfactuals):
     columns = counterfactuals.columns
-    return np.mean(
-        np.linalg.norm(factuals[columns].values - counterfactuals[columns].values, 
-        axis=1, ord=1)
+    prox = np.linalg.norm(
+            factuals[columns].values - counterfactuals[columns].values, 
+            axis=1, ord=1
     )
-
+    prox = prox[~np.isnan(prox)]
+    return np.mean(prox)
 
 def main():
     os.environ["CUDA_VISIBLE_DEVICES"]=""
