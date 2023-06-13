@@ -8,6 +8,22 @@ import pandas as pd
 import time
 import os
 import torch
+import numpy as np
+
+
+def validity(factuals, counterfactuals, mlmodel):
+    factuals_y = (mlmodel.predict(factuals) > 0.5).flatten()
+    cf_y = (mlmodel.predict(counterfactuals) > 0.5).flatten()
+    return np.mean(factuals_y != cf_y)
+
+
+def proximity(factuals, counterfactuals):
+    columns = counterfactuals.columns
+    return np.mean(
+        np.linalg.norm(factuals[columns].values - counterfactuals[columns].values, 
+        axis=1, ord=1)
+    )
+
 
 def main():
     os.environ["CUDA_VISIBLE_DEVICES"]=""
@@ -49,6 +65,8 @@ def main():
     total_time = time.time() - start_time
 
     print(total_time)
+    print("Validity: ", validity(factuals, counterfactuals, model))
+    print("Proximity: ", proximity(factuals, counterfactuals))
 
 if __name__ == "__main__":
     main()
