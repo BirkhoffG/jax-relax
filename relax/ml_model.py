@@ -5,7 +5,7 @@ __all__ = ['MLPBlock', 'MLP', 'MLModuleConfig', 'MLModule', 'download_ml_module'
 
 # %% ../nbs/02_ml_model.ipynb 1
 from .import_essentials import *
-from .data import TabularDataModule, DEFAULT_DATA_CONFIGS
+from .data_module import DataModule, DEFAULT_DATA_CONFIGS
 from .utils import validate_configs
 from .base import *
 from sklearn.datasets import make_classification
@@ -14,6 +14,8 @@ from urllib.request import urlretrieve
 
 # %% ../nbs/02_ml_model.ipynb 3
 class MLPBlock(keras.layers.Layer):
+    """MLP block with leaky relu activation and dropout."""
+
     def __init__(
         self, 
         output_size: int, 
@@ -35,6 +37,8 @@ class MLPBlock(keras.layers.Layer):
 
 @keras.saving.register_keras_serializable()
 class MLP(keras.Model):
+    """MLP model with multiple MLP blocks and a dense layer at the end."""
+    
     def __init__(
         self, 
         sizes: list, 
@@ -101,13 +105,13 @@ class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
 
     def train(
         self, 
-        data: TabularDataModule, 
+        data: DataModule, 
         batch_size: int = 128,
         epochs: int = 10,
         **fit_kwargs
     ):
-        if isinstance(data, TabularDataModule):
-            X_train, y_train = data.dataset('train')
+        if isinstance(data, DataModule):
+            X_train, y_train = data['train']
         else:
             X_train, y_train = data
         self.model.fit(
