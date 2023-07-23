@@ -1,88 +1,37 @@
 .cell {
-    margin-bottom: 1rem;
-  }
-  
-  .cell > .sourceCode {
-    margin-bottom: 0;
-  }
-  
-  .cell-output > pre {
-    margin-bottom: 0;
-  }
-  
-  .cell-output > pre, .cell-output > .sourceCode > pre, .cell-output-stdout > pre {
-    margin-left: 0.8rem;
-    margin-top: 0;
-    background: none;
-    border-left: 2px solid lightsalmon;
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-  }
-  
-  .cell-output > .sourceCode {
-    border: none;
-  }
-  
-  .cell-output > .sourceCode {
-    background: none;
-    margin-top: 0;
-  }
-  
-  div.description {
-    padding-left: 2px;
-    padding-top: 5px;
-    font-style: italic;
-    font-size: 135%;
-    opacity: 70%;
-  }
-  
-  /* show_doc signature */
-  blockquote > pre {
-    font-size: 14px;
-  }
-  
-  .table {
-    font-size: 16px;
-    /* disable striped tables */
-    --bs-table-striped-bg: var(--bs-table-bg);
-  }
-  
-  .quarto-figure-center > figure > figcaption {
-    text-align: center;
-  }
-
-.callout-captioned#docs {
-    font-size: 1.1rem;
-    /* font-weight: 500; */
-}
-
-.callout-body#docs {
-    font-size: 1.0rem;
-    font-weight: 500;
-}
-
-.callout-body > li.menu-item:not(:last-child) { 
-  display: flex;
-  margin-bottom: 5px;  
-  /* margin-bottom: em;   */
-}
-
-.callout-body > ul {
-  display: block;
-  list-style-type: disc;
-  margin-block-start: 1.2rem;
-  margin-block-end: 1.2rem;
-  margin-inline-start: 0px;
-  margin-inline-end: 0px;
-  padding-inline-start: 40px;
-}
-
-div.doc-sig {
-  /* background-color: aqua; */
-  font-family: var(--bs-font-monospace);
-  border-left: .25rem solid #e9ecef;
-  padding: .625rem 1.0rem;
   margin-bottom: 1rem;
-  font-size: 0.9rem;
-  font-weight: 400;
+}
+
+.cell > .sourceCode {
+  margin-bottom: 0;
+}
+
+.cell-output > pre {
+  margin-bottom: 0;
+}
+
+.cell-output > pre, .cell-output > .sourceCode > pre, .cell-output-stdout > pre {
+  margin-left: 0.8rem;
+  margin-top: 0;
+  background: none;
+  border-left: 2px solid lightsalmon;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.cell-output > .sourceCode {
+  border: none;
+}
+
+.cell-output > .sourceCode {
+  background: none;
+  margin-top: 0;
+}
+
+div.description {
+  padding-left: 2px;
+  padding-top: 5px;
+  font-style: italic;
+  font-size: 135%;
+  opacity: 70%;
 }

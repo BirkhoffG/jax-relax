@@ -1,9 +1,0 @@
-,,acc,validity,proximity,runtime
-forktable,VanillaCF,0.803041,0.653899,8.321959,252.531379    
-forktable,DiverseCF,0.803041,0.322938,2.622117,341.914998   
-forktable,ProtoCF,0.803041,0.775962,5.276597,557.64364                          
-forktable,CounterNet,0.804178,0.993905,8.963745,1.708427                        
-forktable,C-CHVAE,0.803041,0.697893,6.439586,231.678869                      
-forktable,CLUE,0.803041,0.435073,7.500844,128.838141                   
-forktable,Growing Sphere,0.803041,1.0,9.049326,1075.444302                    
-forktable,VAECF,0.803041,0.302107,13.786414,5.689032

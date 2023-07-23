@@ -29,6 +29,11 @@ import jax
 from jax import pmap, vmap, random, device_put, lax, jit, Array
 import jax.numpy as jnp, jax.random as jrand
 from jax_tqdm import loop_tqdm, scan_tqdm
+import optax
+
+# keras
+os.environ['KERAS_BACKEND'] = 'jax'
+import keras_core as keras
 
 # nn related
 import haiku as hk

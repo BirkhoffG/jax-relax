@@ -165,7 +165,7 @@ def make_hk_module(
 def init_net_opt(
     net: hk.Transformed,
     opt: optax.GradientTransformation,
-    X: jnp.DeviceArray,
+    X: jax.Array,
     key: random.PRNGKey,
 ) -> Tuple[hk.Params, optax.OptState]:
     X = device_put(X)
@@ -207,9 +207,9 @@ def load_json(f_name: str) -> Dict[str, Any]:  # file name
 
 # %% ../nbs/00_utils.ipynb 47
 def binary_cross_entropy(
-    preds: jnp.DeviceArray, # The predicted values
-    labels: jnp.DeviceArray # The ground-truth labels
-) -> jnp.DeviceArray: # Loss value
+    preds: jax.Array, # The predicted values
+    labels: jax.Array # The ground-truth labels
+) -> jax.Array: # Loss value
     """Per-sample binary cross-entropy loss function."""
 
     # Clip the predictions to avoid NaNs in the log
@@ -226,17 +226,17 @@ def sigmoid(x):
     return 0.5 * (jnp.tanh(x / 2) + 1)
 
 # %% ../nbs/00_utils.ipynb 50
-def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jnp.DeviceArray:
+def accuracy(y_true: jnp.ndarray, y_pred: jnp.ndarray) -> jax.Array:
     y_true, y_pred = map(jnp.round, (y_true, y_pred))
     return jnp.mean(jnp.equal(y_true, y_pred))
 
 
-def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jnp.DeviceArray:
+def dist(x: jnp.ndarray, cf: jnp.ndarray, ord: int = 2) -> jax.Array:
     dist = jnp.linalg.norm(x - cf, ord=ord, axis=-1, keepdims=True)
     return jnp.mean(vmap(jnp.sum)(dist))
 
 
-def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jnp.DeviceArray:
+def proximity(x: jnp.ndarray, cf: jnp.ndarray) -> jax.Array:
     return dist(x, cf, ord=1)
 
 # %% ../nbs/00_utils.ipynb 53

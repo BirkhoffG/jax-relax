@@ -1,50 +1,20 @@
 project:
   type: website
-  output-dir: _docs
-  preview:
-    port: 3000
-    browser: false
 
 format:
   html:
-    theme: 
-      - cosmo
-      - theme.scss
+    theme: cosmo
     css: styles.css
     toc: true
-    toc-depth: 4    
-    number-sections: false
-    number-depth: 2
-    html-math-method: katex
-    highlight-style: flatly
 
 website:
   twitter-card: true
   open-graph: true
   repo-actions: [issue]
-  sidebar:
-    style: "floating"
   navbar:
     background: primary
     search: true
-    left:
-      - text: "Overview"
-        file: index.ipynb
-      - text: "Tutorial"
-        file: tutorials/getting_started.ipynb
-      - text: "Contribute"
-        file: tutorials/contribution.ipynb
-      - text: "Help"
-        menu:
-          - text: "Report an Issue"
-            icon: bug
-            href: https://github.com/birkhoffg/ReLax/issues
-          - text: "Ask a Question"
-            icon: chat-right-text
-            href: https://github.com/birkhoffg/ReLax/discussions/
-    right:
-      - icon: github
-        href: "https://github.com/birkhoffg/ReLax"
-    
+  sidebar:
+    style: floating
 
 metadata-files: [nbdev.yml, sidebar.yml]
