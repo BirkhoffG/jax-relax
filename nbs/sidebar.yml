@@ -1,0 +1,22 @@
+website:
+  sidebar:
+    contents:
+      - index.ipynb
+      # - section: Tutorials
+      #   contents:
+      #   - tutorials/install.ipynb
+      #   - tutorials/getting_started.ipynb
+      #   - tutorials/contribution.ipynb        
+      - section: API
+        contents:
+        - 00_base.ipynb
+        - 00_utils.ipynb
+        - 00_docs.ipynb
+        - section: Data
+          contents:
+          - 01_data.ipynb
+          - 01_data.utils.ipynb
+        - 02_ml_model.ipynb
+        - section: Methods
+          contents:
+          - 00_base.ipynb

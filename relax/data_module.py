@@ -11,11 +11,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import json, os, shutil
-# from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
-# from sklearn.base import TransformerMixin
-# from sklearn.utils.validation import check_is_fitted, NotFittedError
 from urllib.request import urlretrieve
-# from relax.data.loader import Dataset, ArrayDataset, DataLoader, DataloaderBackends
 from pydantic.fields import ModelField, Field
 from typing import List, Dict, Union, Optional, Tuple, Callable, Any, Iterable
 
@@ -113,7 +109,8 @@ class DataModule(BaseDataModule):
             config = load_json(path / 'config.json')
         features = FeaturesList.load_from_path(path / 'features')
         label = FeaturesList.load_from_path(path / 'label')
-        return cls(config, features=features, label=label)
+        data = pd.read_csv(path / 'data.csv')
+        return cls(config, data=data, features=features, label=label)
 
     def convert_to_features(
         self, 
@@ -240,8 +237,7 @@ def load_data(
     data_name: str, # The name of data
     return_config: bool = False, # Return `data_config `or not
     data_configs: dict = None, # Data configs to override default configuration
-    download_original_data: bool = False, # Download original data or not
-) -> DataModule | Tuple[DataModule, DataModuleConfig]: 
+) -> DataModule | Tuple[DataModule, DataModuleConfig]: # Return `DataModule` or (`DataModule`, `DataModuleConfig`)
     """High-level util function for loading `data` and `data_config`."""
     
     _validate_dataname(data_name)
@@ -253,7 +249,7 @@ def load_data(
     # download files
     download_data_module_files(
         data_name, data_parent_dir, 
-        download_original_data=download_original_data
+        download_original_data=True
     )
 
     # read config
