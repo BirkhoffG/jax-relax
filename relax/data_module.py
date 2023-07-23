@@ -2,7 +2,7 @@
 
 # %% ../nbs/01_data.ipynb 3
 from __future__ import annotations
-from .utils import load_json, validate_configs, cat_normalize, get_config
+from .utils import load_json, validate_configs, get_config
 from .base import *
 from .data_utils import *
 import jax
