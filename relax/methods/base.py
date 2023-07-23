@@ -4,6 +4,7 @@
 __all__ = ['CFModule', 'ParametricCFModule']
 
 # %% ../../nbs/methods/00_base.ipynb 1
+from ..import_essentials import *
 from ..base import BaseConfig, BaseModule, PredFnMixedin, TrainableMixedin
 
 # %% ../../nbs/methods/00_base.ipynb 2
