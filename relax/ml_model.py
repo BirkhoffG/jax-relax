@@ -27,7 +27,8 @@ class MLPBlock(keras.layers.Layer):
 
     def build(self, input_shape):
         self.dense = keras.layers.Dense(
-            self.output_size, activation='leaky_relu')
+            self.output_size, activation='leaky_relu', kernel_initializer='he_normal'
+        )
         self.dropout = keras.layers.Dropout(self.dropout_rate)
 
     def call(self, x, training=False):
@@ -65,7 +66,7 @@ class MLP(keras.Model):
         }
 
 # %% ../nbs/02_ml_model.ipynb 4
-class MLModuleConfig(BaseParser):
+class MLModuleConfig(BaseConfig):
     """Configurator of `MLModule`."""
     
     sizes: List[int] = Field([64, 32, 16], description="List of hidden layer sizes.")
@@ -104,7 +105,6 @@ class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
             )
         return model
             
-
     def train(
         self, 
         data: DataModule, 
@@ -150,9 +150,9 @@ class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
     def pred_fn(self, x):
         if not self.is_trained:
             raise ValueError("Model is not trained.")
-        return self.model(x)
+        return self.model(x, training=False)
 
-# %% ../nbs/02_ml_model.ipynb 12
+# %% ../nbs/02_ml_model.ipynb 16
 def download_ml_module(name: str, path: str = None):
     if path is None:
         path = Path('relax_assets') / name / 'model'
@@ -160,9 +160,9 @@ def download_ml_module(name: str, path: str = None):
         path = Path(path)
     if not path.exists():
         path.mkdir(parents=True)
-    _model_path = f"assets/{name}/model"
-    model_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/model.keras"
-    config_url = f"https://github.com/BirkhoffG/ReLax/raw/master/{_model_path}/config.json"
+    _model_path = f"{name}/model"
+    model_url = f"https://huggingface.co/datasets/birkhoffg/ReLax-Assets/resolve/main/{_model_path}/model.keras"
+    config_url = f"https://huggingface.co/datasets/birkhoffg/ReLax-Assets/resolve/main/{_model_path}/config.json"
 
     if not (path / "model.keras").exists():
         urlretrieve(model_url, filename=str(path / "model.keras"))
