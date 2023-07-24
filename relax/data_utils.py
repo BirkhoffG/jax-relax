@@ -372,7 +372,7 @@ class FeaturesList:
 
     @property
     def feature_indices(self):
-        if self._feature_indices is None:
+        if self._feature_indices is None or len(self._feature_indices) == 0:
             self._transform_data()
         return self._feature_indices
     
