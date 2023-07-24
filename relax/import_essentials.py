@@ -8,8 +8,8 @@ import hashlib,itertools,types,inspect,functools,time,math,bz2,typing,numbers,st
 import multiprocessing,threading,urllib,tempfile,concurrent.futures,matplotlib,warnings,zipfile
 
 # import sklearn
-from sklearn.utils import shuffle
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_validate
+# from sklearn.utils import shuffle
+# from sklearn.model_selection import train_test_split, GridSearchCV, cross_validate
 
 # misc.
 from pprint import pprint
@@ -21,7 +21,6 @@ from fastcore.utils import in_jupyter
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pydantic import BaseModel as BaseParser, validator, ValidationError, Field
-from deprecation import deprecated
 from functools import partial
 
 # jax related
@@ -30,12 +29,11 @@ from jax import pmap, vmap, random, device_put, lax, jit, Array
 import jax.numpy as jnp, jax.random as jrand
 from jax_tqdm import loop_tqdm, scan_tqdm
 import optax
+import chex
 
 # keras
 os.environ['KERAS_BACKEND'] = 'jax'
 import keras_core as keras
 
 # nn related
-import haiku as hk
-import optax
-import chex
+# import haiku as hk

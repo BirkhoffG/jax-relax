@@ -227,7 +227,7 @@ def download_data_module_files(
     if download_original_data:
         files.append("data.csv")
     for f in files:
-        url = f"https://github.com/BirkhoffG/ReLax-Assets/raw/master/{data_name}/data/{f}"
+        url = f"https://huggingface.co/datasets/birkhoffg/ReLax-Assets/resolve/main/{data_name}/data/{f}"
         f_path = data_parent_dir / f'{data_name}/data' / f
         os.makedirs(f_path.parent, exist_ok=True)
         if not f_path.is_file(): urlretrieve(url, f_path)
