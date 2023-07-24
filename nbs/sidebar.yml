@@ -17,6 +17,7 @@ website:
           - 01_data.ipynb
           - 01_data.utils.ipynb
         - 02_ml_model.ipynb
+        - 03_explain.strategy.ipynb
         - section: Methods
           contents:
           - 00_base.ipynb
