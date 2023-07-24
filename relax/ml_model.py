@@ -68,7 +68,7 @@ class MLP(keras.Model):
 class MLModuleConfig(BaseParser):
     """Configurator of `MLModule`."""
     
-    sizes: List[int] = Field(description="List of hidden layer sizes.")
+    sizes: List[int] = Field([64, 32, 16], description="List of hidden layer sizes.")
     output_size: int = Field(2, description="The number of output classes.")
     dropout_rate: float = Field(0.3, description="Dropout rate.")
     lr: float = Field(1e-3, description="Learning rate.")
@@ -79,7 +79,9 @@ class MLModuleConfig(BaseParser):
 
 # %% ../nbs/02_ml_model.ipynb 5
 class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
-    def __init__(self, config: MLModuleConfig, *, model: keras.Model = None, name: str = None):
+    def __init__(self, config: MLModuleConfig = None, *, model: keras.Model = None, name: str = None):
+        if config is None:
+            config = MLModuleConfig()
         config = validate_configs(config, MLModuleConfig)
         self.model = self._init_model(config, model)
         self._is_trained = False
@@ -121,7 +123,7 @@ class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
             **fit_kwargs
         )
         self._is_trained = True
-        return self.model
+        return self
     
     @property
     def is_trained(self) -> bool:

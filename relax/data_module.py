@@ -167,6 +167,14 @@ class DataModule(BaseDataModule):
     def dataset(self) -> Tuple[Array, Array]:
         return (self.xs, self.ys)
     
+    @property
+    def train_indices(self) -> List[int]:
+        return self.config.train_indices
+    
+    @property
+    def test_indices(self) -> List[int]:
+        return self.config.test_indices
+    
     def _get_data(self, indices):
         if isinstance(indices, list):
             indices = jnp.array(indices)
@@ -182,6 +190,9 @@ class DataModule(BaseDataModule):
         
     def apply_constraints(self, x: Array, cf: Array, hard: bool = False) -> Array:
         return self._features.apply_constraints(x, cf, hard)
+    
+    def apply_regularization(self, x: Array, cf: Array, hard: bool = False) -> float:
+        return self._features.apply_regularization(x, cf, hard)
 
 # %% ../nbs/01_data.ipynb 13
 DEFAULT_DATA = [

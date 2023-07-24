@@ -21,6 +21,7 @@ from fastcore.utils import in_jupyter
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from pydantic import BaseModel as BaseParser, validator, ValidationError, Field
+import functools as ft
 from functools import partial
 
 # jax related
