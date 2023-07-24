@@ -11,7 +11,7 @@ from fastcore.test import *
 from jax.core import InconclusiveDimensionOperation
 
 # %% auto 0
-__all__ = ['validate_configs', 'auto_reshaping', 'load_json', 'get_config']
+__all__ = ['validate_configs', 'auto_reshaping', 'grad_update', 'load_json', 'get_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -74,12 +74,23 @@ def auto_reshaping(reshape_argname: str):
     return decorator
 
 # %% ../nbs/00_utils.ipynb 21
+def grad_update(
+    grads, # A pytree of gradients.
+    params, # A pytree of parameters.
+    opt_state: optax.OptState,
+    opt: optax.GradientTransformation,
+): # Return (upt_params, upt_opt_state)
+    updates, opt_state = opt.update(grads, opt_state, params)
+    upt_params = optax.apply_updates(params, updates)
+    return upt_params, opt_state
+
+# %% ../nbs/00_utils.ipynb 23
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 23
+# %% ../nbs/00_utils.ipynb 25
 @dataclass
 class Config:
     rng_reserve_size: int
@@ -91,6 +102,6 @@ class Config:
 
 main_config = Config.default()
 
-# %% ../nbs/00_utils.ipynb 24
+# %% ../nbs/00_utils.ipynb 26
 def get_config() -> Config: 
     return main_config
