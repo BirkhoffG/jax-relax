@@ -78,7 +78,7 @@ class DataModuleConfig(BaseConfig):
 class DataModule(BaseDataModule):
     def __init__(
         self, 
-        config, 
+        config: Dict | DataModuleConfig, 
         data: pd.DataFrame = None,
         features: List[Feature] = None,
         label: Feature = None,
@@ -99,6 +99,8 @@ class DataModule(BaseDataModule):
             path.mkdir(parents=True)
         self._features.save(path / 'features')
         self._label.save(path / 'label')
+        if self._data is not None:
+            self._data.to_csv(path / 'data.csv', index=False)
         with open(path / "config.json", "w") as f:
             json.dump(self.config.dict(), f)
 
@@ -209,7 +211,8 @@ DEFAULT_DATA = [
     'qsar',
     'bioresponse',
     'churn',
-    'road'
+    'road',
+    'dummy'
  ]
 
 DEFAULT_DATA_CONFIGS = { 
@@ -218,13 +221,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 17
+# %% ../nbs/01_data.ipynb 18
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 18
+# %% ../nbs/01_data.ipynb 19
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.
