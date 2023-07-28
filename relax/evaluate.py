@@ -9,8 +9,8 @@ from .explain import *
 from keras_core.metrics import sparse_categorical_accuracy
 
 # %% auto 0
-__all__ = ['METRICS_CALLABLE', 'METRICS', 'DEFAULT_METRICS', 'BaseEvalMetrics', 'PredictiveAccuracy', 'Validity', 'Proximity',
-           'pairwise_distances', 'l2_ann', 'ManifoldDist', 'evaluate_cfs', 'benchmark_cfs']
+__all__ = ['BaseEvalMetrics', 'PredictiveAccuracy', 'Validity', 'Proximity', 'pairwise_distances', 'l2_ann', 'ManifoldDist',
+           'Runtime', 'evaluate_cfs', 'benchmark_cfs']
 
 # %% ../nbs/04_evaluate.ipynb 6
 class BaseEvalMetrics:
@@ -122,6 +122,15 @@ class ManifoldDist(BaseEvalMetrics):
         xs, cfs = explanation.xs, explanation.cfs
         dists, _ = l2_ann(cfs, xs, k=self.n_neighbors)
         return dists.mean()
+
+# %% ../nbs/04_evaluate.ipynb 18
+class Runtime(BaseEvalMetrics):
+    """Compute the runtime of the CF explanation method."""
+    def __init__(self, name: str = "runtime"):
+        super().__init__(name=name)
+    
+    def __call__(self, explanation: Explanation) -> float:
+        return explanation.total_time
 
 # %% ../nbs/04_evaluate.ipynb 21
 METRICS_CALLABLE = [
