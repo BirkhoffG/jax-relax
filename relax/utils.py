@@ -64,7 +64,7 @@ def auto_reshaping(reshape_argname: str):
                     f"Invalid return type: must be a `jax.Array`, but got `{type(cf).__name__}`.")
             try: 
                 cf = cf.reshape(x_shape)
-            except InconclusiveDimensionOperation:
+            except (InconclusiveDimensionOperation, TypeError) as e:
                 raise ValueError(
                     f"Invalid return shape: Require `cf.shape` = {cf.shape} "
                     f"is not compatible with `x.shape` = {x_shape}.")
