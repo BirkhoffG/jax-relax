@@ -155,14 +155,13 @@ class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
 # %% ../nbs/02_ml_model.ipynb 16
 def download_ml_module(name: str, path: str = None):
     if path is None:
-        path = Path('relax_assets') / name / 'model'
+        path = Path('relax-assets') / name / 'model'
     else:
         path = Path(path)
     if not path.exists():
         path.mkdir(parents=True)
-    _model_path = f"{name}/model"
-    model_url = f"https://huggingface.co/datasets/birkhoffg/ReLax-Assets/resolve/main/{_model_path}/model.keras"
-    config_url = f"https://huggingface.co/datasets/birkhoffg/ReLax-Assets/resolve/main/{_model_path}/config.json"
+    model_url = f"https://huggingface.co/datasets/birkhoffg/ReLax-Assets/resolve/main/{name}/model/model.keras"
+    config_url = f"https://huggingface.co/datasets/birkhoffg/ReLax-Assets/resolve/main/{name}/model/config.json"
 
     if not (path / "model.keras").exists():
         urlretrieve(model_url, filename=str(path / "model.keras"))
@@ -178,4 +177,4 @@ def load_ml_module(name: str) -> MLModule:
             f'but got data_name={name}.')
 
     download_ml_module(name)
-    return MLModule.load_from_path(f"relax_assets/{name}/model")
+    return MLModule.load_from_path(f"relax-assets/{name}/model")

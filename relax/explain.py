@@ -8,34 +8,77 @@ from .base import *
 from .methods import *
 from .strategy import *
 from .ml_model import *
+from sklearn.datasets import make_classification
 
 # %% auto 0
-__all__ = ['Explanation', 'prepare_pred_fn', 'prepare_cf_module', 'generate_cf_explanations']
-
-# %% ../nbs/03_explain.ipynb 3
-@dataclass
-class Explanation:
-    """Generated CF Explanations class."""
-    cf_name: str  # cf method's name
-    data_module: DataModule  # data module
-    cfs: jnp.DeviceArray  # generated cf explanation of `X`
-    total_time: float  # total runtime
-    pred_fn: Callable[[jnp.DeviceArray], jnp.DeviceArray]  # predict function
-    dataset_name: str = str()  # dataset name
-    xs: jnp.ndarray = None  # input
-    ys: jnp.ndarray = None  # label
-
-    def __post_init__(self):
-        if self.data_module:
-            if self.dataset_name == str():
-                self.dataset_name = self.data_module.name
-            if self.xs is None:
-                self.xs = self.data_module.xs
-            if self.ys is None:
-                self.ys = self.data_module.ys
-
+__all__ = ['Explanation', 'fake_explanation', 'prepare_pred_fn', 'prepare_cf_module', 'generate_cf_explanations']
 
 # %% ../nbs/03_explain.ipynb 4
+class Explanation:
+    """Generated CF Explanations class. It behaves like a `DataModule`, except a few more attributes."""
+
+    def __init__(
+        self,
+        data: DataModule,  # Data module
+        cfs: Array,  # Generated cf explanation of `xs` in `data`
+        pred_fn: Callable[[Array], Array],  # Predict function
+        total_time: float = None,  # Total runtime
+        cf_name: str = "CFModule",  # CF method's name
+    ):
+        self._data = data
+        self._cfs = cfs
+        self.pred_fn = pred_fn
+        self.total_time = total_time
+        self.cf_name = cf_name
+
+    def __repr__(self):
+        return f"Explanation(data_name={self.data_name}, cf_name={self.cf_name}, " \
+               f"total_time={self.total_time}, xs={self.xs}, ys={self.ys}, cfs={self.cfs})"
+
+    @property
+    def data(self):
+        return self._data
+
+    @property
+    def xs(self):
+        return self.data.xs
+    
+    @property
+    def ys(self):
+        return self.data.ys
+    
+    @property
+    def cfs(self):
+        assert self.xs.shape == self._cfs.shape
+        return self._cfs
+    
+    @property
+    def data_name(self):
+        return self.data.name
+
+    @property
+    def train_indices(self):
+        return self.data.train_indices
+    
+    @property
+    def test_indices(self):
+        return self.data.test_indices
+    
+    def apply_constraints(self, *args, **kwargs):
+        return self.data.apply_constraints(*args, **kwargs)
+    
+    def apply_regularization(self, *args, **kwargs):
+        return self.data.apply_regularization(*args, **kwargs)
+
+# %% ../nbs/03_explain.ipynb 5
+def fake_explanation():
+    dm = load_data('dummy')
+    ml_model = load_ml_module('dummy')
+    return Explanation(
+        data=dm, cfs=dm.xs, pred_fn=ml_model.pred_fn, total_time=0.0, cf_name='dummy_method'
+    )
+
+# %% ../nbs/03_explain.ipynb 8
 def prepare_pred_fn(
     cf_module: CFModule,
     data: DataModule,
@@ -81,7 +124,7 @@ def prepare_cf_module(
     return cf_module
 
 
-# %% ../nbs/03_explain.ipynb 5
+# %% ../nbs/03_explain.ipynb 9
 def generate_cf_explanations(
     cf_module: CFModule, # CF Explanation Module
     data: DataModule, # Data Module
@@ -107,7 +150,7 @@ def generate_cf_explanations(
     # Return CF explanations.
     return Explanation(
         cf_name=cf_module.name,
-        data_module=data,
+        data=data,
         cfs=cfs,
         total_time=total_time,
         pred_fn=pred_fn,
