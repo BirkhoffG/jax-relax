@@ -75,6 +75,8 @@ jobs:
           pip install -e .[dev]
           # install causal graphical models
           pip install git+https://github.com/BirkhoffG/causalgraphicalmodels.git --upgrade
+          # copy the relax-assets to nbs to save downloading time
+          cp -r assets nbs/relax-assets
 
       - name: Run Tests
         run: nbdev_test
