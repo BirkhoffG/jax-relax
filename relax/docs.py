@@ -186,10 +186,10 @@ class CustomizedMarkdownRenderer(ShowDocRenderer):
     def hook_methods(self, sym):
         self.methods = []
         if self.isclass and hasattr(sym, '__ALL__'):
-            all_methods_syms = [
-                getattr(sym, x) for x in sym.__ALL__
+            all_methods_syms_names = [
+                (getattr(sym, x), x) for x in sym.__ALL__
             ]
-            self.methods = [ShowDocRenderer(x) for x in all_methods_syms]
+            self.methods = [ShowDocRenderer(sym, name=str(x)) for sym, x in all_methods_syms_names]
 
     def _check_sym(self, sym):
        
@@ -213,12 +213,14 @@ class CustomizedMarkdownRenderer(ShowDocRenderer):
             title_level=self.title_level + 1,
         )
         if self.methods:
-            doc += '\n\n' 
+            doc += '\n\n::: {.doc-methods} \n\n**Methods** \n\n' 
             doc += '\n\n'.join([
                 _repr_markdown(
                     x, use_module_dir=False,
                     show_title=False, is_class=False,
                 ) 
                 for x in self.methods])
+            
+            doc += '\n\n:::\n\n'
             
         return doc
