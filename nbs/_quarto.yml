@@ -6,6 +6,10 @@ format:
     theme: cosmo
     css: styles.css
     toc: true
+    toc-depth: 4    
+    number-sections: false
+    number-depth: 2
+    html-math-method: katex
 
 website:
   twitter-card: true
