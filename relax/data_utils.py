@@ -10,11 +10,12 @@ import jax.numpy as jnp
 import einops
 import os, sys, json, pickle
 import shutil
+from .utils import *
 
 # %% auto 0
 __all__ = ['PREPROCESSING_TRANSFORMATIONS', 'DataPreprocessor', 'MinMaxScaler', 'EncoderPreprocessor', 'OrdinalPreprocessor',
            'OneHotEncoder', 'Transformation', 'MinMaxTransformation', 'OneHotTransformation', 'OrdinalTransformation',
-           'IdentityTransformation', 'Feature', 'save_pytree', 'load_pytree', 'FeaturesList']
+           'IdentityTransformation', 'Feature', 'FeaturesList']
 
 # %% ../nbs/01_data.utils.ipynb 5
 def _check_xs(xs: np.ndarray, name: str):
@@ -96,7 +97,7 @@ def _unique(xs):
 # %% ../nbs/01_data.utils.ipynb 13
 class EncoderPreprocessor(DataPreprocessor):
     def _fit(self, xs, y=None):
-        _check_xs(xs)
+        _check_xs(xs, name="EncoderPreprocessor")
         self.categories_ = _unique(xs)
 
     def _transform(self, xs):
@@ -332,32 +333,6 @@ class Feature:
         )
 
 # %% ../nbs/01_data.utils.ipynb 30
-def _is_array(x):
-    return isinstance(x, np.ndarray) or isinstance(x, jnp.ndarray) or isinstance(x, list)
-
-def save_pytree(pytree, saved_dir):
-    with open(os.path.join(saved_dir, "data.npy"), "wb") as f:
-        for x in jax.tree_util.tree_leaves(pytree):
-            np.save(f, x)
-
-    tree_struct = jax.tree_util.tree_map(lambda t: _is_array(t), pytree)
-    with open(os.path.join(saved_dir, "treedef.json"), "w") as f:
-        json.dump(tree_struct, f)
-
-
-def load_pytree(saved_dir):
-    with open(os.path.join(saved_dir, "treedef.json"), "r") as f:
-        tree_struct = json.load(f)
-
-    leaves, treedef = jax.tree_util.tree_flatten(tree_struct)
-    with open(os.path.join(saved_dir, "data.npy"), "rb") as f:
-        flat_state = [
-            np.load(f, allow_pickle=True) if is_arr else np.load(f, allow_pickle=True).item()
-            for is_arr in leaves
-        ]
-    return jax.tree_util.tree_unflatten(treedef, flat_state)
-
-# %% ../nbs/01_data.utils.ipynb 32
 class FeaturesList:
     def __init__(
         self,
