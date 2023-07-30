@@ -3,13 +3,13 @@
 # %% auto 0
 __all__ = ['BaseConfig', 'BaseModule', 'PredFnMixedin', 'TrainableMixedin']
 
-# %% ../nbs/00_base.ipynb 1
+# %% ../nbs/00_base.ipynb 2
 from pydantic import BaseModel as BasePydanticModel
 import json
 from pathlib import Path
 
 
-# %% ../nbs/00_base.ipynb 3
+# %% ../nbs/00_base.ipynb 4
 class BaseConfig(BasePydanticModel):
     """Base class for all config classes."""
 
@@ -30,8 +30,9 @@ class BaseConfig(BasePydanticModel):
         with open(path, 'r') as f:
             return cls(**json.load(f))
 
-# %% ../nbs/00_base.ipynb 5
+# %% ../nbs/00_base.ipynb 6
 class BaseModule:
+    """Base class for all modules."""
     def __init__(self, config, *, name=None):
         self.config = config
         self._name = name
@@ -46,16 +47,27 @@ class BaseModule:
     def load_from_path(self, path):
         raise NotImplementedError
 
-# %% ../nbs/00_base.ipynb 7
-class PredFnMixedin:
-    def pred_fn(self, x):
-        raise NotImplementedError
-
 # %% ../nbs/00_base.ipynb 8
+class PredFnMixedin:
+    """Mixin class for modules that have a `pred_fn` method."""
+    
+    def pred_fn(self, x):
+        """Return the prediction/probability of the model on `x`."""
+        raise NotImplementedError
+    
+    __ALL__ = ['pred_fn']
+
+# %% ../nbs/00_base.ipynb 9
 class TrainableMixedin:
+    """Mixin class for trainable modules."""
+    
     @property
     def is_trained(self) -> bool:
+        """Return whether the module is trained or not."""
         raise NotImplementedError
     
     def train(self, data, **kwargs):
+        """Train the module."""
         raise NotImplementedError
+    
+    __ALL__ = ['is_trained', 'train']

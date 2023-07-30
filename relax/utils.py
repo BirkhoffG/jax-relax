@@ -11,7 +11,7 @@ from fastcore.test import *
 from jax.core import InconclusiveDimensionOperation
 
 # %% auto 0
-__all__ = ['validate_configs', 'auto_reshaping', 'grad_update', 'load_json', 'get_config']
+__all__ = ['validate_configs', 'save_pytree', 'load_pytree', 'auto_reshaping', 'grad_update', 'load_json', 'get_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -32,6 +32,34 @@ def validate_configs(
     return configs
 
 # %% ../nbs/00_utils.ipynb 15
+def _is_array(x):
+    return isinstance(x, np.ndarray) or isinstance(x, jnp.ndarray) or isinstance(x, list)
+
+def save_pytree(pytree, saved_dir):
+    """Save a pytree to a directory."""
+    with open(os.path.join(saved_dir, "data.npy"), "wb") as f:
+        for x in jax.tree_util.tree_leaves(pytree):
+            np.save(f, x)
+
+    tree_struct = jax.tree_util.tree_map(lambda t: _is_array(t), pytree)
+    with open(os.path.join(saved_dir, "treedef.json"), "w") as f:
+        json.dump(tree_struct, f)
+
+# %% ../nbs/00_utils.ipynb 20
+def load_pytree(saved_dir):
+    """Load a pytree from a saved directory."""
+    with open(os.path.join(saved_dir, "treedef.json"), "r") as f:
+        tree_struct = json.load(f)
+
+    leaves, treedef = jax.tree_util.tree_flatten(tree_struct)
+    with open(os.path.join(saved_dir, "data.npy"), "rb") as f:
+        flat_state = [
+            np.load(f, allow_pickle=True) if is_arr else np.load(f, allow_pickle=True).item()
+            for is_arr in leaves
+        ]
+    return jax.tree_util.tree_unflatten(treedef, flat_state)
+
+# %% ../nbs/00_utils.ipynb 25
 def _reshape_x(x: Array):
     x_size = x.shape
     if len(x_size) > 1 and x_size[0] != 1:
@@ -43,7 +71,7 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
         x = x.reshape(1, -1)
     return x, x_size
 
-# %% ../nbs/00_utils.ipynb 16
+# %% ../nbs/00_utils.ipynb 26
 def auto_reshaping(reshape_argname: str):
     """
     Decorator to automatically reshape function's input into (1, k), 
@@ -73,7 +101,7 @@ def auto_reshaping(reshape_argname: str):
         return wrapper
     return decorator
 
-# %% ../nbs/00_utils.ipynb 21
+# %% ../nbs/00_utils.ipynb 31
 def grad_update(
     grads, # A pytree of gradients.
     params, # A pytree of parameters.
@@ -84,13 +112,13 @@ def grad_update(
     upt_params = optax.apply_updates(params, updates)
     return upt_params, opt_state
 
-# %% ../nbs/00_utils.ipynb 23
+# %% ../nbs/00_utils.ipynb 33
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 25
+# %% ../nbs/00_utils.ipynb 35
 @dataclass
 class Config:
     rng_reserve_size: int
@@ -102,6 +130,6 @@ class Config:
 
 main_config = Config.default()
 
-# %% ../nbs/00_utils.ipynb 26
+# %% ../nbs/00_utils.ipynb 36
 def get_config() -> Config: 
     return main_config
