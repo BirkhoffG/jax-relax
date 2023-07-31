@@ -10,6 +10,8 @@ format:
     number-sections: false
     number-depth: 2
     html-math-method: katex
+    highlight-style: atom.theme
+
 
 website:
   twitter-card: true
