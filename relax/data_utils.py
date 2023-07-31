@@ -96,6 +96,7 @@ def _unique(xs):
 
 # %% ../nbs/01_data.utils.ipynb 13
 class EncoderPreprocessor(DataPreprocessor):
+    """Encode categorical features as an integer array."""
     def _fit(self, xs, y=None):
         _check_xs(xs, name="EncoderPreprocessor")
         self.categories_ = _unique(xs)
@@ -105,11 +106,12 @@ class EncoderPreprocessor(DataPreprocessor):
         if xs.dtype == object:
             xs = xs.astype(str)
         ordinal = np.searchsorted(self.categories_, xs)
-        return einops.rearrange(ordinal, 'k n -> n k')
+        # return einops.rearrange(ordinal, 'k n -> n k')
+        return ordinal
     
     def _inverse_transform(self, xs):
         """Transform ordinal encoded data back to original data."""
-        return self.categories_[xs].T
+        return self.categories_[xs.T].T
     
     def from_dict(self, params: dict):
         self.categories_ = params["categories_"]
@@ -120,6 +122,8 @@ class EncoderPreprocessor(DataPreprocessor):
 
 # %% ../nbs/01_data.utils.ipynb 14
 class OrdinalPreprocessor(EncoderPreprocessor):
+    """Ordinal encoder for a single feature."""
+    
     def fit(self, xs, y=None):
         self._fit(xs, y)
         return self
@@ -135,7 +139,8 @@ class OrdinalPreprocessor(EncoderPreprocessor):
 
 # %% ../nbs/01_data.utils.ipynb 16
 class OneHotEncoder(EncoderPreprocessor):
-    # Fit the encoder without sci-kit OneHotEncoder.
+    """One-hot encoder for a single categorical feature."""
+    
     def fit(self, xs, y=None):
         self._fit(xs, y)
         return self
@@ -146,7 +151,7 @@ class OneHotEncoder(EncoderPreprocessor):
                              f"but got shape={xs.shape}.")
         xs_int = self._transform(xs)
         one_hot_feats = jax.nn.one_hot(xs_int, len(self.categories_))
-        return einops.rearrange(one_hot_feats, 'k n d -> n (k d)')
+        return einops.rearrange(one_hot_feats, 'n k d -> n (k d)')
 
     def inverse_transform(self, xs):
         xs_int = np.argmax(xs, axis=-1)
