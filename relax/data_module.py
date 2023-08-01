@@ -190,11 +190,21 @@ class DataModule(BaseDataModule):
         else:
             raise ValueError(f"Unknown data name: {name}. Should be one of ['train', 'valid', 'test']")
         
-    def apply_constraints(self, x: Array, cf: Array, hard: bool = False) -> Array:
-        return self._features.apply_constraints(x, cf, hard)
+    def transform(self, data: pd.DataFrame):
+        if isinstance(data, pd.DataFrame):
+            data_dict = {k: np.array(v).reshape(-1, 1) for k, v in data.iloc[:, :-1].to_dict(orient='list').items()}
+            return self._features.transform(data_dict)
+        else:
+            raise ValueError("data should be a pandas DataFrame.")
+        
+    def inverse_transform(self, data: Array):
+        return self._label.inverse_transform(data)
+        
+    def apply_constraints(self, xs: Array, cfs: Array, hard: bool = False) -> Array:
+        return self._features.apply_constraints(xs, cfs, hard)
     
-    def apply_regularization(self, x: Array, cf: Array, hard: bool = False) -> float:
-        return self._features.apply_regularization(x, cf, hard)
+    def compute_reg_loss(self, xs: Array, cfs: Array, hard: bool = False) -> float:
+        return self._features.compute_reg_loss(xs, cfs, hard)
 
 # %% ../nbs/01_data.ipynb 13
 DEFAULT_DATA = [
