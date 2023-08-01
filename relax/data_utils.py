@@ -11,6 +11,7 @@ import einops
 import os, sys, json, pickle
 import shutil
 from .utils import *
+import chex
 
 # %% auto 0
 __all__ = ['PREPROCESSING_TRANSFORMATIONS', 'DataPreprocessor', 'MinMaxScaler', 'EncoderPreprocessor', 'OrdinalPreprocessor',
@@ -176,8 +177,11 @@ class Transformation:
     def inverse_transform(self, xs):
         return self.transformer.inverse_transform(xs)
 
-    def apply_constraints(self, xs):
-        return xs
+    def apply_constraints(self, xs, cfs, hard: bool = False):
+        return cfs
+    
+    def compute_reg_loss(self, xs, cfs, hard: bool = False):
+        return 0.
     
     def from_dict(self, params: dict):
         self.name = params["name"]
@@ -201,16 +205,19 @@ class OneHotTransformation(Transformation):
         super().__init__("ohe", OneHotEncoder())
 
     @property
-    def categories(self) -> int:
+    def num_categories(self) -> int:
         return len(self.transformer.categories_)
 
     def apply_constraints(self, xs, cfs, hard: bool = False):
         return jax.lax.cond(
             hard,
-            true_fun=lambda x: jax.nn.one_hot(jnp.argmax(x, axis=-1), self.categories),
+            true_fun=lambda x: jax.nn.one_hot(jnp.argmax(x, axis=-1), self.num_categories),
             false_fun=lambda x: jax.nn.softmax(x, axis=-1),
             operand=cfs,
         )
+    
+    def compute_reg_loss(self, xs, cfs, hard: bool = False):
+        return (cfs.sum(axis=-1, keepdims=True) - 1.0) ** 2
 
 # %% ../nbs/01_data.utils.ipynb 24
 class OrdinalTransformation(Transformation):
@@ -218,7 +225,7 @@ class OrdinalTransformation(Transformation):
         super().__init__("ordinal", OrdinalPreprocessor())
 
     @property
-    def categories(self) -> int:
+    def num_categories(self) -> int:
         return len(self.transformer.categories_)
     
 class IdentityTransformation(Transformation):
@@ -282,7 +289,7 @@ class Feature:
         self.is_immutable = is_immutable
 
     @property
-    def transformed_data(self):
+    def transformed_data(self) -> jax.Array:
         if self._transformed_data is None:
             return self.fit_transform(self.data)
         else:
@@ -336,6 +343,9 @@ class Feature:
             false_fun=lambda _: self.transformation.apply_constraints(xs, cfs, hard),
             operand=xs,
         )
+    
+    def compute_reg_loss(self, xs, cfs, hard: bool = False):
+        return self.transformation.compute_reg_loss(xs, cfs, hard)
 
 # %% ../nbs/01_data.utils.ipynb 30
 class FeaturesList:
@@ -350,33 +360,80 @@ class FeaturesList:
             self._transformed_data = features.transformed_data
         elif isinstance(features, Feature):
             self._features = [features]
-            self._feature_indices = []
-            self._transformed_data = None
         elif isinstance(features, list):
             if len(features) > 0 and not isinstance(features[0], Feature):
                 raise ValueError(f"Invalid features type: {type(features[0]).__name__}")
             self._features = features
-            self._feature_indices = []
-            self._transformed_data = None
         else:
             raise ValueError(f"Unknown features type {type(features)}")
 
     @property
-    def features(self):
+    def features(self) -> list[Feature]: # Return [Feature(...), ...]
         return self._features
 
     @property
-    def feature_indices(self):
-        if self._feature_indices is None or len(self._feature_indices) == 0:
+    def feature_indices(self) -> list[tuple[int, int]]: # Return [(start, end), ...]
+        if not hasattr(self, "_feature_indices") or self._feature_indices is None or len(self._feature_indices) == 0:
             self._transform_data()
         return self._feature_indices
     
     @property
+    def feature_name_indices(self) -> dict[str, tuple[int, int]]: # Return {feature_name: (feat_idx, start, end), ...}
+        if not hasattr(self, "_feature_indices") or self._feature_indices is None:
+            self._transform_data()
+        return self._feature_name_indices
+    
+    @property
     def transformed_data(self):
-        if self._transformed_data is None:
+        if not hasattr(self, "_transformed_data") or self._transformed_data is None:
             self._transform_data()
         return self._transformed_data
     
+    def _transform_data(self):
+        self._feature_indices = []
+        self._feature_name_indices = {}
+        self._transformed_data = []
+        start, end = 0, 0
+        for i, feat in enumerate(self.features):
+            transformed_data = feat.transformed_data
+            end += transformed_data.shape[-1]
+            self._feature_indices.append((start, end))
+            self._feature_name_indices[feat.name] = (i, start, end)
+            self._transformed_data.append(transformed_data)
+            start = end
+
+        self._transformed_data = jnp.concatenate(self._transformed_data, axis=-1)
+    
+    def transform(self, data: dict[str, jax.Array]):
+        if not isinstance(data, dict):
+            raise ValueError(f"Invalid data type: {type(data).__name__}, should be dict[str, jax.Array]")
+
+        transformed_data = [None] * len(self.features)
+        for feat_name, val in data.items():
+            feat_idx, _, _ = self.feature_name_indices[feat_name]
+            feat = self.features[feat_idx]
+            transformed_data[feat_idx] = feat.transform(val)
+        return jnp.concatenate(transformed_data, axis=-1)
+
+    def inverse_transform(self, xs) -> dict[str, jax.Array]:
+        orignial_data = {}
+        for (start, end), feat in zip(self.feature_indices, self.features):
+            orignial_data[feat.name] = feat.inverse_transform(xs[:, start:end])
+        return orignial_data
+
+    def apply_constraints(self, xs, cfs, hard: bool = False):
+        constrainted_cfs = []
+        for (start, end), feat in zip(self.feature_indices, self.features):
+            _cfs = feat.apply_constraints(xs[:, start:end], cfs[:, start:end], hard)
+            constrainted_cfs.append(_cfs)
+        return jnp.concatenate(constrainted_cfs, axis=-1)
+    
+    def compute_reg_loss(self, xs, cfs, hard: bool = False):
+        reg_loss = 0.
+        for (start, end), feat in zip(self.feature_indices, self.features):
+            reg_loss += feat.compute_reg_loss(xs[:, start:end], cfs[:, start:end], hard)
+        return reg_loss
+
     def to_dict(self):
         return {
             'features': [feat.to_dict() for feat in self.features],
@@ -395,29 +452,3 @@ class FeaturesList:
     @classmethod
     def load_from_path(cls, saved_dir):
         return cls.from_dict(load_pytree(saved_dir))
-
-    def _transform_data(self):
-        self._feature_indices = []
-        self._transformed_data = []
-        start, end = 0, 0
-        for feat in self.features:
-            transformed_data = feat.transformed_data
-            end += transformed_data.shape[-1]
-            self._feature_indices.append((start, end))
-            self._transformed_data.append(transformed_data)
-            start = end
-
-        self._transformed_data = jnp.concatenate(self._transformed_data, axis=-1)
-
-    def transform(self, data):
-        raise NotImplementedError
-
-    def inverse_transform(self, xs):
-        raise NotImplementedError
-
-    def apply_constraints(self, xs, cfs, hard: bool = False):
-        constrainted_cfs = []
-        for (start, end), feat in zip(self.feature_indices, self.features):
-            _cfs = feat.apply_constraints(xs[:, start:end], cfs[:, start:end], hard)
-            constrainted_cfs.append(_cfs)
-        return jnp.concatenate(constrainted_cfs, axis=-1)
