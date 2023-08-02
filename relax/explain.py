@@ -67,8 +67,8 @@ class Explanation:
     def apply_constraints(self, *args, **kwargs):
         return self.data.apply_constraints(*args, **kwargs)
     
-    def apply_regularization(self, *args, **kwargs):
-        return self.data.apply_regularization(*args, **kwargs)
+    def compute_reg_loss(self, *args, **kwargs):
+        return self.data.compute_reg_loss(*args, **kwargs)
 
 # %% ../nbs/03_explain.ipynb 5
 def fake_explanation():
@@ -112,12 +112,12 @@ def prepare_cf_module(
 ):
     """Prepare the CF module. 
     It will hook up the data module's apply functions via the `init_apply_fns` method
-    (e.g., `apply_constraints_fn` and `apply_regularization_fn`).
+    (e.g., `apply_constraints_fn` and `compute_reg_loss_fn`).
     It will also train the model if `cf_module` is a `ParametricCFModule`.
     """
-    cf_module.init_apply_fns(
+    cf_module.init_fns(
         apply_constraints_fn=data_module.apply_constraints,
-        apply_regularization_fn=data_module.apply_regularization,
+        compute_reg_loss_fn=data_module.compute_reg_loss,
     )
     if isinstance(cf_module, ParametricCFModule):
         cf_module.train(data_module, pred_fn=pred_fn, **train_config)

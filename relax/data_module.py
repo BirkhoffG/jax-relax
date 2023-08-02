@@ -29,7 +29,7 @@ class BaseDataModule(BaseModule):
     def apply_constraints(self, x: Array, cf: Array, hard: bool = False, **kwargs) -> Array:
         raise NotImplementedError
     
-    def apply_regularization(self, x: Array, cf: Array, hard: bool = False, **kwargs) -> float:
+    def compute_reg_loss(self, x: Array, cf: Array, hard: bool = False, **kwargs) -> float:
         raise NotImplementedError
 
 # %% ../nbs/01_data.ipynb 8
