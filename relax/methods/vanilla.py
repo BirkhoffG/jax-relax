@@ -38,9 +38,9 @@ def _vanilla_cf(
         pred_fn: Callable[[Array], Array],
     ):
         y_pred = pred_fn(x)
-        cf_y_true = 1.0 - y_pred
+        # cf_y_true = 1.0 - y_pred
         cf_y_pred = pred_fn(cf)
-        return loss_fn_1(cf_y_true, cf_y_pred) + lambda_ * loss_fn_2(x, cf)
+        return loss_fn_1(y_target, cf_y_pred) + lambda_ * loss_fn_2(x, cf)
 
     @loop_tqdm(n_steps)
     def gen_cf_step(
@@ -55,8 +55,6 @@ def _vanilla_cf(
     cf = jnp.array(x, copy=True)
     opt = optax.rmsprop(lr)
     opt_state = opt.init(cf)
-    # for _ in tqdm(range(n_steps)):
-    #     cf, opt_state = gen_cf_step(x, cf, opt_state)
     cf, opt_state = lax.fori_loop(0, n_steps, gen_cf_step, (cf, opt_state))
 
     cf = apply_constraints_fn(x, cf, hard=True)
@@ -89,6 +87,7 @@ class VanillaCF(CFModule):
         x: Array,  # `x` shape: (k,), where `k` is the number of features
         pred_fn: Callable[[Array], Array],
         y_target: Array = None,
+        **kwargs,
     ) -> jnp.DeviceArray:
         # TODO: Currently assumes binary classification.
         if y_target is None:
