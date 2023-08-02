@@ -56,7 +56,9 @@ class CFModule(BaseModule):
         self,
         x: Array,
         pred_fn: Callable = None,
-        pred_fn_args: Dict = None,
+        y_target: Array = None,
+        rng_key: jrand.PRNGKey = None,
+        **kwargs
     ) -> Array: # Return counterfactual of x.
         raise NotImplementedError
 
