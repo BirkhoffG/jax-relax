@@ -8,6 +8,7 @@ from .base import *
 from .methods import *
 from .strategy import *
 from .ml_model import *
+import einops
 from sklearn.datasets import make_classification
 
 # %% auto 0
@@ -49,7 +50,7 @@ class Explanation:
     
     @property
     def cfs(self):
-        assert self.xs.shape == self._cfs.shape
+        # assert self.xs.shape == self._cfs.shape
         return self._cfs
     
     @property
@@ -71,11 +72,19 @@ class Explanation:
         return self.data.compute_reg_loss(*args, **kwargs)
 
 # %% ../nbs/03_explain.ipynb 5
-def fake_explanation():
+def fake_explanation(n_cfs: int=1):
     dm = load_data('dummy')
     ml_model = load_ml_module('dummy')
+    if n_cfs < 1: 
+        raise ValueError(f'n_cfs must be greater than 0, but got n_cfs={n_cfs}.')
+    elif n_cfs == 1:
+        cfs = dm.xs
+    else:
+        # Allow for multiple counterfactuals
+        cfs = einops.repeat(dm.xs, "n k -> n c k", c=n_cfs)
+
     return Explanation(
-        data=dm, cfs=dm.xs, pred_fn=ml_model.pred_fn, total_time=0.0, cf_name='dummy_method'
+        data=dm, cfs=cfs, pred_fn=ml_model.pred_fn, total_time=0.0, cf_name='dummy_method'
     )
 
 # %% ../nbs/03_explain.ipynb 8
