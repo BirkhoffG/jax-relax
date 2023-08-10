@@ -3,6 +3,7 @@
 # %% ../nbs/03_explain.strategy.ipynb 2
 from __future__ import annotations
 from .import_essentials import *
+import einops
 
 # %% auto 0
 __all__ = ['BaseStrategy', 'IterativeStrategy', 'VmapStrategy', 'PmapStrategy', 'BatchedVmapStrategy', 'BatchedPmapStrategy',
@@ -38,7 +39,6 @@ class IterativeStrategy(BaseStrategy):
         
         assert X.ndim == 2
         cfs = jnp.stack([fn(X[i], pred_fn=pred_fn, **kwargs) for i in range(X.shape[0])])
-        assert X.shape == cfs.shape
         return cfs
 
 
@@ -118,14 +118,14 @@ def _batched_generation(
     # pad X to be divisible by batch_size
     pad_size = batch_size - (X.shape[0] % batch_size)
     X = jnp.pad(X, ((0, pad_size), (0, 0)))
-    X = X.reshape(-1, batch_size, *x_shape[1:])
+    X = einops.rearrange(X, "(n b) k -> n b k", b=batch_size)
     # generate cfs via lax.map
     gs_fn_partial = lambda x: gs_fn(cf_fn, x, pred_fn=pred_fn, **kwargs)
     cfs = lax.map(gs_fn_partial, X)
-    cfs = cfs.reshape(-1, *x_shape[1:])[:x_shape[0]]
+    # cfs = cfs.reshape(-1, *x_shape[1:])[:x_shape[0]]
+    cfs = einops.rearrange(cfs, "n b ... k -> (n b) ... k")
+    cfs = cfs[:x_shape[0]]
     return cfs
-     
-
 
 # %% ../nbs/03_explain.strategy.ipynb 10
 class BatchedVmapStrategy(BaseStrategy):
@@ -168,7 +168,7 @@ class BatchedPmapStrategy(BaseStrategy):
         return cfs
 
 
-# %% ../nbs/03_explain.strategy.ipynb 20
+# %% ../nbs/03_explain.strategy.ipynb 22
 class StrategyFactory(object):
     """Factory class for Parallelism Strategy."""
 
