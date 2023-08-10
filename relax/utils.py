@@ -72,7 +72,10 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
     return x, x_size
 
 # %% ../nbs/00_utils.ipynb 26
-def auto_reshaping(reshape_argname: str):
+def auto_reshaping(
+    reshape_argname: str, # The name of the argument to be reshaped.
+    reshape_output: bool = True, # Whether to reshape the output. Useful to set `False` when returning multiple cfs.
+):
     """
     Decorator to automatically reshape function's input into (1, k), 
     and out to input's shape.
@@ -86,16 +89,18 @@ def auto_reshaping(reshape_argname: str):
             else:
                 raise ValueError(
                     f"Invalid argument name: `{reshape_argname}` is not a valid argument name.")
+            # Call the function.
             cf = func(**kwargs)
             if not isinstance(cf, Array): 
                 raise ValueError(
                     f"Invalid return type: must be a `jax.Array`, but got `{type(cf).__name__}`.")
-            try: 
-                cf = cf.reshape(x_shape)
-            except (InconclusiveDimensionOperation, TypeError) as e:
-                raise ValueError(
-                    f"Invalid return shape: Require `cf.shape` = {cf.shape} "
-                    f"is not compatible with `x.shape` = {x_shape}.")
+            if reshape_output:
+                try: 
+                    cf = cf.reshape(x_shape)
+                except (InconclusiveDimensionOperation, TypeError) as e:
+                    raise ValueError(
+                        f"Invalid return shape: Require `cf.shape` = {cf.shape} "
+                        f"is not compatible with `x.shape` = {x_shape}.")
             return cf
 
         return wrapper

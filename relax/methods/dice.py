@@ -60,6 +60,7 @@ def _diverse_cf(
     
     cfs, opt_state = lax.fori_loop(0, n_steps, gen_cf_step, (cfs, opt_state))
     # TODO: support return multiple cfs
-    cfs = apply_constraints_fn(x, cfs[:1, :], hard=True)
+    # cfs = apply_constraints_fn(x, cfs[:1, :], hard=True)
+    cfs = apply_constraints_fn(x, cfs, hard=True)
     return cfs
 
