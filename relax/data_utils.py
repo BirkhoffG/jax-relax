@@ -365,7 +365,7 @@ class FeaturesList:
                 raise ValueError(f"Invalid features type: {type(features[0]).__name__}")
             self._features = features
         else:
-            raise ValueError(f"Unknown features type {type(features)}")
+            raise ValueError(f"Unknown features type. Got {type(features).__name__}")
 
     @property
     def features(self) -> list[Feature]: # Return [Feature(...), ...]

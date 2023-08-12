@@ -49,8 +49,10 @@ class Explanation:
         return self.data.ys
     
     @property
-    def cfs(self):
-        # assert self.xs.shape == self._cfs.shape
+    def cfs(self) -> Array:
+        """Return the counterfactuals in the shape of (n, c, k)"""
+        if self._cfs.ndim == 2:
+            return einops.rearrange(self._cfs, "n d -> n () d")
         return self._cfs
     
     @property
