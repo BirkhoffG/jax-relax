@@ -189,7 +189,23 @@ class DataModule(BaseDataModule):
             return self._get_data(self.config.test_indices)
         else:
             raise ValueError(f"Unknown data name: {name}. Should be one of ['train', 'valid', 'test']")
+    
+    def sample(self, size: float | int, stage: str = 'train', key: jrand.PRNGKey = None):
+        key = jrand.PRNGKey(0) if key is None else key
+        xs, ys = self[stage]
+        indices = jnp.arange(xs.shape[0])
         
+        if isinstance(size, float) and 0 <= size <= 1:
+            size = int(size * indices.shape[0])
+        elif isinstance(size, int):
+            size = min(size, indices.shape[0])
+        else:
+            raise ValueError(f"`size` should be a floating number 0<=size<=1, or an integer,"
+                             f" but got size={size}.")
+                
+        indices = jrand.permutation(key, indices)[:size]
+        return xs[indices], ys[indices]
+
     def transform(self, data: pd.DataFrame):
         if isinstance(data, pd.DataFrame):
             data_dict = {k: np.array(v).reshape(-1, 1) for k, v in data.iloc[:, :-1].to_dict(orient='list').items()}
