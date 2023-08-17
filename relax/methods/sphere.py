@@ -3,13 +3,15 @@
 # %% ../../nbs/methods/05_sphere.ipynb 3
 from __future__ import annotations
 from ..import_essentials import *
-from .base import BaseCFModule
-from ..utils import *
+from .base import CFModule
+from ..utils import auto_reshaping, grad_update, validate_configs
+from ..data_utils import Feature, FeaturesList
 
 # %% auto 0
-__all__ = ['hyper_sphere_coordindates', 'sample_categorical', 'cat_sample', 'apply_immutable', 'GSConfig', 'GrowingSphere']
+__all__ = ['hyper_sphere_coordindates', 'sample_categorical', 'default_perturb_function', 'perturb_function_with_features',
+           'GSConfig', 'GrowingSphere']
 
-# %% ../../nbs/methods/05_sphere.ipynb 4
+# %% ../../nbs/methods/05_sphere.ipynb 5
 @partial(jit, static_argnums=(2, 5))
 def hyper_sphere_coordindates(
     rng_key: jrand.PRNGKey, # Random number generator key
@@ -31,157 +33,109 @@ def hyper_sphere_coordindates(
 
     return candidates
 
-# %% ../../nbs/methods/05_sphere.ipynb 5
+# %% ../../nbs/methods/05_sphere.ipynb 6
 @partial(jit, static_argnums=(1, 2))
 def sample_categorical(rng_key: jrand.PRNGKey, col_size: int, n_samples: int):
-    rng_key, subkey = jrand.split(rng_key)
+    rng_key, _ = jrand.split(rng_key)
     prob = jnp.ones(col_size) / col_size
-    cat_sample = jax.nn.one_hot(
-        jrand.categorical(rng_key, prob, shape=(n_samples,)), num_classes=col_size
-    )
-    return subkey, cat_sample
-
-
-def cat_sample(
-    rng_key: jrand.PRNGKey, # Random number generator key
-    cat_array_sizes: List[int],  # A list of the number of categories for each categorical feature
-    n_samples: int,  # Number of samples to sample
-):  
-    if len(cat_array_sizes) == 0:
-        return jnp.empty((n_samples, 0))
-    
-    candidates = []
-    for col in cat_array_sizes:
-        rng_key, cat_sample = sample_categorical(rng_key, col, n_samples)
-        candidates.append(cat_sample)
-    candidates = jnp.concatenate(candidates, axis=1)
-    
-    return candidates
+    cat_sample = jrand.categorical(rng_key, prob, shape=(n_samples, 1))
+    return cat_sample
 
 # %% ../../nbs/methods/05_sphere.ipynb 7
-@auto_reshaping('x')
-def _growing_spheres(
-    rng_key: jrand.PRNGKey, # Random number generator key
-    x: Array, # Input instance. Shape: (n_features)
-    pred_fn: Callable, # Prediction function
-    n_steps: int, # Number of steps
-    n_samples: int,  # Number of samples to sample
-    cat_idx: int, # Index of categorical features
-    cat_arrays: List[List[str]],  # A list of a list of each categorical feature name
-    step_size: float, # Step size
-    p_norm: int, # Norm
-    apply_fn: Callable # Apply immutable constraints
-):  
-    @jit
-    def dist_fn(x, cf):
-        if p_norm == 1:
-            return jnp.abs(cf - x).sum(axis=1)
-        elif p_norm == 2:
-            return jnp.linalg.norm(cf - x, ord=2, axis=1)
-        else:
-            raise ValueError("Only p_norm = 1 or 2 is supported")
-    
-    @loop_tqdm(n_steps)
-    def step(i, state):
-        candidate_cf, count, rng_key = state
-        rng_key, subkey_1, subkey_2 = jrand.split(rng_key, num=3)
-        low, high = step_size * count, step_size * (count + 1)
-        # Sample around x
-        cont_candidates = hyper_sphere_coordindates(subkey_1, x[:, :cat_idx], n_samples, high, low, p_norm)
-        cat_candidates = cat_sample(subkey_2, cat_array_sizes, n_samples)
-        candidates = jnp.concatenate([cont_candidates, cat_candidates], axis=1)
-        # Apply immutable constraints
-        candidates = apply_fn(x=x, cf=candidates)
-        assert candidates.shape[1] == x.shape[1], f"candidates.shape = {candidates.shape}, x.shape = {x.shape}"
+def default_perturb_function(
+    rng_key: jrand.PRNGKey,
+    x: np.ndarray, # Shape: (1, k)
+    n_samples: int,
+    high: float,
+    low: float,
+    p_norm: int
+):
+    return hyper_sphere_coordindates(
+        rng_key, x, n_samples, high, low, p_norm
+    )
 
-        # Calculate distance
-        dist = dist_fn(x, candidates)
+def perturb_function_with_features(
+    rng_key: jrand.PRNGKey,
+    x: np.ndarray, # Shape: (1, k)
+    n_samples: int,
+    high, 
+    low,
+    p_norm,
+    feats: FeaturesList,
+):
+    def perturb_feature(rng_key, x, feat):
+        if feat.is_categorical:
+            return feat.transform(
+                sample_categorical(
+                    rng_key, feat.transformation.num_categories, n_samples
+                ) #<== sampled labels
+            ) #<== transformed labels
+        else: 
+            return hyper_sphere_coordindates(
+                rng_key, x, n_samples, high, low, p_norm
+            ) #<== transformed continuous features
+        
+    rng_keys = jrand.split(rng_key, len(feats))
+    perturbed = jnp.repeat(x, n_samples, axis=0)
+    for rng_key, (start, end), feat in zip(rng_keys, feats.feature_indices, feats):
+        _perturbed_feat = perturb_feature(rng_keys[0], x[:, start: end], feat)
+        perturbed = perturbed.at[:, start: end].set(_perturbed_feat)
+    return perturbed
 
-        # Calculate counterfactual labels
-        candidate_preds = pred_fn(candidates).round().reshape(-1)
-        indices = jnp.where(candidate_preds != y_pred, 1, 0).astype(bool)
 
-        candidates = jnp.where(indices.reshape(-1, 1), 
-                               candidates, jnp.ones_like(candidates) * jnp.inf)
-        dist = jnp.where(indices.reshape(-1, 1), dist, jnp.ones_like(dist) * jnp.inf)
-
-        closest_idx = dist.argmin()
-        candidate_cf_update = candidates[closest_idx].reshape(1, -1)
-
-        candidate_cf = jnp.where(
-            dist[closest_idx].mean() < dist_fn(x, candidate_cf).mean(),
-            candidate_cf_update, 
-            candidate_cf
-        )
-        return candidate_cf, count + 1, rng_key
-    
-    y_pred = pred_fn(x).round().reshape(-1)
-    candidate_cf = jnp.ones_like(x) * jnp.inf
-    cat_array_sizes = [len(cat_array) for cat_array in cat_arrays]
-    count = 0
-    state = (candidate_cf, count, rng_key)
-    candidate_cf, _, _ = lax.fori_loop(0, n_steps, step, state)
-    # if `inf` is found, return the original input
-    candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
-    return candidate_cf
-
-# %% ../../nbs/methods/05_sphere.ipynb 8
-def apply_immutable(x: Array, cf: Array, immutable_idx: List[int]):
-    if immutable_idx is not None:
-        cf = cf.at[:, immutable_idx].set(x[:, immutable_idx])
-    return cf
-
-# %% ../../nbs/methods/05_sphere.ipynb 9
+# %% ../../nbs/methods/05_sphere.ipynb 10
 class GSConfig(BaseParser):
-    seed: int = 42
     n_steps: int = 100
     n_samples: int = 1000
     step_size: float = 0.05
     p_norm: int = 2
-    
 
-# %% ../../nbs/methods/05_sphere.ipynb 10
-class GrowingSphere(BaseCFModule):
-    name = "Growing Sphere"
 
-    def __init__(
-        self,
-        configs: Dict | GSConfig = None
-    ):
-        if configs is None:
-            configs = GSConfig()
-        self.configs = validate_configs(configs, GSConfig)
-        self.rng = jrand.PRNGKey(self.configs.seed)
-    
+# %% ../../nbs/methods/05_sphere.ipynb 11
+class GrowingSphere(CFModule):
+    def __init__(self, config: dict | GSConfig = None, *, name: str = None, perturb_fn = None):
+        if config is None:
+             config = GSConfig()
+        config = validate_configs(config, GSConfig)
+        name = "GrowingSphere" if name is None else name
+        self.perturb_fn = perturb_fn
+        super().__init__(config, name=name)
+
+    def before_generate_cf(self, *args, **kwargs):
+        if self.perturb_fn is None:
+            if hasattr(self, 'data_module'):
+                self.perturb_fn = ft.partial(
+                    perturb_function_with_features, feats=self.data_module.features
+                )
+            else:
+                self.perturb_fn = default_perturb_function
+        
+    @auto_reshaping('x')
     def generate_cf(
         self,
-        x: Array,
-        pred_fn: Callable,
-    ):
-        cat_idx = self.data_module.cat_idx
-        apply_immutable_partial = partial(
-            apply_immutable, immutable_idx=self.data_module._imutable_idx_list)
-        cf = _growing_spheres(
-            self.rng,
-            x,
-            pred_fn,
-            self.configs.n_steps,
-            self.configs.n_samples,
-            cat_idx,
-            self.data_module._cat_arrays,
-            self.configs.step_size,
-            self.configs.p_norm,
-            apply_immutable_partial,
+        x: Array,  # `x` shape: (k,), where `k` is the number of features
+        pred_fn: Callable[[Array], Array],
+        y_target: Array = None,
+        rng_key: jnp.ndarray = None,
+        **kwargs,
+    ) -> jnp.DeviceArray:
+        # TODO: Currently assumes binary classification.
+        if y_target is None:
+            y_target = 1 - pred_fn(x)
+        else:
+            y_target = jnp.array(y_target, copy=True)
+        if rng_key is None:
+            raise ValueError("`rng_key` must be provided, but got `None`.")
+        
+        return _growing_spheres(
+            rng_key=rng_key,
+            x=x,
+            y_target=y_target,
+            pred_fn=pred_fn,
+            n_steps=self.config.n_steps,
+            n_samples=self.config.n_samples,
+            step_size=self.config.step_size,
+            p_norm=self.config.p_norm,
+            perturb_fn=self.perturb_fn,
+            apply_constraints_fn=self.apply_constraints_fn
         )
-        return cf
-    
-    def generate_cfs(
-        self, 
-        X: Array, 
-        pred_fn: Callable = None
-    ) -> jnp.ndarray:
-        rng_keys = jrand.split(jrand.PRNGKey(self.configs.seed), num=X.shape[0])
-        generate_cf_partial = jit(partial(self.generate_cf, pred_fn=pred_fn))
-        cfs = jax.vmap(generate_cf_partial)(X, rng_keys)
-        # cfs = generate_cf_partial(X[0], rng_keys[0])
-        return cfs

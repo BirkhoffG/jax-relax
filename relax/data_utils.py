@@ -164,6 +164,10 @@ class Transformation:
         self.name = name
         self.transformer = transformer
 
+    @property
+    def is_categorical(self) -> bool:
+        return isinstance(self.transformer, EncoderPreprocessor)
+
     def fit(self, xs, y=None):
         self.transformer.fit(xs)
         return self
@@ -269,6 +273,7 @@ class Feature:
         transformation: str | Transformation,
         transformed_data = None,
         is_immutable: bool = False,
+        is_categorical: bool = None,
     ):
         self.name = name
         self.data = data
@@ -287,6 +292,15 @@ class Feature:
             raise ValueError(f"Unknown transformer {transformation}")
         self._transformed_data = transformed_data
         self.is_immutable = is_immutable
+        if is_categorical is not None:
+            self._is_categorical = is_categorical
+            assert self._is_categorical == self.transformation.is_categorical
+        else:
+            self._is_categorical = self.transformation.is_categorical
+
+    @property
+    def is_categorical(self) -> bool:
+        return self._is_categorical
 
     @property
     def transformed_data(self) -> jax.Array:
@@ -306,14 +320,18 @@ class Feature:
             'transformed_data': self.transformed_data,
             'transformation': self.transformation.to_dict(),
             'is_immutable': self.is_immutable,
+            'is_categorical': self.is_categorical,
         }
     
     def __repr__(self):
-        return f"Feature(" \
-               f"name={self.name}, \ndata={self.data}, \n" \
-               f"transformed_data={self.transformed_data}, \n" \
-               f"transformer={self.transformation}, \n" \
-               f"is_immutable={self.is_immutable})"
+        # return f"Feature(" \
+        #        f"name={self.name}, \ndata={self.data}, \n" \
+        #        f"transformed_data={self.transformed_data}, \n" \
+        #        f"transformer={self.transformation}, \n" \
+        #        f"is_immutable={self.is_immutable})"
+        dict_repr = self.to_dict()
+        return f"Feature(" + \
+               f",\n".join([f"{k}={v}" for k, v in dict_repr.items()]) + f")"
     
     __str__ = __repr__
 
@@ -339,7 +357,7 @@ class Feature:
     def apply_constraints(self, xs, cfs, hard: bool = False):
         return jax.lax.cond(
             self.is_immutable,
-            true_fun=lambda xs: xs,
+            true_fun=lambda xs: jnp.broadcast_to(xs, cfs.shape),
             false_fun=lambda _: self.transformation.apply_constraints(xs, cfs, hard),
             operand=xs,
         )
@@ -366,6 +384,25 @@ class FeaturesList:
             self._features = features
         else:
             raise ValueError(f"Unknown features type. Got {type(features).__name__}")
+        
+        # Record the current position of the features
+        self.pose = 0
+
+    # Iterator
+    def __len__(self):
+        return len(self._features)
+    
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self.pose < len(self):
+            feat = self._features[self.pose]
+            self.pose += 1
+            return feat
+        else:
+            self.pose = 0
+            raise StopIteration
 
     @property
     def features(self) -> list[Feature]: # Return [Feature(...), ...]
