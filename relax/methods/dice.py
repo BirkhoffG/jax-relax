@@ -8,7 +8,18 @@ from ..base import BaseConfig
 from ..utils import auto_reshaping, grad_update, validate_configs
 
 # %% auto 0
-__all__ = []
+__all__ = ['dpp_style_vmap', 'DiverseCFConfig', 'DiverseCF']
+
+# %% ../../nbs/methods/02_dice.ipynb 6
+@jit
+def dpp_style_vmap(cfs: Array):
+    def dpp_fn(cf_1, cf_2):
+        return 1 / (1 + jnp.linalg.norm(cf_1 - cf_2, ord=1))
+    
+    det_entries = vmap(vmap(dpp_fn, in_axes=(None, 0)), in_axes=(0, None))(cfs, cfs)
+    det_entries += jnp.eye(cfs.shape[0]) * 1e-8
+    assert det_entries.shape == (cfs.shape[0], cfs.shape[0])
+    return jnp.linalg.det(det_entries)
 
 # %% ../../nbs/methods/02_dice.ipynb 13
 def _diverse_cf(
@@ -63,4 +74,64 @@ def _diverse_cf(
     # cfs = apply_constraints_fn(x, cfs[:1, :], hard=True)
     cfs = apply_constraints_fn(x, cfs, hard=True)
     return cfs
+
+
+# %% ../../nbs/methods/02_dice.ipynb 15
+class DiverseCFConfig(BaseConfig):
+    n_cfs: int = 5
+    n_steps: int = 1000
+    lr: float = 0.001
+    lambda_1: float = 1.0
+    lambda_2: float = 0.1
+    lambda_3: float = 1.0
+    lambda_4: float = 0.1
+    validity_fn: str = 'KLDivergence'
+    cost_fn: str = 'MeanSquaredError'
+    seed: int = 42
+
+
+# %% ../../nbs/methods/02_dice.ipynb 16
+class DiverseCF(CFModule):
+
+    def __init__(self, config: dict | DiverseCF = None, *, name: str = None):
+        if config is None:
+             config = DiverseCFConfig()
+        config = validate_configs(config, DiverseCFConfig)
+        name = "DiverseCF" if name is None else name
+        super().__init__(config, name=name)
+
+    @auto_reshaping('x', reshape_output=False)
+    def generate_cf(
+        self,
+        x: Array,  # `x` shape: (k,), where `k` is the number of features
+        pred_fn: Callable[[Array], Array],
+        y_target: Array = None,
+        rng_key: jnp.ndarray = None,
+        **kwargs,
+    ) -> jnp.DeviceArray:
+        # TODO: Currently assumes binary classification.
+        if y_target is None:
+            y_target = 1 - pred_fn(x)
+        else:
+            y_target = jnp.array(y_target, copy=True)
+        if rng_key is None:
+            rng_key = jax.random.PRNGKey(self.config.seed)
+        
+        return _diverse_cf(
+            x=x,  # `x` shape: (k,), where `k` is the number of features
+            y_target=y_target,  # `y_target` shape: (1,)
+            pred_fn=pred_fn,  # y = pred_fn(x)
+            n_cfs=self.config.n_cfs,
+            n_steps=self.config.n_steps,
+            lr=self.config.lr,  # learning rate for each `cf` optimization step
+            lambdas=(
+                self.config.lambda_1, self.config.lambda_2, 
+                self.config.lambda_3, self.config.lambda_4
+            ),
+            key=rng_key,
+            validity_fn=keras.losses.get({'class_name': self.config.validity_fn, 'config': {'reduction': None}}),
+            cost_fn=keras.losses.get({'class_name': self.config.cost_fn, 'config': {'reduction': None}}),
+            apply_constraints_fn=self.apply_constraints_fn,
+            compute_reg_loss_fn=self.compute_reg_loss_fn,
+        )
 

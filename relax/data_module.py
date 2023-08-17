@@ -164,6 +164,14 @@ class DataModule(BaseDataModule):
     @property
     def ys(self) -> Array:
         return self._label.transformed_data
+    
+    @property
+    def features(self) -> FeaturesList:
+        return self._features
+    
+    @property
+    def label(self) -> FeaturesList:
+        return self._label
 
     @property
     def dataset(self) -> Tuple[Array, Array]:

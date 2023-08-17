@@ -122,16 +122,20 @@ def prepare_cf_module(
     train_config: Dict[str, Any] = None, 
 ):
     """Prepare the CF module. 
-    It will hook up the data module's apply functions via the `init_apply_fns` method
+    It will hook up the data module, 
+    and its apply functions via the `init_apply_fns` method
     (e.g., `apply_constraints_fn` and `compute_reg_loss_fn`).
-    It will also train the model if `cf_module` is a `ParametricCFModule`.
+    Next, it will train the model if `cf_module` is a `ParametricCFModule`.
+    Finally, it will call `before_generate_cf` method.
     """
+    cf_module.set_data_module(data_module)
     cf_module.init_fns(
         apply_constraints_fn=data_module.apply_constraints,
         compute_reg_loss_fn=data_module.compute_reg_loss,
     )
     if isinstance(cf_module, ParametricCFModule):
         cf_module.train(data_module, pred_fn=pred_fn, **train_config)
+    cf_module.before_generate_cf()
     return cf_module
 
 

@@ -29,11 +29,16 @@ class CFModule(BaseModule):
         super().__init__(config, name=name)
         self.apply_constraints_fn = apply_constraints_fn
         self.compute_reg_loss_fn = compute_reg_loss_fn
+        self.data_module = None
+
+    def set_data_module(self, data_module):
+        self.data_module = data_module
 
     def init_fns(
         self,
         apply_constraints_fn = None,
-        compute_reg_loss_fn = None
+        compute_reg_loss_fn = None,
+        **kwargs
     ):
         if self.apply_constraints_fn is None and apply_constraints_fn is not None:
             self.apply_constraints_fn = apply_constraints_fn
@@ -51,6 +56,9 @@ class CFModule(BaseModule):
     def compute_reg_loss(self, *args, **kwargs):
         if self.compute_reg_loss_fn is not None:
             self.compute_reg_loss_fn(*args, **kwargs)
+
+    def before_generate_cf(self, *args, **kwargs):
+        pass
 
     def generate_cf(
         self,
