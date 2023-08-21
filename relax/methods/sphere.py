@@ -83,6 +83,70 @@ def perturb_function_with_features(
     return perturbed
 
 
+# %% ../../nbs/methods/05_sphere.ipynb 9
+def _growing_spheres(
+    rng_key: jrand.PRNGKey, # Random number generator key
+    y_target: Array, # Target label
+    x: Array, # Input instance. Shape: (n_features)
+    pred_fn: Callable, # Prediction function
+    n_steps: int, # Number of steps
+    n_samples: int,  # Number of samples to sample
+    step_size: float, # Step size
+    p_norm: int, # Norm
+    perturb_fn: Callable, # Perturbation function
+    apply_constraints_fn: Callable # Apply immutable constraints
+): 
+    @jit
+    def dist_fn(x, cf):
+        if p_norm == 1:
+            return jnp.abs(cf - x).sum(axis=1)
+        elif p_norm == 2:
+            return jnp.linalg.norm(cf - x, ord=2, axis=1)
+        else:
+            raise ValueError("Only p_norm = 1 or 2 is supported")
+    
+    @loop_tqdm(n_steps)
+    def step(i, state):
+        candidate_cf, count, rng_key = state
+        rng_key, subkey_1, subkey_2 = jrand.split(rng_key, num=3)
+        low, high = step_size * count, step_size * (count + 1)
+        # Sample around x
+        candidates = perturb_fn(rng_key, x, n_samples, high=high, low=low, p_norm=p_norm)
+        
+        # Apply immutable constraints
+        candidates = apply_constraints_fn(x, candidates, hard=True)
+        assert candidates.shape[1] == x.shape[1], f"candidates.shape = {candidates.shape}, x.shape = {x.shape}"
+
+        # Calculate distance
+        dist = dist_fn(x, candidates)
+
+        # Calculate counterfactual labels
+        candidate_preds = pred_fn(candidates).argmax(axis=1)
+        indices = jnp.where(candidate_preds == y_target, 1, 0).astype(bool)
+
+        candidates = jnp.where(indices.reshape(-1, 1), 
+                               candidates, jnp.ones_like(candidates) * jnp.inf)
+        dist = jnp.where(indices.reshape(-1, 1), dist, jnp.ones_like(dist) * jnp.inf)
+
+        closest_idx = dist.argmin()
+        candidate_cf_update = candidates[closest_idx].reshape(1, -1)
+
+        candidate_cf = jnp.where(
+            dist[closest_idx].mean() < dist_fn(x, candidate_cf).mean(),
+            candidate_cf_update, 
+            candidate_cf
+        )
+        return candidate_cf, count + 1, rng_key
+    
+    y_target = y_target.reshape(1, -1).argmax(axis=1)
+    candidate_cf = jnp.ones_like(x) * jnp.inf
+    count = 0
+    state = (candidate_cf, count, rng_key)
+    candidate_cf, _, _ = lax.fori_loop(0, n_steps, step, state)
+    # if `inf` is found, return the original input
+    candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
+    return candidate_cf
+
 # %% ../../nbs/methods/05_sphere.ipynb 10
 class GSConfig(BaseParser):
     n_steps: int = 100
