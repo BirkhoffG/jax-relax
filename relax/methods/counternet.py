@@ -3,64 +3,105 @@
 # %% ../../nbs/methods/04_counternet.ipynb 3
 from __future__ import annotations
 from ..import_essentials import *
-from ..module import MLP, BaseTrainingModule
-from .base import BaseCFModule, BaseParametricCFModule, BasePredFnCFModule
-from ..trainer import TrainingConfigs, train_model
-from ..data import TabularDataModule
-from ..utils import *
-from functools import partial
+from .base import CFModule, ParametricCFModule
+from ..base import BaseConfig
+from ..utils import auto_reshaping, grad_update, validate_configs
+from ..data_utils import Feature, FeaturesList
+from ..ml_model import MLP, MLPBlock
+from ..data_module import DataModule
 
 # %% auto 0
 __all__ = ['CounterNetModel', 'partition_trainable_params', 'project_immutable_features', 'CounterNetTrainingModuleConfigs',
            'CounterNetTrainingModule', 'CounterNetConfigs', 'CounterNet']
 
 # %% ../../nbs/methods/04_counternet.ipynb 5
-class CounterNetModelConfigs(BaseParser):
+class CounterNetConfig(BaseConfig):
     """Configurator of `CounterNetModel`."""
 
     enc_sizes: List[int] = Field([50,10], description='Encoder sizes.')
-    dec_sizes: List[int] = Field([10], description='Predictor sizes.')
+    pred_sizes: List[int] = Field([10], description='Predictor sizes.')
     exp_sizes: List[int] = Field([50, 50], description='CF generator sizes.')
     dropout_rate: float = Field(0.3, description='Dropout rate.')
+    lr: float = 0.003
+    lambda_1: float = 1.0
+    lambda_2: float = 0.2
+    lambda_3: float = 0.1
 
 # %% ../../nbs/methods/04_counternet.ipynb 6
-class CounterNetModel(hk.Module):
+class CounterNetModel(keras.Model):
     """CounterNet Model"""
-    def __init__(
-        self,
-        m_config: Dict | CounterNetModelConfigs,  # Model configs which contain configs in `CounterNetModelConfigs`.
-        name: str = None,  # Name of the module.
-    ):
+    def __init__(self, config: Dict | CounterNetConfig = None):
         """CounterNet model architecture."""
-        super().__init__(name=name)
-        if m_config is None:
-            m_config = CounterNetModelConfigs()
-        self.configs = validate_configs(m_config, CounterNetModelConfigs)
+        super().__init__()
+        config = CounterNetConfig() if config is None else config
+        self.config: CounterNetConfig = validate_configs(config, CounterNetConfig)
+        self.dropout_rate = self.config.dropout_rate
 
-    def __call__(self, x: jnp.ndarray, is_training: bool = True) -> jnp.ndarray:
-        input_shape = x.shape[-1]
-        # encoder
-        z = MLP(self.configs.enc_sizes, self.configs.dropout_rate, name="Encoder")(
-            x, is_training
+    def build(self, input_shape):
+        self.encoder = keras.Sequential([
+            MLPBlock(size, self.dropout_rate) for size in self.config.enc_sizes
+        ])
+        # predictor
+        self.predictor = keras.Sequential([
+            MLPBlock(size, self.dropout_rate) for size in self.config.pred_sizes
+        ])
+        self.pred_linear = keras.layers.Dense(2, activation='softmax')
+        # explainer
+        self.explainer = MLP(
+            self.config.exp_sizes, output_size=input_shape[-1], 
+            dropout_rate=self.dropout_rate, last_activation='linear'
         )
 
-        # prediction
-        pred = MLP(self.configs.dec_sizes, self.configs.dropout_rate, name="Predictor")(
-            z, is_training
+    def call(self, x, training=False):
+        z = self.encoder(x, training=training)
+        # predict y_hat
+        pred = self.predictor(z, training=training)
+        y_hat = self.pred_linear(pred)
+        # explain x
+        z_exp = keras.ops.concatenate([z, pred], axis=-1)
+        cfs = self.explainer(z_exp, training=training)
+        return pred, cfs
+    
+    def forward(self, params, xs, training=False):
+        (pred, cfs), non_trainable_params = self.stateless_call(
+            *params, xs, training=training
         )
-        y_hat = hk.Linear(1, name="Predictor")(pred)
-        y_hat = jax.nn.sigmoid(y_hat)
-
-        # explain
-        z_exp = jnp.concatenate((z, pred), axis=-1)
-        cf = MLP(self.configs.exp_sizes, self.configs.dropout_rate, name="Explainer")(
-            z_exp, is_training
+        (cf_ys, _), non_trainable_params = self.stateless_call(
+            *params, cfs, training=training
         )
-        cf = hk.Linear(input_shape, name="Explainer")(cf)
-        return y_hat, cf
+        return pred, cfs, cf_ys
+    
+    def pred_loss_fn(self, params, xs, ys, training=False):
+        (pred, cfs), non_trainable_params = self.stateless_call(
+            *params, xs, training=training
+        )
+        pred_loss = self.config.lambda_1 * self.loss_1(ys, pred)
+        return pred_loss
+    
+    def exp_loss_fn(self, params, xs, ys, training=False):
+        pred, cfs, cf_ys = self.forward(params, xs, training=training)
+        # TODO: Do we need the hard or soft labels?
+        y_prime = 1 - jnp.round(pred)
+        loss_2 = self.loss_2(y_prime, cf_ys)
+        loss_3 = self.loss_3(xs, cfs)
+        exp_loss = self.config.lambda_2 * loss_2 + self.config.lambda_3 * loss_3
+        return exp_loss
+
+    def train_step(self, state, batch):
+        trainable_params, non_trainable_params, _, metrics_vars = state
+        opt_1_state, opt_2_state = self.opt_1.variables, self.opt_2.variables
+        xs, ys = batch
+
+        # Stage 1: Train predictor
+        loss, grads = jax.value_and_grad(self.pred_loss_fn)(
+            (trainable_params, non_trainable_params), xs, ys, training=True)
+        trainable_params, opt_1_state = self.opt_1.stateless_apply(
+            opt_1_state, grads, trainable_params
+        )
+        
 
 
-# %% ../../nbs/methods/04_counternet.ipynb 8
+# %% ../../nbs/methods/04_counternet.ipynb 11
 def partition_trainable_params(params: hk.Params, trainable_name: str):
     trainable_params, non_trainable_params = hk.data_structures.partition(
         lambda m, n, p: trainable_name in m, params
@@ -68,12 +109,12 @@ def partition_trainable_params(params: hk.Params, trainable_name: str):
     return trainable_params, non_trainable_params
 
 
-# %% ../../nbs/methods/04_counternet.ipynb 9
-def project_immutable_features(x, cf: jnp.DeviceArray, imutable_idx_list: List[int]):
+# %% ../../nbs/methods/04_counternet.ipynb 12
+def project_immutable_features(x, cf: jax.Array, imutable_idx_list: List[int]):
     cf = cf.at[:, imutable_idx_list].set(x[:, imutable_idx_list])
     return cf
 
-# %% ../../nbs/methods/04_counternet.ipynb 10
+# %% ../../nbs/methods/04_counternet.ipynb 13
 class CounterNetTrainingModuleConfigs(BaseParser):
     lr: float = 0.003
     lambda_1: float = 1.0
@@ -81,7 +122,7 @@ class CounterNetTrainingModuleConfigs(BaseParser):
     lambda_3: float = 0.1
 
 
-# %% ../../nbs/methods/04_counternet.ipynb 11
+# %% ../../nbs/methods/04_counternet.ipynb 14
 class CounterNetTrainingModule(BaseTrainingModule):
     _data_module: TabularDataModule
 
@@ -256,7 +297,7 @@ class CounterNetTrainingModule(BaseTrainingModule):
         self.log_dict(logs)
         return logs
 
-# %% ../../nbs/methods/04_counternet.ipynb 16
+# %% ../../nbs/methods/04_counternet.ipynb 19
 class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs):
     """Configurator of `CounterNet`."""
 
@@ -287,7 +328,7 @@ class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs)
     )
 
 
-# %% ../../nbs/methods/04_counternet.ipynb 17
+# %% ../../nbs/methods/04_counternet.ipynb 20
 class CounterNet(BaseCFModule, BaseParametricCFModule, BasePredFnCFModule):
     """API for CounterNet Explanation Module."""
     params: hk.Params = None
@@ -325,7 +366,7 @@ class CounterNet(BaseCFModule, BaseParametricCFModule, BasePredFnCFModule):
     def generate_cfs(self, X: jnp.ndarray, pred_fn = None) -> jnp.ndarray:
         return self.module.generate_cfs(X, self.params, rng_key=jax.random.PRNGKey(0))
     
-    def pred_fn(self, X: jnp.DeviceArray):
+    def pred_fn(self, X: jax.Array):
         rng_key = jax.random.PRNGKey(0)
         y_pred = self.module.predict(self.params, rng_key, X)
         return y_pred
