@@ -62,7 +62,7 @@ class CounterNetModel(keras.Model):
         cfs = self.explainer(z_exp, training=training)
         return pred, cfs
     
-    def forward(self, params, xs, training=False):
+    def stateless_forward(self, params, xs, training=False):
         (pred, cfs), non_trainable_params = self.stateless_call(
             *params, xs, training=training
         )
@@ -86,22 +86,13 @@ class CounterNetModel(keras.Model):
         loss_3 = self.loss_3(xs, cfs)
         exp_loss = self.config.lambda_2 * loss_2 + self.config.lambda_3 * loss_3
         return exp_loss
+    
+    def freeze_predictor(self, freeze=True):
+        freezing_layers = [self.encoder, self.predictor, self.pred_linear]
+        for layer in freezing_layers:
+            layer.trainable = not freeze
 
-    def train_step(self, state, batch):
-        trainable_params, non_trainable_params, _, metrics_vars = state
-        opt_1_state, opt_2_state = self.opt_1.variables, self.opt_2.variables
-        xs, ys = batch
-
-        # Stage 1: Train predictor
-        loss, grads = jax.value_and_grad(self.pred_loss_fn)(
-            (trainable_params, non_trainable_params), xs, ys, training=True)
-        trainable_params, opt_1_state = self.opt_1.stateless_apply(
-            opt_1_state, grads, trainable_params
-        )
-        
-
-
-# %% ../../nbs/methods/04_counternet.ipynb 11
+# %% ../../nbs/methods/04_counternet.ipynb 15
 def partition_trainable_params(params: hk.Params, trainable_name: str):
     trainable_params, non_trainable_params = hk.data_structures.partition(
         lambda m, n, p: trainable_name in m, params
@@ -109,12 +100,12 @@ def partition_trainable_params(params: hk.Params, trainable_name: str):
     return trainable_params, non_trainable_params
 
 
-# %% ../../nbs/methods/04_counternet.ipynb 12
+# %% ../../nbs/methods/04_counternet.ipynb 16
 def project_immutable_features(x, cf: jax.Array, imutable_idx_list: List[int]):
     cf = cf.at[:, imutable_idx_list].set(x[:, imutable_idx_list])
     return cf
 
-# %% ../../nbs/methods/04_counternet.ipynb 13
+# %% ../../nbs/methods/04_counternet.ipynb 17
 class CounterNetTrainingModuleConfigs(BaseParser):
     lr: float = 0.003
     lambda_1: float = 1.0
@@ -122,7 +113,7 @@ class CounterNetTrainingModuleConfigs(BaseParser):
     lambda_3: float = 0.1
 
 
-# %% ../../nbs/methods/04_counternet.ipynb 14
+# %% ../../nbs/methods/04_counternet.ipynb 18
 class CounterNetTrainingModule(BaseTrainingModule):
     _data_module: TabularDataModule
 
@@ -297,7 +288,7 @@ class CounterNetTrainingModule(BaseTrainingModule):
         self.log_dict(logs)
         return logs
 
-# %% ../../nbs/methods/04_counternet.ipynb 19
+# %% ../../nbs/methods/04_counternet.ipynb 23
 class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs):
     """Configurator of `CounterNet`."""
 
@@ -328,7 +319,7 @@ class CounterNetConfigs(CounterNetTrainingModuleConfigs, CounterNetModelConfigs)
     )
 
 
-# %% ../../nbs/methods/04_counternet.ipynb 20
+# %% ../../nbs/methods/04_counternet.ipynb 24
 class CounterNet(BaseCFModule, BaseParametricCFModule, BasePredFnCFModule):
     """API for CounterNet Explanation Module."""
     params: hk.Params = None
