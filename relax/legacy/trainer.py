@@ -8,7 +8,6 @@ from .logger import Logger
 from .utils import validate_configs, load_json
 from .ckpt_manager import CheckpointManager, load_checkpoint
 from ..data_module import DataModule
-import jax_dataloader as jdl
 from urllib.request import urlretrieve
 
 # %% auto 0
