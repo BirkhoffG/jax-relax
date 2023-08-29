@@ -83,32 +83,45 @@ def train_model_with_states(
         max_n_checkpoints=t_configs.max_n_checkpoints,
     )
     # dataloaders
-    train_loader = jdl.DataLoader(jdl.ArrayDataset(*data_module['train']), backend='jax', batch_size=t_configs.batch_size, shuffle=True) 
-    val_loader = jdl.DataLoader(jdl.ArrayDataset(*data_module['test']), backend='jax', batch_size=t_configs.batch_size, shuffle=False)
+    # train_loader = jdl.DataLoader(jdl.ArrayDataset(*data_module['train']), backend='jax', batch_size=t_configs.batch_size, shuffle=True) 
+    epoch_iterator = EpochIterator(*data_module['train'], batch_size=t_configs.batch_size, shuffle=True)
+    val_epoch_iterator = EpochIterator(*data_module['test'], batch_size=t_configs.batch_size, shuffle=False)
 
     @jax.jit
     def train_step(params, opt_state, key, batch):
         return training_module.training_step(params, opt_state, key, batch)
+    
     # start training
     for epoch in range(t_configs.n_epochs):
         training_module.logger.on_epoch_started()
-        # TODO: dataloader seems to be the bottleneck
+        # for step, batch in epoch_iterator.enumerate_epoch('np'):
         with tqdm(
-            train_loader, unit="batch", leave=epoch == t_configs.n_epochs - 1
+            epoch_iterator.enumerate_epoch('np'), 
+            unit="batch", 
+            leave=epoch == t_configs.n_epochs - 1,
+            total=epoch_iterator.num_batches
         ) as t_loader:
             t_loader.set_description(f"Epoch {epoch}")
-            for batch in t_loader:
-                x, y = batch
+            for step, batch in t_loader:
+                x, y = batch[0]
                 logs, (params, opt_state) = train_step(params, opt_state, next(keys), (x, y))
-                # logs = training_module.training_step_logs(
-                #     params, next(keys), (x, y))
-                # logs = training_module.logger.get_last_logs()
-                t_loader.set_postfix(**logs)
-                # logger.log(logs)
+        # TODO: dataloader seems to be the bottleneck
+        # with tqdm(
+        #     train_loader, unit="batch", leave=epoch == t_configs.n_epochs - 1
+        # ) as t_loader:
+        #     t_loader.set_description(f"Epoch {epoch}")
+        #     for batch in t_loader:
+        #         x, y = batch
+        #         logs, (params, opt_state) = train_step(params, opt_state, next(keys), (x, y))
+        #         # logs = training_module.training_step_logs(
+        #         #     params, next(keys), (x, y))
+        #         # logs = training_module.logger.get_last_logs()
+        #         t_loader.set_postfix(**logs)
+        #         # logger.log(logs)
 
         # validation
-        for batch in val_loader:
-            x, y = batch
+        for step, batch in val_epoch_iterator.enumerate_epoch('np'):
+            x, y = batch[0]
             logs = training_module.validation_step(params, next(keys), (x, y))
             # logger.log(logs)
         epoch_logs = training_module.logger.on_epoch_finished()
