@@ -9,6 +9,7 @@ from .utils import validate_configs, load_json
 from .ckpt_manager import CheckpointManager, load_checkpoint
 from ..data_module import DataModule
 from urllib.request import urlretrieve
+from keras_core.src.trainers.epoch_iterator import EpochIterator
 
 # %% auto 0
 __all__ = ['TrainingConfigs', 'train_model_with_states', 'train_model']
@@ -47,7 +48,7 @@ class TrainingConfigs(BaseParser):
         return hk.PRNGSequence(self.seed)
 
 
-# %% ../../nbs/legacy/04_trainer.ipynb 6
+# %% ../../nbs/legacy/04_trainer.ipynb 5
 def train_model_with_states(
     training_module: BaseTrainingModule,
     params: hk.Params,
@@ -104,20 +105,9 @@ def train_model_with_states(
             for step, batch in t_loader:
                 x, y = batch[0]
                 logs, (params, opt_state) = train_step(params, opt_state, next(keys), (x, y))
-        # TODO: dataloader seems to be the bottleneck
-        # with tqdm(
-        #     train_loader, unit="batch", leave=epoch == t_configs.n_epochs - 1
-        # ) as t_loader:
-        #     t_loader.set_description(f"Epoch {epoch}")
-        #     for batch in t_loader:
-        #         x, y = batch
-        #         logs, (params, opt_state) = train_step(params, opt_state, next(keys), (x, y))
-        #         # logs = training_module.training_step_logs(
-        #         #     params, next(keys), (x, y))
-        #         # logs = training_module.logger.get_last_logs()
-        #         t_loader.set_postfix(**logs)
-        #         # logger.log(logs)
-
+                # TODO: tqdm becomes the bottleneck
+                t_loader.set_postfix(**logs)
+        
         # validation
         for step, batch in val_epoch_iterator.enumerate_epoch('np'):
             x, y = batch[0]
@@ -130,15 +120,20 @@ def train_model_with_states(
     return params, opt_state
 
 
-# %% ../../nbs/legacy/04_trainer.ipynb 7
+# %% ../../nbs/legacy/04_trainer.ipynb 6
 def train_model(
     training_module: BaseTrainingModule, # Training module
     data_module: DataModule, # Data module
-    t_configs: Dict[str, Any] | TrainingConfigs, # Training configurator
+    batch_size=128, # Batch size
+    epochs=1, # Number of epochs
+    **fit_kwargs # Positional arguments for `keras.Model.fit`
 ) -> Tuple[hk.Params, optax.OptState]:
     """Train models."""
-    
-    t_configs = validate_configs(t_configs, TrainingConfigs)
+    t_configs = TrainingConfigs(
+        n_epochs=epochs,
+        batch_size=batch_size,
+        **fit_kwargs
+    )
     keys = t_configs.PRNGSequence 
     params, opt_state = training_module.init_net_opt(data_module, next(keys))
     return train_model_with_states(
