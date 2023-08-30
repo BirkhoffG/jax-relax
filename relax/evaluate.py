@@ -101,7 +101,7 @@ class Sparsity(BaseEvalMetrics):
         super().__init__(name=name)
     
     def __call__(self, explanation: Explanation) -> float:
-        xs, cfs, feature_indices = explanation.xs, explanation.cfs, exp.data._features.feature_indices
+        xs, cfs, feature_indices = explanation.xs, explanation.cfs, explanation.data._features.feature_indices
         return jax.vmap(compute_sparsity, in_axes=(None, 1, None))(xs, cfs, feature_indices).mean()
 
 # %% ../nbs/04_evaluate.ipynb 19
