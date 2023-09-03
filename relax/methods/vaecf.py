@@ -3,182 +3,129 @@
 # %% ../../nbs/methods/07_vaecf.ipynb 3
 from __future__ import annotations
 from ..import_essentials import *
-from .base import BaseCFModule, BaseParametricCFModule
-from ..utils import *
-from ..module import MLP, BaseTrainingModule
-from ..data import *
-from ..trainer import train_model, TrainingConfigs
+from .base import ParametricCFModule
+from ..ml_model import MLP, MLPBlock
+from ..data_module import DataModule
+from ..utils import auto_reshaping, validate_configs
+from keras_core.src.backend.jax.random import draw_seed
 
 # %% auto 0
-__all__ = ['VAECFConfigs', 'VAECF']
+__all__ = ['sample_latent', 'VAE', 'VAECFConfig', 'VAECF']
 
 # %% ../../nbs/methods/07_vaecf.ipynb 4
-@partial(jax.jit, static_argnums=(3,))
+@jax.jit
 def hindge_embedding_loss(
-    inputs: Array, targets: Array, margin: float = 1.0, reduction: str = "mean"
+    inputs: Array, targets: Array, margin: float = 1.0
 ):
-    """Hinge embedding loss. (Reduce mean over batch)"""
+    """Hinge embedding loss."""
     assert targets.shape == (1,)
-    # assert margin == 1. or margin == -1.
     loss = jnp.where(
         targets == 1,
         inputs,
         jax.nn.relu(margin - inputs)
     )
-    if reduction is None:
-        return loss
-    elif reduction == "mean":
-        return jnp.mean(loss)
-    elif reduction == "sum":
-        return jnp.sum(loss)
-    else:
-        raise ValueError(f"reduction must be one of [None, 'mean', 'sum'], but got {reduction}")
-    # loss = jnp.mean(loss)
-    # return loss   
+    return loss
 
+# %% ../../nbs/methods/07_vaecf.ipynb 7
+def sample_latent(rng_key, mean, logvar):
+    eps = jax.random.normal(rng_key, mean.shape)
+    return mean + eps * jnp.sqrt(logvar)
 
-# %% ../../nbs/methods/07_vaecf.ipynb 10
-class Encoder(hk.Module):
-    def __init__(self, sizes: List[int], dropout: float = 0.1):
-        super().__init__()
-        self.encoder = MLP(
-            sizes[:-1], dropout_rate=dropout, name="encoder_mean")
-        self.encoded_size = sizes[-1]
-    
-    def __call__(self, x: Array, is_training: bool):
-        mu = self.encoder(x, is_training)
-        mu = hk.Linear(self.encoded_size, name='mu')(mu)
-        logvar = self.encoder(x, is_training)
-        logvar = hk.Linear(self.encoded_size, name='logvar')(logvar) + 0.5
-        logvar = jax.nn.sigmoid(logvar) + 0.5
-        return mu, logvar
-
-class Decoder(hk.Module):
+# %% ../../nbs/methods/07_vaecf.ipynb 8
+class VAE(keras.Model):
     def __init__(
         self, 
-        sizes: List[int], 
-        input_size: int,
-        dropout: float = 0.1
+        layers: list[int],
+        # pred_fn: Callable,
+        mc_samples: int = 50,
+        # compute_regularization_fn=None, 
+        **kwargs
     ):
-        super().__init__()
-        self.decoder = MLP(
-            sizes, dropout_rate=dropout, name="Decoder")
-        self.input_size = input_size
+        super().__init__(**kwargs)
+        self.n_layers = layers
+        # self.pred_fn = pred_fn
+        self.mc_samples = mc_samples
+        # if compute_regularization_fn is None:
+        #     self.compute_regularization_fn = lambda *args, **kwargs: 0.
+        # elif callable(compute_regularization_fn):
+        #     self.compute_regularization_fn = compute_regularization_fn
+        # else:
+        #     raise ValueError("`compute_regularization_fn` must be callable or None, ",
+        #                      f"but got {type(compute_regularization_fn)} instead.")
     
-    def __call__(self, z: Array, is_training: bool):
-        mu_dec = self.decoder(z, is_training=is_training)
-        mu_dec = hk.Linear(self.input_size, name='mu_x')(mu_dec)
-        mu_dec = jax.nn.sigmoid(mu_dec)
-        return mu_dec
+    def set_pred_fn(self, pred_fn):
+        self.pred_fn = pred_fn
 
-# %% ../../nbs/methods/07_vaecf.ipynb 11
-class VAECFModuleConfigs(BaseParser):
-    """Configurator of `VAECFModule`."""
-    enc_sizes: List[int] = Field(
-        [20, 16, 14, 12, 5],
-        description="Sequence of Encoder layer sizes."
-    )
-    dec_sizes: List[int] = Field(
-        [12, 14, 16, 20],
-        description="Sequence of Decoder layer sizes."
-    )
-    dropout_rate: float = Field(
-        0.1, description="Dropout rate."
-    )
-    lr: float = Field(
-        1e-3, description="Learning rate."
-    )
-    mu_samples: int = Field(
-        50, description="Number of samples for mu."
-    )
-    validity_reg: float = Field(
-        42.0, description="Regularization for validity."
-    )
+    def set_compute_regularization_fn(self, compute_regularization_fn):
+        self.compute_regularization_fn = compute_regularization_fn
 
-# %% ../../nbs/methods/07_vaecf.ipynb 12
-class VAECFModule(BaseTrainingModule):
-    pred_fn: Callable
-
-    def __init__(self, m_configs: Dict = None):
-        if m_configs is None: m_configs = {}
-        self.save_hyperparameters(m_configs)
-        self.m_config = validate_configs(m_configs, VAECFModuleConfigs)
-        self.opt = optax.adam(self.m_config.lr)
-
-    def init_net_opt(self, dm, key):
-        self._data_module = dm
-        X, y = dm.train_dataset[:128]
-        Z = jnp.ones((X.shape[0], self.m_config.enc_sizes[-1]))
-        inputs = jnp.concatenate([X, y.reshape(-1, 1)], axis=-1)
-        latent = jnp.concatenate([Z, y.reshape(-1, 1)], axis=-1)
-
-        self.encoder = make_hk_module(
-            Encoder, sizes=self.m_config.enc_sizes, 
-            dropout=self.m_config.dropout_rate
-        )
-        self.decoder = make_hk_module(
-            Decoder, sizes=self.m_config.dec_sizes,
-            input_size=X.shape[-1], 
-            dropout=self.m_config.dropout_rate
-        )
-
-        enc_params = self.encoder.init(
-            key, inputs, is_training=True)
-        dec_params = self.decoder.init(
-            key, latent, is_training=True)
-        opt_state = self.opt.init((enc_params, dec_params))
-        return (enc_params, dec_params), opt_state
-    
-    @partial(jax.jit, static_argnums=(0, 4))
-    def encode(self, enc_params, rng_key, x, is_training=True):
-        mu_z, logvar_z = self.encoder.apply(
-            enc_params, rng_key, x, is_training=is_training)
-        return mu_z, logvar_z
+    def _compile(self, x):
+        pred_out = self.pred_fn(x)
+        if pred_out.shape[-1] != 2: 
+            raise ValueError("Only binary classification is supported.")
         
-    @partial(jax.jit, static_argnums=(0,))
-    def sample_latent_code(self, rng_key, mean, logvar):
-        eps = jax.random.normal(rng_key, logvar.shape)
-        return mean + eps * jnp.sqrt(logvar)
+        mu = self.mu_enc(x)
+        var = 0.5 + self.var_enc(x)
+        z = sample_latent(draw_seed(None), mu, var)
+        z = jnp.concatenate([z, pred_out.argmax(-1, keepdims=True)], axis=-1)
+        mu_x = self.mu_dec(z)
     
-    @partial(jax.jit, static_argnums=(0, 4))
-    def decode(self, dec_params, rng_key, z, is_training=True):
-        mu_x = self.decoder.apply(
-            dec_params, rng_key, z, is_training=is_training)
-        return mu_x
+    def build(self, input_shape):
+        encoder = keras.Sequential([
+            MLPBlock(size, use_batch_norm=True, dropout_rate=0.) for size in self.n_layers[:-1]
+        ])
+        decoder = keras.Sequential([
+            MLPBlock(size, use_batch_norm=True, dropout_rate=0.) for size in self.n_layers[::-1][1:]
+        ])
+
+        self.mu_enc = keras.Sequential([encoder, keras.layers.Dense(self.n_layers[-1])])
+        self.var_enc = keras.Sequential([encoder, keras.layers.Dense(self.n_layers[-1], activation='sigmoid')])
+        self.mu_dec = keras.Sequential([
+            decoder, keras.layers.Dense(input_shape[-1]), 
+        ])
+        self._compile(jnp.zeros(input_shape))
+
+    def encode(self, x, training=None):
+        mean = self.mu_enc(x, training=training)
+        var = 0.5 + self.var_enc(x, training=training)
+        return mean, var
     
-    @partial(jax.jit, static_argnums=(0, 6))
-    def sample_step(
-        self, rng_key, dec_params, em, ev, c, is_training=True
-    ):
-        z = self.sample_latent_code(rng_key, em, ev)
-        z = jnp.concatenate([z, c.reshape(-1, 1)], axis=-1)
-        mu_x = self.decode(dec_params, rng_key, z, is_training=is_training)
-        return mu_x
-    
-    @partial(jax.jit, static_argnums=(0, 4, 5))
+    def decode(self, z, training=None):
+        return self.mu_dec(z, training=training)
+        
     def sample(
-        self, params, rng_key, inputs, mc_samples, is_training=True
-    ): # Shape: (mc_samples, batch_size, input_size)
-        enc_params, dec_params = params
-        x, c = inputs[:, :-1], inputs[:, -1]
-        em, ev = self.encode(enc_params, rng_key, inputs)
-        keys = jax.random.split(rng_key, mc_samples)
-        
-        partial_sample_step = partial(
-            self.sample_step, dec_params=dec_params,
-            em=em, ev=ev, c=c
-        )
-        mu_x = jax.vmap(partial_sample_step)(keys)
-        # return SampleOut(em=em, ev=ev, mu_x=mu_x)
-        return (em, ev, mu_x)
-        
-    def compute_loss(self, params, rng_key, inputs, is_training=True):
+        self, 
+        rng_key: jrand.PRNGKey, 
+        inputs: Array, 
+        mc_samples: int, 
+        training=None
+    ):
+        @jit
+        def step(rng_key, em, ev, c):
+            # rng_key, _ = jrand.split(rng_key)
+            z = sample_latent(rng_key, em, ev)
+            z = jnp.concatenate([z, c], axis=-1)
+            mu_x = self.decode(z)
+            return mu_x
+
+        keys = jrand.split(rng_key, mc_samples)
+        x, c = inputs[:, :-1], inputs[:, -1:]
+        em, ev = self.encode(x, training=training)
+        step_fn = partial(step, em=em, ev=ev, c=c)
+        mu_x = jax.vmap(step_fn)(keys) # [mc_samples, n, d]
+        return em, ev, mu_x
+    
+    def compute_vae_loss(
+        self,
+        inputs: Array,
+        em, ev, cfs
+    ):
         def cf_loss(cf: Array, x: Array, y: Array):
             assert cf.shape == x.shape, f"cf.shape ({cf.shape}) != x.shape ({x.shape}))"
             # proximity loss
             recon_err = jnp.sum(jnp.abs(cf - x), axis=1).mean()
             # Sum to 1 over the categorical indexes of a feature
-            cat_error = self._data_module.apply_regularization(x, cf)
+            cat_error = self.compute_regularization_fn(x, cf)
             # validity loss
             pred_prob = self.pred_fn(cf)
             # This is same as the following:
@@ -187,126 +134,131 @@ class VAECFModule(BaseTrainingModule):
             #     hindge_embedding_loss(1. - 2 * tempt_0, -1, 0.165)
             target = jnp.array([-1])
             hindge_loss_1 = hindge_embedding_loss(
-                jax.nn.sigmoid(pred_prob) - jax.nn.sigmoid(1. - pred_prob), target, 0.165, reduction=None)
+                jax.nn.sigmoid(pred_prob[:, 1]) - jax.nn.sigmoid(pred_prob[:, 0]), target, 0.165)
             hindge_loss_0 = hindge_embedding_loss(
-                jax.nn.sigmoid(1. - pred_prob) - jax.nn.sigmoid(pred_prob), target, 0.165, reduction=None)
+                jax.nn.sigmoid(pred_prob[:, 0]) - jax.nn.sigmoid(pred_prob[:, 1]), target, 0.165)
             tempt_1 = jnp.where(y == 1, hindge_loss_1, 0).sum() / y.sum()
             tempt_0 = jnp.where(y == 0, hindge_loss_0, 0).sum() / (y.shape[0] - y.sum())
             validity_loss = tempt_1 + tempt_0
-
             return recon_err + cat_error, - validity_loss
-
-        em, ev, cfs = self.sample(
-            params, rng_key, inputs, self.m_config.mu_samples, 
-            is_training=is_training
-        )
-        X, y = inputs[:, :-1], inputs[:, -1]
-        # kl divergence
+        
+        xs, ys = inputs[:, :-1], inputs[:, -1]
         kl = 0.5 * jnp.mean(em**2 + ev - jnp.log(ev) - 1, axis=1)
-        cf_loss_partial = partial(cf_loss, x=X, y=y)
-        recon_err, validity_loss = jax.vmap(cf_loss_partial)(cfs)
-        # assert recon_err.shape == (self.m_config.mu_samples,), recon_err.shape
-        # assert cat_error.shape == (self.m_config.mu_samples,), cat_error.shape
-        # assert validity_loss.shape == (self.m_config.mu_samples,), validity_loss.shape
-        recon_err = jnp.mean(recon_err)
-        validity_loss = jnp.mean(validity_loss)
-        return jnp.mean(kl + recon_err) + validity_loss
+        cf_loss_fn = partial(cf_loss, x=xs, y=ys)
+        cf_losses, validity_losses = jax.vmap(cf_loss_fn)(cfs)
+        return (cf_losses.mean() + kl).mean() + validity_losses.mean()
+    
+    def call(self, inputs, training=None):
+        rng_key = draw_seed(None)
+        ys = 1. - self.pred_fn(inputs).argmax(axis=1, keepdims=True)
+        inputs = jnp.concatenate([inputs, ys], axis=-1)
+        em, ev, cfs = self.sample(rng_key, inputs, self.mc_samples, training=training)
+        loss = self.compute_vae_loss(inputs, em, ev, cfs)
+        self.add_loss(loss)
+        return cfs   
 
-    @partial(jax.jit, static_argnums=(0,))
-    def _training_step(
+
+# %% ../../nbs/methods/07_vaecf.ipynb 9
+class VAECFConfig(BaseParser):
+    """Configurator of `VAECFModule`."""
+    layers: List[int] = Field(
+        [20, 16, 14, 12, 5],
+        description="Sequence of Encoder/Decoder layer sizes."
+    )
+    dropout_rate: float = Field(
+        0.1, description="Dropout rate."
+    )
+    opt_name: str = Field(
+        "adam", description="Optimizer name."  
+    )
+    lr: float = Field(
+        1e-3, description="Learning rate."
+    )
+    mc_samples: int = Field(
+        50, description="Number of samples for mu."
+    )
+    validity_reg: float = Field(
+        42.0, description="Regularization for validity."
+    )
+
+
+# %% ../../nbs/methods/07_vaecf.ipynb 10
+class VAECF(ParametricCFModule):
+    def __init__(self, config=None, vae=None, name: str = 'VAECF'):
+        if config is None:
+            config = VAECFConfig()
+        config = validate_configs(config, VAECFConfig)
+        self.vae = vae
+        super().__init__(config, name=name)
+
+    def _init_model(
         self, 
-        params: Tuple[hk.Params, hk.Params],
-        opt_state: optax.OptState, 
-        rng_key: random.PRNGKey, 
-        batch: Tuple[jnp.array, jnp.array]
-    ) -> Tuple[hk.Params, optax.OptState]:
-        x, _ = batch
-        y = self.pred_fn(x).round().reshape(-1, 1)
-        loss, grads = jax.value_and_grad(self.compute_loss)(
-            params, rng_key, jnp.concatenate([x, y], axis=-1))
-        update_params, opt_state = grad_update(
-            grads, params, opt_state, self.opt)
-        return update_params, opt_state, loss
-    
-    def training_step(
-        self,
-        params: Tuple[hk.Params, hk.Params],
-        opt_state: optax.OptState,
-        rng_key: random.PRNGKey,
-        batch: Tuple[jnp.array, jnp.array]
-    ) -> Tuple[hk.Params, optax.OptState]:
-        params, opt_state, loss = self._training_step(params, opt_state, rng_key, batch)
-        self.log_dict({'train/loss': loss.item()})
-        return params, opt_state
-    
-    def validation_step(
-        self,
-        params: Tuple[hk.Params, hk.Params],
-        rng_key: random.PRNGKey,
-        batch: Tuple[jnp.array, jnp.array],
-    ) -> Tuple[hk.Params, optax.OptState]:
-        pass
-
-
-# %% ../../nbs/methods/07_vaecf.ipynb 13
-class VAECFConfigs(VAECFModuleConfigs):
-    pass
-
-# %% ../../nbs/methods/07_vaecf.ipynb 14
-class VAECF(BaseCFModule, BaseParametricCFModule):
-    params: Tuple[hk.Params, hk.Params] = None
-    module: VAECFModule
-    name: str = 'VAECF'
-
-    def __init__(self, m_config: Dict | VAECFConfigs = None):
-        if m_config is None:
-            m_config = VAECFConfigs()
-        self.m_config = validate_configs(m_config, VAECFConfigs)
-        self.module = VAECFModule(self.m_config.dict())
-
-    def _is_module_trained(self) -> bool:
-        return not (self.params is None)
+        config: VAECFConfig, 
+        model: keras.Model, 
+        # pred_fn: Callable,
+        # compute_regularization_fn: Callable
+    ):
+        if model is None:
+            model = VAE(
+                config.layers,
+                # pred_fn=pred_fn,
+                mc_samples=config.mc_samples,
+                # compute_regularization_fn=compute_regularization_fn
+            )
+            model.compile(
+                optimizer=keras.optimizers.get({
+                    'class_name': config.opt_name, 
+                    'config': {'learning_rate': config.lr}
+                }),
+            )
+        return model
     
     def train(
         self, 
-        datamodule: TabularDataModule, # data module
-        t_configs: TrainingConfigs | dict = None, # training configs
-        pred_fn: Callable = None, # prediction function
+        data: DataModule, 
+        pred_fn: Callable, 
+        batch_size: int = 128,
+        epochs: int = 10,
+        **fit_kwargs
     ):
-        if pred_fn is None:
-            raise ValueError('pred_fn must be provided')
-
-        _default_t_configs = dict(
-            n_epochs=10, batch_size=128
+        if not isinstance(data, DataModule):
+            raise ValueError(f"Expected `data` to be `DataModule`, "
+                             f"got type=`{type(data).__name__}` instead.")
+        train_xs, train_ys = data['train']
+        self.vae = self._init_model(self.config, self.vae)
+        self.vae.set_pred_fn(pred_fn)
+        self.vae.set_compute_regularization_fn(data.compute_reg_loss)
+        self.vae.fit(
+            train_xs, train_ys, 
+            batch_size=batch_size, 
+            epochs=epochs,
+            **fit_kwargs
         )
-        if t_configs is None: t_configs = _default_t_configs
-        
-        setattr(self.module, 'pred_fn', pred_fn)
-        params, _ = train_model(self.module, datamodule, t_configs)
-        self.params = params
+        self._is_trained = True
+        return self
     
     @auto_reshaping('x')
-    @partial(jax.jit, static_argnums=[0, 2])
     def generate_cf(
-        self, 
-        x: Array, 
-        pred_fn: Callable = None
-    ) -> jnp.ndarray:
-        y = pred_fn(x).round().reshape(-1, 1)
-        inputs = jnp.concatenate([x, y], axis=-1)
-        _, _, cfs = self.module.sample(
-            self.params, random.PRNGKey(0), inputs, self.m_config.mu_samples,
-            is_training=False
-        )
-        return self.data_module.apply_constraints(x, cfs[0], hard=True)
-
-
-    def generate_cfs(self, X: Array, pred_fn: Callable = None) -> jnp.ndarray:
-        y = pred_fn(X).round().reshape(-1, 1)
-        inputs = jnp.concatenate([X, y], axis=-1)
-        _, _, cfs = self.module.sample(
-            self.params, random.PRNGKey(0), inputs, self.m_config.mu_samples,
-            is_training=False
-        )
-        return self.data_module.apply_constraints(X, cfs[0], hard=True)
+        self,
+        x: Array,
+        pred_fn: Callable = None,
+        y_target: Array = None,
+        rng_key: jrand.PRNGKey = None,
+        **kwargs
+    ) -> Array:
+        # TODO: Currently assumes binary classification.
+        if y_target is None:
+            y_target = 1 - pred_fn(x).argmax(axis=1, keepdims=True)
+        else:
+            y_target = jnp.array(y_target, copy=True)
+        if rng_key is None:
+            raise ValueError("`rng_key` must be provided, but got `None`.")
+        
+        @jit
+        def sample_step(rng_key, y_target):
+            inputs = jnp.concatenate([x, y_target], axis=-1)
+            _, _, cfs = self.vae.sample(rng_key, inputs, 1, training=False)
+            return cfs
+        
+        return sample_step(rng_key, y_target)
         
