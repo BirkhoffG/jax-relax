@@ -14,26 +14,35 @@ from urllib.request import urlretrieve
 
 # %% ../nbs/02_ml_model.ipynb 3
 class MLPBlock(keras.layers.Layer):
-    """MLP block with leaky relu activation and dropout."""
+    """MLP block with leaky relu activation and dropout/batchnorm."""
 
     def __init__(
         self, 
         output_size: int, 
         dropout_rate: float = 0.3,
+        use_batch_norm: bool = False
     ):
         super().__init__()
         self.output_size = output_size
         self.dropout_rate = dropout_rate
+        self.use_batch_norm = use_batch_norm
+        if use_batch_norm and dropout_rate > 0:
+            warnings.warn("Batch normalization and dropout are usually mutually exclusive.")
 
     def build(self, input_shape):
         self.dense = keras.layers.Dense(
-            self.output_size, activation='leaky_relu', kernel_initializer='he_normal'
+            self.output_size, activation='leaky_relu', 
+            kernel_initializer='he_normal'
         )
         self.dropout = keras.layers.Dropout(self.dropout_rate)
+        if self.use_batch_norm:
+            self.batch_norm = keras.layers.BatchNormalization()
 
     def call(self, x, training=False):
         x = self.dense(x)
         x = self.dropout(x, training=training)
+        if self.use_batch_norm:
+            x = self.batch_norm(x, training=training)
         return x
 
 @keras.saving.register_keras_serializable()
@@ -45,13 +54,14 @@ class MLP(keras.Model):
         sizes: list, 
         output_size: int = 2,
         dropout_rate: float = 0.3,
+        use_batch_norm: bool = False,
         last_activation: str = 'softmax',
         **kwargs
     ):
         super().__init__(**kwargs)
         self.blocks = []
         for size in sizes:
-            self.blocks.append(MLPBlock(size, dropout_rate))
+            self.blocks.append(MLPBlock(size, dropout_rate, use_batch_norm))
         self.dense = keras.layers.Dense(output_size, activation=last_activation)
 
     def call(self, x, training=False):
