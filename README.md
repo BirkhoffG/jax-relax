@@ -9,9 +9,9 @@ status](https://github.com/BirkhoffG/jax-relax/actions/workflows/test.yaml/badge
 License](https://img.shields.io/github/license/BirkhoffG/jax-relax.svg)
 
 [**Overview**](#overview) \| [**Installation**](#installation) \|
-[**Tutorials**](https://birkhoffg.github.io/ReLax/tutorials/getting_started.html)
-\| [**Documentation**](https://birkhoffg.github.io/ReLax/) \| [**Citing
-ReLax**](#citing-relax)
+[**Tutorials**](https://birkhoffg.github.io/jax-relax/tutorials/getting_started.html)
+\| [**Documentation**](https://birkhoffg.github.io/jax-relax/) \|
+[**Citing ReLax**](#citing-relax)
 
 ## Overview
 
@@ -51,19 +51,74 @@ steps in the [official install
 guidelines](https://github.com/google/jax#installation) to install the
 right version for GPU or TPU.
 
-## Supported Recourse Methods
-
-| Type           | Method                                                                               | Paper Title                                                                                  | Ref                                       |
-|----------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|-------------------------------------------|
-| Non-Parametric | [`VanillaCF`](https://birkhoffg.github.io/ReLax-Core/methods/vanilla.html#vanillacf) | Counterfactual Explanations without Opening the Black Box: Automated Decisions and the GDPR. | [\[1\]](https://arxiv.org/abs/1711.00399) |
-| Non-Parametric | [`DiverseCF`](https://birkhoffg.github.io/ReLax-Core/methods/dice.html#diversecf)    | Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations.         | [\[2\]](https://arxiv.org/abs/1905.07697) |
-
 ## Dive into `ReLax`
+
+`ReLax` is a recourse explanation library for explaining (any) JAX-based
+ML models.
+
+``` python
+from relax.ml_model import MLModule
+from relax.methods import VanillaCF
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+import functools as ft
+import jax
+```
+
+We generate synthetic data using
+[sklearn](https://scikit-learn.org/stable/):
+
+``` python
+xs, ys = make_classification(n_samples=1000, n_features=10, random_state=42)
+train_xs, test_xs, train_ys, test_ys = train_test_split(xs, ys, random_state=42)
+```
+
+Next, we fit an MLP model for this data. This model can be any model
+implmented in JAX. We will use the
+[`MLModule`](https://birkhoffg.github.io/jax-relax/ml_model.html#mlmodule)
+in `ReLax` as an example.
+
+``` python
+model = MLModule()
+model.train((train_xs, train_ys), epochs=5, batch_size=64)
+```
+
+Generating recourse explanations are straightforward. We can simply call
+`generate_cf` of an implemented recourse method to generate *one*
+recourse explanation:
+
+``` python
+vcf = VanillaCF()
+vcf.init_fns()
+cf = vcf.generate_cf(test_xs[0], model.pred_fn)
+assert cf.shape == test_xs[0].shape
+```
+
+Or generate a bunch of recourse explanations with `jax.vmap`:
+
+``` python
+generate_fn = ft.partial(vcf.generate_cf, pred_fn=model.pred_fn)
+cfs = jax.vmap(generate_fn)(test_xs)
+assert cfs.shape == test_xs.shape
+```
 
 ## An End-to-End Example of using `ReLax`
 
 See [Getting Started with
 ReLax](https://birkhoffg.github.io/ReLax/tutorials/getting_started.html).
+
+## Supported Recourse Methods
+
+| Method                                                                                     | Type            | Paper Title                                                                                    | Ref                                       |
+|--------------------------------------------------------------------------------------------|-----------------|------------------------------------------------------------------------------------------------|-------------------------------------------|
+| [`VanillaCF`](https://birkhoffg.github.io/jax-relax/methods/vanilla.html#vanillacf)        | Non-Parametric  | Counterfactual Explanations without Opening the Black Box: Automated Decisions and the GDPR.   | [\[1\]](https://arxiv.org/abs/1711.00399) |
+| [`DiverseCF`](https://birkhoffg.github.io/jax-relax/methods/dice.html#diversecf)           | Non-Parametric  | Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations.           | [\[2\]](https://arxiv.org/abs/1905.07697) |
+| [`ProtoCF`](https://birkhoffg.github.io/jax-relax/methods/proto.html#protocf)              | Semi-Parametric | Interpretable Counterfactual Explanations Guided by Prototypes.                                | [\[3\]](https://arxiv.org/abs/1907.02584) |
+| [`CounterNet`](https://birkhoffg.github.io/jax-relax/methods/counternet.html#counternet)   | Parametric      | CounterNet: End-to-End Training of Prediction Aware Counterfactual Explanations.               | [\[4\]](https://arxiv.org/abs/2109.07557) |
+| [`GrowingSphere`](https://birkhoffg.github.io/jax-relax/methods/sphere.html#growingsphere) | Non-Parametric  | Inverse Classification for Comparison-based Interpretability in Machine Learning.              | [\[5\]](https://arxiv.org/abs/1712.08443) |
+| [`CCHVAE`](https://birkhoffg.github.io/jax-relax/methods/cchvae.html#cchvae)               | Semi-Parametric | Learning Model-Agnostic Counterfactual Explanations for Tabular Data.                          | [\[6\]](https://arxiv.org/abs/1910.09398) |
+| [`VAECF`](https://birkhoffg.github.io/jax-relax/methods/vaecf.html#vaecf)                  | Parametric      | Preserving Causal Constraints in Counterfactual Explanations for Machine Learning Classifiers. | [\[7\]](https://arxiv.org/abs/1912.03277) |
+| `CLUE`                                                                                     | Semi-Parametric | Getting a CLUE: A Method for Explaining Uncertainty Estimates.                                 | [\[8\]](https://arxiv.org/abs/2006.06848) |
 
 ## Citing `ReLax`
 
