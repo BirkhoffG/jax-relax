@@ -3,7 +3,7 @@ project:
 
 website:
   title: "jax-relax"
-  site-url: "https://birkhoffg.github.io/ReLax-Core"
-  description: "Jax-based Recourse Explanation Library"
+  site-url: "https://birkhoffg.github.io/jax-relax"
+  description: "JAX-based Recourse Explanation Library"
   repo-branch: master
-  repo-url: "https://github.com/birkhoffg/ReLax-Core"
+  repo-url: "https://github.com/birkhoffg/jax-relax"

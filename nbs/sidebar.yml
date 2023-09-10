@@ -2,11 +2,11 @@ website:
   sidebar:
     contents:
       - index.ipynb
-      # - section: Tutorials
-      #   contents:
-      #   - tutorials/install.ipynb
-      #   - tutorials/getting_started.ipynb
-      #   - tutorials/contribution.ipynb        
+      - section: Tutorials
+        contents:
+        - tutorials/install.ipynb
+        - tutorials/getting_started.ipynb
+        - tutorials/contribution.ipynb        
       - section: API
         contents:
         - 00_base.ipynb
@@ -21,6 +21,4 @@ website:
         - 03_explain.ipynb
         - 04_evaluate.ipynb
         - section: Methods
-          contents:
-          - methods/00_base.ipynb
-          - methods/01_vanilla.ipynb
+          contents: methods/*
