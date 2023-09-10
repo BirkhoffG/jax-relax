@@ -14,9 +14,11 @@ import json, os, shutil
 from urllib.request import urlretrieve
 from pydantic.fields import ModelField, Field
 from typing import List, Dict, Union, Optional, Tuple, Callable, Any, Iterable
+import warnings
 
 # %% auto 0
-__all__ = ['BaseDataModule', 'DataModuleConfig', 'DataModule', 'download_data_module_files', 'load_data']
+__all__ = ['DataModuleConfig', 'features2config', 'features2pandas', 'DataModule', 'TabularDataModuleConfigs',
+           'TabularDataModule', 'download_data_module_files', 'load_data']
 
 # %% ../nbs/01_data.ipynb 6
 class BaseDataModule(BaseModule):
@@ -32,127 +34,12 @@ class BaseDataModule(BaseModule):
     def compute_reg_loss(self, x: Array, cf: Array, hard: bool = False, **kwargs) -> float:
         raise NotImplementedError
 
-# %% ../nbs/01_data.ipynb 8
-class DataModuleConfig(BaseConfig):
-    """Configurator of `TabularDataModule`."""
+# %% ../nbs/01_data.ipynb 7
+class DataModuleInfoMixin:
+    """This base class exposes some attributes of DataModule
+    at the base level for easy access.
+    """
 
-    data_dir: str = Field(description="The directory of dataset.")
-    data_name: str = Field(description="The name of `DataModule`.")
-    continous_cols: List[str] = Field([], description="Continuous features/columns in the data.")
-    discret_cols: List[str] = Field([], description="Categorical features/columns in the data.")
-    imutable_cols: List[str] = Field([], description="Immutable features/columns in the data.")
-    continuous_transformation: str = Field('minmax', description="Transformation for continuous features.")
-    discret_transformation: str = Field('ohe', description="Transformation for categorical features.")
-    sample_frac: Optional[float] = Field(
-        None, description="Sample fraction of the data. Default to use the entire data.", ge=0., le=1.0
-    )
-    train_indices: List[int] = Field([], description="Indices of training data.")
-    test_indices: List[int] = Field([], description="Indices of testing data.")
-    
-    # normalizer: Optional[str] = Field(
-    #     default_factory=lambda: MinMaxScaler(),
-    #     description="Sklearn scalar for continuous features. Can be unfitted, fitted, or None. "
-    #     "If not fitted, the `TabularDataModule` will fit using the training data. If fitted, no fitting will be applied. "
-    #     "If `None`, no transformation will be applied. Default to `MinMaxScaler()`."
-    # )
-    # encoder: Optional[str] = Field(
-    #     default_factory=lambda: OneHotEncoder(sparse=False),
-    #     description="Fitted encoder for categorical features. Can be unfitted, fitted, or None. "
-    #     "If not fitted, the `TabularDataModule` will fit using the training data. If fitted, no fitting will be applied. "
-    #     "If `None`, no transformation will be applied. Default to `OneHotEncoder(sparse=False)`."
-    # )
-
-    def shuffle(self, data: Array, test_size: float, seed: int = None):
-        """Shuffle data with a seed."""
-        if seed is None:
-            seed = get_config().global_seed
-        key = jrand.PRNGKey(seed)
-        total_length = data.shape[0]
-        train_length = int((1 - test_size) * total_length)
-        if len(self.train_indices) == 0:
-            self.train_indices = jrand.permutation(key, total_length)[:train_length].tolist()
-        if len(self.test_indices) == 0:
-            self.test_indices = jrand.permutation(key, total_length)[train_length:].tolist()
-
-# %% ../nbs/01_data.ipynb 10
-class DataModule(BaseDataModule):
-    def __init__(
-        self, 
-        config: Dict | DataModuleConfig, 
-        data: pd.DataFrame = None,
-        features: List[Feature] = None,
-        label: Feature = None,
-    ):
-        config = validate_configs(config, DataModuleConfig)
-        if data is None:
-            data = pd.read_csv(config.data_dir)
-        self._data = data
-        features = self.convert_to_features(config, data, features)
-        label = self.convert_to_label(config, data, label)
-        self.prepare(features, label)
-        config.shuffle(self.xs, test_size=0.25)
-        super().__init__(config, name=config.data_name)
-    
-    def save(self, path):
-        path = Path(path)
-        if not path.exists():
-            path.mkdir(parents=True)
-        self._features.save(path / 'features')
-        self._label.save(path / 'label')
-        if self._data is not None:
-            self._data.to_csv(path / 'data.csv', index=False)
-        with open(path / "config.json", "w") as f:
-            json.dump(self.config.dict(), f)
-
-    @classmethod
-    def load_from_path(cls, path, config=None):
-        path = Path(path)
-        if config is None:
-            config = load_json(path / 'config.json')
-        features = FeaturesList.load_from_path(path / 'features')
-        label = FeaturesList.load_from_path(path / 'label')
-        data = pd.read_csv(path / 'data.csv')
-        return cls(config, data=data, features=features, label=label)
-
-    def convert_to_features(
-        self, 
-        config: DataModuleConfig, 
-        data: pd.DataFrame, 
-        features: list[Feature] = None
-    ):
-        to_feature = lambda col, data, is_continuous: Feature(
-            name=col, data=data[col].to_numpy().reshape(-1, 1),
-            transformation=config.continuous_transformation if is_continuous else config.discret_transformation,
-            is_immutable=col in config.imutable_cols
-        )
-
-        if features is not None:
-            return features
-        
-        cont_features = [to_feature(col, data, True) for col in config.continous_cols]
-        cat_features = [to_feature(col, data, False) for col in config.discret_cols]
-        return cont_features + cat_features        
-        
-    def convert_to_label(self, config: DataModuleConfig, data: pd.DataFrame, label: Feature = None):
-        if label is not None:
-            return label
-        
-        label_col = data.columns[-1]
-        return Feature(
-            name=label_col, data=data[label_col].to_numpy().reshape(-1, 1),
-            transformation='identity',
-            is_immutable=label_col in config.imutable_cols
-        )
-        
-    def prepare(self, features, label):
-        if features is not None and label is not None:
-            self._features = FeaturesList(features)
-            self._label = FeaturesList(label)
-        elif features is None:
-            raise ValueError("Features cannot be None.")
-        elif label is None:
-            raise ValueError("Label cannot be None.")
-    
     @property
     def data(self) -> pd.DataFrame:
         return self._data
@@ -184,7 +71,170 @@ class DataModule(BaseDataModule):
     @property
     def test_indices(self) -> List[int]:
         return self.config.test_indices
+
+
+# %% ../nbs/01_data.ipynb 9
+class DataModuleConfig(BaseConfig):
+    """Configurator of `TabularDataModule`."""
+
+    data_dir: str = Field(description="The directory of dataset.")
+    data_name: str = Field(description="The name of `DataModule`.")
+    continous_cols: List[str] = Field([], description="Continuous features/columns in the data.")
+    discret_cols: List[str] = Field([], description="Categorical features/columns in the data.")
+    imutable_cols: List[str] = Field([], description="Immutable features/columns in the data.")
+    continuous_transformation: str = Field('minmax', description="Transformation for continuous features.")
+    discret_transformation: str = Field('ohe', description="Transformation for categorical features.")
+    sample_frac: Optional[float] = Field(
+        None, description="Sample fraction of the data. Default to use the entire data.", ge=0., le=1.0
+    )
+    train_indices: List[int] = Field([], description="Indices of training data.")
+    test_indices: List[int] = Field([], description="Indices of testing data.")
     
+    def shuffle(self, data: Array, test_size: float, seed: int = None):
+        """Shuffle data with a seed."""
+        if seed is None:
+            seed = get_config().global_seed
+        key = jrand.PRNGKey(seed)
+        total_length = data.shape[0]
+        train_length = int((1 - test_size) * total_length)
+        if len(self.train_indices) == 0:
+            self.train_indices = jrand.permutation(key, total_length)[:train_length].tolist()
+        if len(self.test_indices) == 0:
+            self.test_indices = jrand.permutation(key, total_length)[train_length:].tolist()
+
+# %% ../nbs/01_data.ipynb 11
+def features2config(
+    features: FeaturesList, 
+    name: str, 
+    return_dict: bool = False
+) -> Union[DataModuleConfig, Dict]:
+    cont, cats, immu = [], [], []
+    for f in features:
+        if f.is_categorical:
+            cats.append(f.name)
+        else:
+            cont.append(f.name)
+
+        if f.is_immutable:
+            immu.append(f.name)
+    
+    # TODO: continuous_transformation and discret_transformation
+    configs_dict = {
+        "data_dir": ".",
+        "data_name": name,
+        "continous_cols": cont,
+        "discret_cols": cats,
+        "imutable_cols": immu,
+    }
+    if return_dict:
+        return configs_dict
+    return DataModuleConfig(**configs_dict)
+        
+
+# %% ../nbs/01_data.ipynb 13
+def features2pandas(
+    features: FeaturesList, 
+    labels: FeaturesList
+) -> pd.DataFrame:
+    feats_df = features.to_pandas()
+    labels_df = labels.to_pandas()
+    df = pd.concat([feats_df, labels_df], axis=1)
+    return df
+
+# %% ../nbs/01_data.ipynb 15
+def to_feature(col: str, data: pd.DataFrame, config: DataModuleConfig, is_continuous: bool):
+    return Feature(
+        name=col, data=data[col].to_numpy().reshape(-1, 1),
+        transformation=config.continuous_transformation if is_continuous else config.discret_transformation,
+        is_immutable=col in config.imutable_cols
+    )
+
+def dataframe2features(
+    data: pd.DataFrame,
+    config: DataModuleConfig,
+) -> FeaturesList:
+    cont_features = [to_feature(col, data, config, True) for col in config.continous_cols]
+    cat_features = [to_feature(col, data, config, False) for col in config.discret_cols]
+    features = cont_features + cat_features
+    return FeaturesList(features)
+
+
+def dataframe2labels(
+    data: pd.DataFrame,
+    config: DataModuleConfig,
+) -> FeaturesList:
+    label_cols = set(data.columns) - set(config.continous_cols) - set(config.discret_cols)
+    labels = [to_feature(col, data, config, False) for col in label_cols]
+    return FeaturesList(labels)
+
+# %% ../nbs/01_data.ipynb 16
+class DataModule(BaseDataModule, DataModuleInfoMixin):
+    def __init__(
+        self, 
+        features: FeaturesList,
+        label: FeaturesList,
+        config: DataModuleConfig = None,
+        data: pd.DataFrame = None,
+        **kwargs
+    ):
+        self.prepare(features, label)
+        if config is None:
+            name = kwargs.pop('name', 'DataModule')
+            config = features2config(features, name)
+        config.shuffle(self.xs, test_size=0.25)
+        self._data = features2pandas(features, label) if data is None else data
+        super().__init__(config, name=config.data_name)
+            
+    def save(self, path):
+        path = Path(path)
+        if not path.exists():
+            path.mkdir(parents=True)
+        self._features.save(path / 'features')
+        self._label.save(path / 'label')
+        if self._data is not None:
+            self._data.to_csv(path / 'data.csv', index=False)
+        with open(path / "config.json", "w") as f:
+            json.dump(self.config.dict(), f)
+
+    @classmethod
+    def load_from_path(cls, path, config=None):
+        path = Path(path)
+        if config is None:
+            config = load_json(path / 'config.json')
+        features = FeaturesList.load_from_path(path / 'features')
+        label = FeaturesList.load_from_path(path / 'label')
+        data = pd.read_csv(path / 'data.csv')
+        return cls(features=features, label=label, config=config, data=data)
+    
+    @classmethod
+    def from_path(cls, path, config=None):
+        """Alias of `load_from_path`"""
+        return cls.from_path(path, config)
+    
+    @classmethod
+    def from_config(cls, config: Dict|DataModuleConfig, data: pd.DataFrame=None):
+        config = validate_configs(config, DataModuleConfig)
+        if data is None:
+            data = pd.read_csv(config.data_dir)
+        if not isinstance(data, pd.DataFrame):
+            raise ValueError("`data` should be a pandas DataFrame.")
+        features = dataframe2features(data, config)
+        label = dataframe2labels(data, config)
+        return cls(features=features, label=label, config=config, data=data)
+    
+    @classmethod
+    def from_features(cls, features: FeaturesList, label: FeaturesList, name: str = None):
+        return cls(features=features, label=label, name=name)
+        
+    def prepare(self, features, label):
+        if features is not None and label is not None:
+            self._features = FeaturesList(features)
+            self._label = FeaturesList(label)
+        elif features is None:
+            raise ValueError("Features cannot be None.")
+        elif label is None:
+            raise ValueError("Label cannot be None.")
+        
     def _get_data(self, indices):
         if isinstance(indices, list):
             indices = jnp.array(indices)
@@ -230,7 +280,20 @@ class DataModule(BaseDataModule):
     def compute_reg_loss(self, xs: Array, cfs: Array, hard: bool = False) -> float:
         return self._features.compute_reg_loss(xs, cfs, hard)
 
-# %% ../nbs/01_data.ipynb 13
+# %% ../nbs/01_data.ipynb 18
+class TabularDataModuleConfigs(DataModuleConfig):
+    def __ini__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        warnings.warn("TabularDataModuleConfigs is deprecated since v0.2, please use DataModuleConfig instead.", 
+                      DeprecationWarning)
+
+class TabularDataModule(DataModule):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        warnings.warn("TabularDataModule is deprecated since v0.2, please use DataModule instead.", 
+                      DeprecationWarning)
+
+# %% ../nbs/01_data.ipynb 20
 DEFAULT_DATA = [
     'adult',
     'heloc',
@@ -255,13 +318,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 18
+# %% ../nbs/01_data.ipynb 25
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 19
+# %% ../nbs/01_data.ipynb 26
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.
