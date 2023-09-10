@@ -77,8 +77,8 @@ class DataModuleInfoMixin:
 class DataModuleConfig(BaseConfig):
     """Configurator of `TabularDataModule`."""
 
-    data_dir: str = Field(description="The directory of dataset.")
-    data_name: str = Field(description="The name of `DataModule`.")
+    data_dir: str = Field(None, description="The directory of dataset.")
+    data_name: str = Field(None, description="The name of `DataModule`.")
     continous_cols: List[str] = Field([], description="Continuous features/columns in the data.")
     discret_cols: List[str] = Field([], description="Categorical features/columns in the data.")
     imutable_cols: List[str] = Field([], description="Immutable features/columns in the data.")
@@ -142,10 +142,10 @@ def features2pandas(
     return df
 
 # %% ../nbs/01_data.ipynb 15
-def to_feature(col: str, data: pd.DataFrame, config: DataModuleConfig, is_continuous: bool):
+def to_feature(col: str, data: pd.DataFrame, config: DataModuleConfig, transformation: str):
     return Feature(
         name=col, data=data[col].to_numpy().reshape(-1, 1),
-        transformation=config.continuous_transformation if is_continuous else config.discret_transformation,
+        transformation=transformation,
         is_immutable=col in config.imutable_cols
     )
 
@@ -153,8 +153,8 @@ def dataframe2features(
     data: pd.DataFrame,
     config: DataModuleConfig,
 ) -> FeaturesList:
-    cont_features = [to_feature(col, data, config, True) for col in config.continous_cols]
-    cat_features = [to_feature(col, data, config, False) for col in config.discret_cols]
+    cont_features = [to_feature(col, data, config, config.continuous_transformation) for col in config.continous_cols]
+    cat_features = [to_feature(col, data, config, config.discret_transformation) for col in config.discret_cols]
     features = cont_features + cat_features
     return FeaturesList(features)
 
@@ -164,7 +164,7 @@ def dataframe2labels(
     config: DataModuleConfig,
 ) -> FeaturesList:
     label_cols = set(data.columns) - set(config.continous_cols) - set(config.discret_cols)
-    labels = [to_feature(col, data, config, False) for col in label_cols]
+    labels = [to_feature(col, data, config, 'identity') for col in label_cols]
     return FeaturesList(labels)
 
 # %% ../nbs/01_data.ipynb 16
