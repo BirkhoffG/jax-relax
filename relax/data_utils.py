@@ -256,14 +256,6 @@ class IdentityTransformation(Transformation):
         return self
 
 # %% ../nbs/01_data.utils.ipynb 26
-PREPROCESSING_TRANSFORMATIONS = {
-    'ohe': OneHotTransformation,
-    'minmax': MinMaxTransformation,
-    'ordinal': OrdinalPreprocessor,
-    'identity': IdentityTransformation,
-}
-
-# %% ../nbs/01_data.utils.ipynb 28
 class Feature:
     
     def __init__(
@@ -364,6 +356,14 @@ class Feature:
     
     def compute_reg_loss(self, xs, cfs, hard: bool = False):
         return self.transformation.compute_reg_loss(xs, cfs, hard)
+
+# %% ../nbs/01_data.utils.ipynb 27
+PREPROCESSING_TRANSFORMATIONS = {
+    'ohe': OneHotTransformation,
+    'minmax': MinMaxTransformation,
+    'ordinal': OrdinalPreprocessor,
+    'identity': IdentityTransformation,
+}
 
 # %% ../nbs/01_data.utils.ipynb 30
 class FeaturesList:
@@ -481,6 +481,13 @@ class FeaturesList:
         return cls(
             features=[Feature.from_dict(feat) for feat in d['features']],
         )
+    
+    def to_pandas(self, use_transformed: bool = False) -> pd.DataFrame:
+        if use_transformed:
+            data = {feat.name: feat.transformed_data.reshape(-1) for feat in self.features}
+        else:
+            data = {feat.name: feat.data.reshape(-1) for feat in self.features}
+        return pd.DataFrame(data=data)
 
     def save(self, saved_dir):
         os.makedirs(saved_dir, exist_ok=True)
