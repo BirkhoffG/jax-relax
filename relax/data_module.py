@@ -2,7 +2,7 @@
 
 # %% ../nbs/01_data.ipynb 3
 from __future__ import annotations
-from .utils import load_json, validate_configs, get_config, save_pytree, load_pytree
+from .utils import load_json, validate_configs, get_config, save_pytree, load_pytree, get_config
 from .base import *
 from .data_utils import *
 import jax
@@ -17,14 +17,14 @@ from typing import List, Dict, Union, Optional, Tuple, Callable, Any, Iterable
 import warnings
 
 # %% auto 0
-__all__ = ['DataModuleConfig', 'features2config', 'features2pandas', 'DataModule', 'TabularDataModuleConfigs',
-           'TabularDataModule', 'download_data_module_files', 'load_data']
+__all__ = ['BaseDataModule', 'DataModuleConfig', 'features2config', 'features2pandas', 'dataframe2features', 'dataframe2labels',
+           'DataModule', 'TabularDataModuleConfigs', 'TabularDataModule', 'download_data_module_files', 'load_data']
 
 # %% ../nbs/01_data.ipynb 6
 class BaseDataModule(BaseModule):
     """DataModule Interface"""
 
-    def prepare(self, *args, **kwargs):
+    def _prepare(self, *args, **kwargs):
         """Prepare data for training"""
         raise NotImplementedError
         
@@ -75,15 +75,15 @@ class DataModuleInfoMixin:
 
 # %% ../nbs/01_data.ipynb 9
 class DataModuleConfig(BaseConfig):
-    """Configurator of `TabularDataModule`."""
+    """Configurator of `DataModule`."""
 
     data_dir: str = Field(None, description="The directory of dataset.")
     data_name: str = Field(None, description="The name of `DataModule`.")
     continous_cols: List[str] = Field([], description="Continuous features/columns in the data.")
     discret_cols: List[str] = Field([], description="Categorical features/columns in the data.")
     imutable_cols: List[str] = Field([], description="Immutable features/columns in the data.")
-    continuous_transformation: str = Field('minmax', description="Transformation for continuous features.")
-    discret_transformation: str = Field('ohe', description="Transformation for categorical features.")
+    continuous_transformation: Optional[str] = Field('minmax', description="Transformation for continuous features. `None` indicates unknown.")
+    discret_transformation: Optional[str] = Field('ohe', description="Transformation for categorical features. `None` indicates unknown.")
     sample_frac: Optional[float] = Field(
         None, description="Sample fraction of the data. Default to use the entire data.", ge=0., le=1.0
     )
@@ -102,46 +102,51 @@ class DataModuleConfig(BaseConfig):
         if len(self.test_indices) == 0:
             self.test_indices = jrand.permutation(key, total_length)[train_length:].tolist()
 
-# %% ../nbs/01_data.ipynb 11
+# %% ../nbs/01_data.ipynb 12
 def features2config(
-    features: FeaturesList, 
-    name: str, 
-    return_dict: bool = False
-) -> Union[DataModuleConfig, Dict]:
+    features: FeaturesList, # FeaturesList to be converted
+    name: str, # Name of the data used for `DataModuleConfig`
+    return_dict: bool = False # Whether to return a dict or `DataModuleConfig`
+) -> Union[DataModuleConfig, Dict]: # Return configs
+    """Get `DataModuleConfig` from `FeaturesList`."""
+
     cont, cats, immu = [], [], []
+    cont_transformation, cat_transformation = None, None
     for f in features:
         if f.is_categorical:
             cats.append(f.name)
         else:
             cont.append(f.name)
-
         if f.is_immutable:
             immu.append(f.name)
     
-    # TODO: continuous_transformation and discret_transformation
     configs_dict = {
         "data_dir": ".",
         "data_name": name,
         "continous_cols": cont,
         "discret_cols": cats,
         "imutable_cols": immu,
+        "continuous_transformation": cont_transformation,
+        "discret_transformation": cat_transformation,
     }
     if return_dict:
         return configs_dict
     return DataModuleConfig(**configs_dict)
-        
 
-# %% ../nbs/01_data.ipynb 13
+
+# %% ../nbs/01_data.ipynb 14
 def features2pandas(
-    features: FeaturesList, 
-    labels: FeaturesList
-) -> pd.DataFrame:
+    features: FeaturesList, # FeaturesList to be converted
+    labels: FeaturesList # labels to be converted
+) -> pd.DataFrame: # Return pandas dataframe
+    """Convert `FeaturesList` to pandas dataframe."""
+    
     feats_df = features.to_pandas()
     labels_df = labels.to_pandas()
     df = pd.concat([feats_df, labels_df], axis=1)
     return df
 
-# %% ../nbs/01_data.ipynb 15
+# %% ../nbs/01_data.ipynb 17
 def to_feature(col: str, data: pd.DataFrame, config: DataModuleConfig, transformation: str):
     return Feature(
         name=col, data=data[col].to_numpy().reshape(-1, 1),
@@ -149,10 +154,13 @@ def to_feature(col: str, data: pd.DataFrame, config: DataModuleConfig, transform
         is_immutable=col in config.imutable_cols
     )
 
+# %% ../nbs/01_data.ipynb 18
 def dataframe2features(
     data: pd.DataFrame,
     config: DataModuleConfig,
 ) -> FeaturesList:
+    """Convert pandas dataframe of features to `FeaturesList`."""
+
     cont_features = [to_feature(col, data, config, config.continuous_transformation) for col in config.continous_cols]
     cat_features = [to_feature(col, data, config, config.discret_transformation) for col in config.discret_cols]
     features = cont_features + cat_features
@@ -163,12 +171,16 @@ def dataframe2labels(
     data: pd.DataFrame,
     config: DataModuleConfig,
 ) -> FeaturesList:
+    """Convert pandas dataframe of labels to `FeaturesList`."""
+    
     label_cols = set(data.columns) - set(config.continous_cols) - set(config.discret_cols)
     labels = [to_feature(col, data, config, 'identity') for col in label_cols]
     return FeaturesList(labels)
 
-# %% ../nbs/01_data.ipynb 16
+# %% ../nbs/01_data.ipynb 20
 class DataModule(BaseDataModule, DataModuleInfoMixin):
+    """DataModule for tabular data."""
+
     def __init__(
         self, 
         features: FeaturesList,
@@ -177,15 +189,28 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         data: pd.DataFrame = None,
         **kwargs
     ):
-        self.prepare(features, label)
+        self._prepare(features, label)
         if config is None:
             name = kwargs.pop('name', 'DataModule')
             config = features2config(features, name)
         config.shuffle(self.xs, test_size=0.25)
         self._data = features2pandas(features, label) if data is None else data
         super().__init__(config, name=config.data_name)
+
+    def _prepare(self, features, label):
+        if features is not None and label is not None:
+            self._features = FeaturesList(features)
+            self._label = FeaturesList(label)
+        elif features is None:
+            raise ValueError("Features cannot be None.")
+        elif label is None:
+            raise ValueError("Label cannot be None.")
             
-    def save(self, path):
+    def save(
+        self, 
+        path: str # Path to the directory to save `DataModule`
+    ):
+        """Save `DataModule` to a directory."""
         path = Path(path)
         if not path.exists():
             path.mkdir(parents=True)
@@ -197,7 +222,12 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
             json.dump(self.config.dict(), f)
 
     @classmethod
-    def load_from_path(cls, path, config=None):
+    def load_from_path(
+        cls, 
+        path: str,  # Path to the directory to load `DataModule`
+        config: DataModuleConfig = None # Configs of `DataModule`
+    ) -> DataModule: # Initialized `DataModule` from path
+        """Load `DataModule` from a directory."""
         path = Path(path)
         if config is None:
             config = load_json(path / 'config.json')
@@ -207,12 +237,16 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         return cls(features=features, label=label, config=config, data=data)
     
     @classmethod
-    def from_path(cls, path, config=None):
+    def from_path(cls, path, config: DataModuleConfig = None):
         """Alias of `load_from_path`"""
         return cls.from_path(path, config)
     
     @classmethod
-    def from_config(cls, config: Dict|DataModuleConfig, data: pd.DataFrame=None):
+    def from_config(
+        cls, 
+        config: Dict|DataModuleConfig, # Configs of `DataModule`
+        data: pd.DataFrame=None # Passed in pd.Dataframe
+    ) -> DataModule: # Initialized `DataModule` from configs and data
         config = validate_configs(config, DataModuleConfig)
         if data is None:
             data = pd.read_csv(config.data_dir)
@@ -223,17 +257,14 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         return cls(features=features, label=label, config=config, data=data)
     
     @classmethod
-    def from_features(cls, features: FeaturesList, label: FeaturesList, name: str = None):
+    def from_features(
+        cls, 
+        features: FeaturesList, # Features of `DataModule`
+        label: FeaturesList, # Labels of `DataModule`
+        name: str = None # Name of `DataModule`
+    ) -> DataModule: # Initialized `DataModule` from features and labels
+        """Create `DataModule` from `FeaturesList`."""
         return cls(features=features, label=label, name=name)
-        
-    def prepare(self, features, label):
-        if features is not None and label is not None:
-            self._features = FeaturesList(features)
-            self._label = FeaturesList(label)
-        elif features is None:
-            raise ValueError("Features cannot be None.")
-        elif label is None:
-            raise ValueError("Label cannot be None.")
         
     def _get_data(self, indices):
         if isinstance(indices, list):
@@ -248,8 +279,15 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         else:
             raise ValueError(f"Unknown data name: {name}. Should be one of ['train', 'valid', 'test']")
     
-    def sample(self, size: float | int, stage: str = 'train', key: jrand.PRNGKey = None):
-        key = jrand.PRNGKey(0) if key is None else key
+    def sample(
+        self, 
+        size: float | int, # Size of the sample. If float, should be 0<=size<=1.
+        stage: str = 'train', # Stage of data to sample from. Should be one of ['train', 'valid', 'test']
+        key: jrand.PRNGKey = None # Random key. 
+    ) -> Tuple[Array, Array]: # Sampled data
+        """Sample data from `DataModule`."""
+
+        key = jrand.PRNGKey(get_config().global_seed) if key is None else key
         xs, ys = self[stage]
         indices = jnp.arange(xs.shape[0])
         
@@ -264,36 +302,75 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         indices = jrand.permutation(key, indices)[:size]
         return xs[indices], ys[indices]
 
-    def transform(self, data: pd.DataFrame):
+    def transform(
+        self, 
+        data: pd.DataFrame # Data to be transformed
+    ) -> Array: # Transformed data
+        """Transform data to `jax.Array`."""
+        # TODO: test this function
         if isinstance(data, pd.DataFrame):
             data_dict = {k: np.array(v).reshape(-1, 1) for k, v in data.iloc[:, :-1].to_dict(orient='list').items()}
             return self._features.transform(data_dict)
         else:
             raise ValueError("data should be a pandas DataFrame.")
         
-    def inverse_transform(self, data: Array):
-        return self._label.inverse_transform(data)
+    def inverse_transform(
+        self, 
+        data: Array # Data to be inverse transformed
+    ) -> pd.DataFrame: # Inverse transformed data
+        """Inverse transform data to `pandas.DataFrame`."""
+        # TODO: test this function
+        return self._features.inverse_transform(data)
         
-    def apply_constraints(self, xs: Array, cfs: Array, hard: bool = False) -> Array:
+    def apply_constraints(
+        self, 
+        xs: Array, # Input data
+        cfs: Array, # Counterfactuals to be constrained
+        hard: bool = False # Whether to apply hard constraints or not
+    ) -> Array: # Constrained counterfactuals
+        """Apply constraints to counterfactuals."""
         return self._features.apply_constraints(xs, cfs, hard)
     
-    def compute_reg_loss(self, xs: Array, cfs: Array, hard: bool = False) -> float:
+    def compute_reg_loss(
+        self, 
+        xs: Array, # Input data
+        cfs: Array, # Counterfactuals to be constrained
+        hard: bool = False # Whether to apply hard constraints or not
+    ) -> float:
+        """Compute regularization loss."""
         return self._features.compute_reg_loss(xs, cfs, hard)
+    
+    __ALL__ = [
+        'load_from_path', 
+        'from_config', 
+        'from_features',
+        'save',
+        'transform',
+        'inverse_transform',
+        'apply_constraints',
+        'compute_reg_loss',
+        'sample'
+    ]
 
-# %% ../nbs/01_data.ipynb 18
+# %% ../nbs/01_data.ipynb 23
 class TabularDataModuleConfigs(DataModuleConfig):
+    """!!!Deprecated!!! - Configurator of `TabularDataModule`."""
     def __ini__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         warnings.warn("TabularDataModuleConfigs is deprecated since v0.2, please use DataModuleConfig instead.", 
                       DeprecationWarning)
 
+# %% ../nbs/01_data.ipynb 24
 class TabularDataModule(DataModule):
+    """!!!Deprecated!!! - DataModule for tabular data."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         warnings.warn("TabularDataModule is deprecated since v0.2, please use DataModule instead.", 
                       DeprecationWarning)
+        
+    __ALL__ = []
 
-# %% ../nbs/01_data.ipynb 20
+# %% ../nbs/01_data.ipynb 26
 DEFAULT_DATA = [
     'adult',
     'heloc',
@@ -318,13 +395,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 25
+# %% ../nbs/01_data.ipynb 31
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 26
+# %% ../nbs/01_data.ipynb 32
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.

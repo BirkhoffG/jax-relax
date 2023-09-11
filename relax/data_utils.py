@@ -361,7 +361,7 @@ class Feature:
 PREPROCESSING_TRANSFORMATIONS = {
     'ohe': OneHotTransformation,
     'minmax': MinMaxTransformation,
-    'ordinal': OrdinalPreprocessor,
+    'ordinal': OrdinalTransformation,
     'identity': IdentityTransformation,
 }
 
