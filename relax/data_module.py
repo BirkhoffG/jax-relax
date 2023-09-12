@@ -5,6 +5,7 @@ from __future__ import annotations
 from .utils import load_json, validate_configs, get_config, save_pytree, load_pytree, get_config
 from .base import *
 from .data_utils import *
+from .import_essentials import *
 import jax
 from jax import numpy as jnp, random as jrand, lax, Array
 import pandas as pd
@@ -225,12 +226,13 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
     def load_from_path(
         cls, 
         path: str,  # Path to the directory to load `DataModule`
-        config: DataModuleConfig = None # Configs of `DataModule`
+        config: Dict|DataModuleConfig = None # Configs of `DataModule`
     ) -> DataModule: # Initialized `DataModule` from path
         """Load `DataModule` from a directory."""
         path = Path(path)
         if config is None:
-            config = load_json(path / 'config.json')
+            config = DataModuleConfig.load_from_json(path / 'config.json')
+        config = validate_configs(config, DataModuleConfig)
         features = FeaturesList.load_from_path(path / 'features')
         label = FeaturesList.load_from_path(path / 'label')
         data = pd.read_csv(path / 'data.csv')
@@ -352,7 +354,7 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         'sample'
     ]
 
-# %% ../nbs/01_data.ipynb 23
+# %% ../nbs/01_data.ipynb 24
 class TabularDataModuleConfigs(DataModuleConfig):
     """!!!Deprecated!!! - Configurator of `TabularDataModule`."""
     def __ini__(self, *args, **kwargs):
@@ -360,7 +362,7 @@ class TabularDataModuleConfigs(DataModuleConfig):
         warnings.warn("TabularDataModuleConfigs is deprecated since v0.2, please use DataModuleConfig instead.", 
                       DeprecationWarning)
 
-# %% ../nbs/01_data.ipynb 24
+# %% ../nbs/01_data.ipynb 25
 class TabularDataModule(DataModule):
     """!!!Deprecated!!! - DataModule for tabular data."""
     def __init__(self, *args, **kwargs):
@@ -370,7 +372,7 @@ class TabularDataModule(DataModule):
         
     __ALL__ = []
 
-# %% ../nbs/01_data.ipynb 26
+# %% ../nbs/01_data.ipynb 27
 DEFAULT_DATA = [
     'adult',
     'heloc',
@@ -395,13 +397,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 31
+# %% ../nbs/01_data.ipynb 32
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 32
+# %% ../nbs/01_data.ipynb 33
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.
