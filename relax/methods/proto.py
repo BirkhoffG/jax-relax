@@ -181,5 +181,5 @@ class ProtoCF(ParametricCFModule):
             ae=self.ae,
             sampled_data=sampled_data,
             validity_fn=keras.losses.get({'class_name': self.config.validity_fn, 'config': {'reduction': None}}),
-            apply_constraints_fn=self.apply_constraints_fn,
+            apply_constraints_fn=self.apply_constraints,
         )

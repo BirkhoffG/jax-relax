@@ -322,8 +322,8 @@ class CounterNet(ParametricCFModule, PredFnMixedin):
         return self
 
     @auto_reshaping('x')
-    def generate_cf(self, x: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        return self.module.generate_cf(self.params, rng_key=jrand.PRNGKey(0), x=x)
+    def generate_cf(self, x: jax.Array, rng_key=jrand.PRNGKey(0), **kwargs) -> jax.Array:
+        return self.module.generate_cf(self.params, rng_key=rng_key, x=x)
     
     def pred_fn(self, xs: jax.Array):
         y_pred = self.module.pred_fn(self.params, rng_key=jrand.PRNGKey(0), xs=xs)

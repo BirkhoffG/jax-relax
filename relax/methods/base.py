@@ -34,12 +34,22 @@ class CFModule(BaseModule):
     def set_data_module(self, data_module):
         self.data_module = data_module
 
+    def set_apply_constraints_fn(self, apply_constraints_fn: Callable):
+        self.apply_constraints_fn = apply_constraints_fn
+
+    def set_compute_reg_loss_fn(self, compute_reg_loss_fn: Callable):
+        self.compute_reg_loss_fn = compute_reg_loss_fn
+
     def init_fns(
         self,
         apply_constraints_fn = None,
         compute_reg_loss_fn = None,
         **kwargs
     ):
+        warnings.warn(
+            "init_fns is deprecated. Use `set_apply_constraints_fn` "
+            "and `set_compute_reg_loss_fn` instead.", DeprecationWarning
+        )
         if self.apply_constraints_fn is None and apply_constraints_fn is not None:
             self.apply_constraints_fn = apply_constraints_fn
         else:
@@ -49,13 +59,17 @@ class CFModule(BaseModule):
         else:
             self.compute_reg_loss_fn = default_compute_reg_loss_fn
     
-    def apply_constraints(self, *args, **kwargs):
+    def apply_constraints(self, *args, **kwargs) -> Array:
         if self.apply_constraints_fn is not None:
-            self.apply_constraints_fn(*args, **kwargs)
+            return self.apply_constraints_fn(*args, **kwargs)
+        else:
+            return default_apply_constraints_fn(*args, **kwargs)
     
     def compute_reg_loss(self, *args, **kwargs):
         if self.compute_reg_loss_fn is not None:
-            self.compute_reg_loss_fn(*args, **kwargs)
+            return self.compute_reg_loss_fn(*args, **kwargs)
+        else:
+            return default_compute_reg_loss_fn(*args, **kwargs)
 
     def before_generate_cf(self, *args, **kwargs):
         pass

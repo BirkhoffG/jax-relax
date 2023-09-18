@@ -131,7 +131,7 @@ class DiverseCF(CFModule):
             key=rng_key,
             validity_fn=keras.losses.get({'class_name': self.config.validity_fn, 'config': {'reduction': None}}),
             cost_fn=keras.losses.get({'class_name': self.config.cost_fn, 'config': {'reduction': None}}),
-            apply_constraints_fn=self.apply_constraints_fn,
-            compute_reg_loss_fn=self.compute_reg_loss_fn,
+            apply_constraints_fn=self.apply_constraints,
+            compute_reg_loss_fn=self.compute_reg_loss,
         )
 

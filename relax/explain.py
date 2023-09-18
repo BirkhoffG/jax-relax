@@ -129,10 +129,8 @@ def prepare_cf_module(
     Finally, it will call `before_generate_cf` method.
     """
     cf_module.set_data_module(data_module)
-    cf_module.init_fns(
-        apply_constraints_fn=data_module.apply_constraints,
-        compute_reg_loss_fn=data_module.compute_reg_loss,
-    )
+    cf_module.set_apply_constraints_fn(data_module.apply_constraints)
+    cf_module.set_compute_reg_loss_fn(data_module.compute_reg_loss)
     if isinstance(cf_module, ParametricCFModule):
         cf_module.train(data_module, pred_fn=pred_fn, **train_config)
     cf_module.before_generate_cf()

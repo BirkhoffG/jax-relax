@@ -201,5 +201,5 @@ class GrowingSphere(CFModule):
             step_size=self.config.step_size,
             p_norm=self.config.p_norm,
             perturb_fn=self.perturb_fn,
-            apply_constraints_fn=self.apply_constraints_fn
+            apply_constraints_fn=self.apply_constraints,
         )

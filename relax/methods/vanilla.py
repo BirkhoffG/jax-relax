@@ -104,6 +104,6 @@ class VanillaCF(CFModule):
             lambda_=self.config.lambda_,  #  loss = validity_loss + lambda_params * cost
             validity_fn=keras.losses.get({'class_name': self.config.validity_fn, 'config': {'reduction': None}}),
             cost_fn=keras.losses.get({'class_name': 'MeanSquaredError', 'config': {'reduction': None}}),
-            apply_constraints_fn=self.apply_constraints_fn,
+            apply_constraints_fn=self.apply_constraints,
         )
 
