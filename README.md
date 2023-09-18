@@ -65,8 +65,7 @@ import functools as ft
 import jax
 ```
 
-We generate synthetic data using
-[sklearn](https://scikit-learn.org/stable/):
+Let’s first generate synthetic data:
 
 ``` python
 xs, ys = make_classification(n_samples=1000, n_features=10, random_state=42)
@@ -89,7 +88,6 @@ recourse explanation:
 
 ``` python
 vcf = VanillaCF()
-vcf.init_fns()
 cf = vcf.generate_cf(test_xs[0], model.pred_fn)
 assert cf.shape == test_xs[0].shape
 ```
