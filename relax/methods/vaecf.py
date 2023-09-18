@@ -6,8 +6,8 @@ from ..import_essentials import *
 from .base import ParametricCFModule
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
-from ..utils import auto_reshaping, validate_configs
-from keras_core.src.backend.jax.random import draw_seed
+from ..utils import auto_reshaping, validate_configs, get_config
+from keras_core.random import SeedGenerator
 
 # %% auto 0
 __all__ = ['sample_latent', 'VAE', 'VAECFConfig', 'VAECF']
@@ -45,6 +45,7 @@ class VAE(keras.Model):
         self.n_layers = layers
         # self.pred_fn = pred_fn
         self.mc_samples = mc_samples
+        self.rng_keys = SeedGenerator(get_config().global_seed)
         # if compute_regularization_fn is None:
         #     self.compute_regularization_fn = lambda *args, **kwargs: 0.
         # elif callable(compute_regularization_fn):
@@ -66,7 +67,7 @@ class VAE(keras.Model):
         
         mu = self.mu_enc(x)
         var = 0.5 + self.var_enc(x)
-        z = sample_latent(draw_seed(None), mu, var)
+        z = sample_latent(self.rng_keys.next(), mu, var)
         z = jnp.concatenate([z, pred_out.argmax(-1, keepdims=True)], axis=-1)
         mu_x = self.mu_dec(z)
     
@@ -149,7 +150,7 @@ class VAE(keras.Model):
         return (cf_losses.mean() + kl).mean() + validity_losses.mean()
     
     def call(self, inputs, training=None):
-        rng_key = draw_seed(None)
+        rng_key = self.rng_keys.next()
         ys = 1. - self.pred_fn(inputs).argmax(axis=1, keepdims=True)
         inputs = jnp.concatenate([inputs, ys], axis=-1)
         em, ev, cfs = self.sample(rng_key, inputs, self.mc_samples, training=training)

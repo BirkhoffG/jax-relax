@@ -5,10 +5,11 @@ from __future__ import annotations
 from ..import_essentials import *
 from .base import CFModule, ParametricCFModule
 from ..base import BaseConfig
-from ..utils import auto_reshaping, grad_update, validate_configs
+from ..utils import auto_reshaping, grad_update, validate_configs, get_config
 from ..data_utils import Feature, FeaturesList
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
+from keras_core.random import SeedGenerator
 
 # %% auto 0
 __all__ = ['CHVAE', 'CCHVAEConfig', 'CCHVAE']
@@ -25,6 +26,7 @@ class CHVAE(keras.Model):
         super().__init__()
         self.n_layers = layers
         self.dropout_rate = dropout_rate
+        self.seed_generator = SeedGenerator(get_config().global_seed)
 
     def set_apply_constraints_fn(self, fn=None):
         if fn is None:
@@ -59,7 +61,7 @@ class CHVAE(keras.Model):
     
     def reparameterize(self, mu, log_var):
         std = keras.ops.exp(0.5 * log_var)
-        eps = keras.random.normal(std.shape)
+        eps = keras.random.normal(std.shape, seed=self.seed_generator)
         return mu + eps * std
     
     def forward(self, x, training=None):
