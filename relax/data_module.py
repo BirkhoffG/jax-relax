@@ -241,7 +241,7 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
     @classmethod
     def from_path(cls, path, config: DataModuleConfig = None):
         """Alias of `load_from_path`"""
-        return cls.from_path(path, config)
+        return cls.load_from_path(path, config)
     
     @classmethod
     def from_config(
