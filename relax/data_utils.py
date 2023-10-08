@@ -415,6 +415,10 @@ class FeaturesList:
         return self._feature_indices
     
     @property
+    def features_and_indices(self) -> list[tuple[Feature, tuple[int, int]]]: # Return [(Feature(...), (start, end)), ...]
+        return list(zip(self.features, self.feature_indices))
+    
+    @property
     def feature_name_indices(self) -> dict[str, tuple[int, int]]: # Return {feature_name: (feat_idx, start, end), ...}
         if not hasattr(self, "_feature_indices") or self._feature_indices is None:
             self._transform_data()
@@ -454,20 +458,20 @@ class FeaturesList:
 
     def inverse_transform(self, xs) -> dict[str, jax.Array]:
         orignial_data = {}
-        for (start, end), feat in zip(self.feature_indices, self.features):
+        for feat, (start, end) in self.features_and_indices:
             orignial_data[feat.name] = feat.inverse_transform(xs[:, start:end])
         return orignial_data
 
     def apply_constraints(self, xs, cfs, hard: bool = False):
         constrainted_cfs = []
-        for (start, end), feat in zip(self.feature_indices, self.features):
+        for feat, (start, end) in self.features_and_indices:
             _cfs = feat.apply_constraints(xs[:, start:end], cfs[:, start:end], hard)
             constrainted_cfs.append(_cfs)
         return jnp.concatenate(constrainted_cfs, axis=-1)
     
     def compute_reg_loss(self, xs, cfs, hard: bool = False):
         reg_loss = 0.
-        for (start, end), feat in zip(self.feature_indices, self.features):
+        for feat, (start, end) in self.features_and_indices:
             reg_loss += feat.compute_reg_loss(xs[:, start:end], cfs[:, start:end], hard)
         return reg_loss
 
