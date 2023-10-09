@@ -24,18 +24,13 @@ class CFModule(BaseModule):
         *, 
         name: str = None,
         apply_constraints_fn = None,
-        compute_reg_loss_fn = None
+        compute_reg_loss_fn = None,
+        **kwargs
     ):
         super().__init__(config, name=name)
         self._apply_constraints_fn = apply_constraints_fn
         self._compute_reg_loss_fn = compute_reg_loss_fn
         self.data_module = None
-
-    def __setattr__(self, __name: str, __value: any) -> None:
-        if __name in ["_apply_constraints_fn", "_compute_reg_loss_fn"]:
-            raise AttributeError(f"Cannot set attribute {__name} directly. "
-                                 "Use set_apply_constraints_fn or set_compute_reg_loss_fn instead.")
-        return super().__setattr__(__name, __value)
 
     def set_data_module(self, data_module):
         self.data_module = data_module

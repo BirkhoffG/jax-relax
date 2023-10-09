@@ -221,14 +221,14 @@ def get_reconstruction_loss_fn(dm: DataModule):
 # %% ../../nbs/methods/08_clue.ipynb 15
 class CLUE(ParametricCFModule):
 
-    def __init__(self, config: Dict | CLUEConfigs = None, vae=None, name: str = 'CLUE'):
+    def __init__(self, config: Dict | CLUEConfig = None, vae=None, name: str = 'CLUE'):
         if config is None:
-            config = CLUEConfigs()
-        config = validate_configs(config, CLUEConfigs)
+            config = CLUEConfig()
+        config = validate_configs(config, CLUEConfig)
         self.vae = vae
         super().__init__(config, name=name)
 
-    def _init_model(self, config: CLUEConfigs, model: VAEGaussCat):
+    def _init_model(self, config: CLUEConfig, model: VAEGaussCat):
         if model is None:
             model = VAEGaussCat(
                 enc_sizes=config.enc_sizes, dec_sizes=config.dec_sizes, 
