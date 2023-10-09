@@ -1,11 +1,8 @@
-from relax.module import PredictiveTrainingModule, PredictiveTrainingModuleConfigs, load_pred_model
-from relax.trainer import train_model
-from relax.utils import load_json
-from relax.data import TabularDataModule, load_data
-from relax.data.module import DEFAULT_DATA_CONFIGS
+import relax
 from relax.methods import *
-from relax.evaluate import generate_cf_explanations, benchmark_cfs, _compute_acc
 from relax.import_essentials import *
+from relax.data_module import DEFAULT_DATA_CONFIGS
+from relax.utils import load_json
 import argparse
 import gc
 
@@ -14,12 +11,12 @@ import gc
 DATASET_NAMES = list(DEFAULT_DATA_CONFIGS.keys())
 
 # CFs for benchmarking
-CF_NAMES = ["VanillaCF","DiverseCF","ProtoCF","CounterNet","CCHVAE","CLUE","GrowingSphere","VAECF"]
+CF_NAMES = ["VanillaCF", "DiverseCF", "ProtoCF", "CounterNet", "CCHVAE", "CLUE", "GrowingSphere", "VAECF"]
 
 def load_cf_configs(
     cf_method: str, # The name of cf method
     data_name: str # The name of data
-    ) -> dict:
+) -> dict:
 
     # validate data name and cf method
     if data_name not in DATASET_NAMES:
@@ -27,8 +24,8 @@ def load_cf_configs(
             f'but got data_name={data_name}.')
     
     if cf_method not in CF_NAMES:
-        raise ValueError(f'`data_name` must be one of {CF_NAMES}, '
-            f'but got data_name={cf_method}.')
+        raise ValueError(f'`cf_name` must be one of {CF_NAMES}, '
+            f'but got cf_name={cf_method}.')
     
     # Fetch the cf configs from the configs file
     data_dir = Path(os.getcwd()) / "cf_data" / data_name 
@@ -41,22 +38,18 @@ def main(args):
     print("start...")
     print("devices: ", jax.devices())
 
-    if args.data_name == "all":
-        data_names = DATASET_NAMES
-    else:
-        data_names = [args.data_name]
+    # list for storing dataset names
+    data_names = DATASET_NAMES if args.data_name == "all" else [args.data_name]
 
-    if args.cf_methods == "all":
-        cf_methods_list = CF_NAMES
-    else:
-        cf_methods_list = [args.cf_methods]
+    # list for storing CF method names
+    cf_methods_list = CF_NAMES if args.cf_methods == "all" else [args.cf_methods]
 
     # Print benchmarking CF methods and dataset
-    if args.cf_methods != "all":
-        print("CF method(s): ", args.cf_methods)
-    else: 
-        print("CF method(s): ", CF_NAMES)
-    print("Dataset(s): ", data_names)
+    # if args.cf_methods != "all":
+    #     print("CF method(s): ", args.cf_methods)
+    # else: 
+    #     print("CF method(s): ", CF_NAMES)
+    # print("Dataset(s): ", data_names)
     
     # strategy
     strategy = args.strategy
@@ -71,10 +64,10 @@ def main(args):
             print("Benchmarking dataset:", data_name)
                                   
             # load data and data configs
-            dm = load_data(data_name = data_name)
+            dm = relax.load_data(data_name)
             
             # load predict function
-            params, training_module = load_pred_model(data_name)
+            params, training_module = relax.load_ml_module(data_name)
             pred_fn = training_module.pred_fn
 
             # warm-up
