@@ -7,7 +7,7 @@ website:
         - tutorials/install.ipynb
         - tutorials/getting_started.ipynb
         - tutorials/contribution.ipynb        
-      - section: API
+      - section: API Documentations
         contents:
         - 00_base.ipynb
         - 00_utils.ipynb

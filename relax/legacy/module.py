@@ -3,7 +3,6 @@
 # %% ../../nbs/legacy/03_module.ipynb 3
 from __future__ import annotations
 from .import_essentials import *
-# from relax.data import TabularDataModule
 from ..data_module import DataModule
 from .logger import Logger #TensorboardLogger
 from .utils import validate_configs, sigmoid, accuracy, init_net_opt, grad_update, make_hk_module, load_json
