@@ -12,7 +12,7 @@ from jax.scipy.stats.norm import logpdf as gaussian_logpdf
 from keras_core.random import SeedGenerator
 
 # %% auto 0
-__all__ = ['Encoder', 'Decoder', 'kl_divergence', 'VAEGaussCat', 'CLUEConfigs', 'get_reconstruction_loss_fn', 'CLUE']
+__all__ = ['Encoder', 'Decoder', 'kl_divergence', 'VAEGaussCat', 'CLUEConfig', 'get_reconstruction_loss_fn', 'CLUE']
 
 # %% ../../nbs/methods/08_clue.ipynb 5
 class Encoder(keras.layers.Layer):
@@ -187,7 +187,7 @@ def _clue_generate(
     return cf
 
 # %% ../../nbs/methods/08_clue.ipynb 12
-class CLUEConfigs(BaseParser):
+class CLUEConfig(BaseConfig):
     enc_sizes: List[int] = Field(
         [20, 16, 14, 12], description="Sequence of Encoder layer sizes."
     )
