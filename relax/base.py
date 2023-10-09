@@ -44,7 +44,8 @@ class BaseModule:
     def save(self, path):
         raise NotImplementedError
 
-    def load_from_path(self, path):
+    @classmethod
+    def load_from_path(cls, path):
         raise NotImplementedError
 
 # %% ../nbs/00_base.ipynb 8
