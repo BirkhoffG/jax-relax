@@ -259,6 +259,19 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         return cls(features=features, label=label, config=config, data=data)
     
     @classmethod
+    def from_numpy(
+        cls,
+        xs: np.ndarray, # Input data
+        ys: np.ndarray, # Labels
+        name: str = None # Name of `DataModule`
+    ) -> DataModule: # Initialized `DataModule` from numpy arrays
+        """Create `DataModule` from numpy arrays. Note that the `xs` are treated as continuous features."""
+        
+        features = FeaturesList([Feature(f"feature_{i}", xs[:, i].reshape(-1, 1), transformation='minmax') for i in range(xs.shape[1])])
+        labels = FeaturesList([Feature(f"label", ys.reshape(-1, 1), transformation='identity')])
+        return cls(features=features, label=labels, name=name)
+    
+    @classmethod
     def from_features(
         cls, 
         features: FeaturesList, # Features of `DataModule`
