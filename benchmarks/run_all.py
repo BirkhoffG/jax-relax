@@ -67,30 +67,30 @@ def main(args):
             dm = relax.load_data(data_name)
             
             # load predict function
-            params, training_module = relax.load_ml_module(data_name)
-            pred_fn = training_module.pred_fn
+            ml_model = relax.load_ml_module(data_name)
+            pred_fn = ml_model.pred_fn
 
             # warm-up
             if i == 0 and not args.disable_jit and strategy == "vmap":
                 print("warm-up...")
-                test_X, test_y = dm.test_dataset[:]
-                pred = pred_fn(test_X, params, jrand.PRNGKey(0)).reshape(-1, 1).round()
-                labels = test_y.reshape(-1, 1)
-                print(f"{data_name}'s accuracy: ", (pred == labels).mean())
+                test_xs, test_ys = dm['test']
+                pred = pred_fn(test_xs)
             
             # get cf configs
-            cf_configs = load_cf_configs(cf_method, data_name)
+            cf_config = {}
 
-            cf = globals()[cf_method](cf_configs)
+            cf = globals()[cf_method](cf_config)
 
             # Generate CFEs
             print("generate...")
-            cf_exp = generate_cf_explanations(cf, dm, pred_fn=pred_fn, pred_fn_args=dict(params=params, rng_key=jrand.PRNGKey(0)), strategy = strategy)
+            cf_exp = relax.generate_cf_explanations(
+                cf, dm, pred_fn, strategy=strategy
+            )
             
             # Store CFEs
             exps.append(cf_exp)
     
-    results = benchmark_cfs(cf_results_list=exps,metrics=["acc", "validity", "proximity","runtime"])
+    results = relax.benchmark_cfs(cf_results_list=exps, metrics=["acc", "validity", "proximity","runtime"])
 
     # Output as csv
     if args.to_csv:
@@ -131,5 +131,4 @@ if __name__ == "__main__":
     if args.disable_jit:
         jax.config.update("jax_disable_jit", True)
     main(args)
-
 
