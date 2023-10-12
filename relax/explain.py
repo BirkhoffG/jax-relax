@@ -151,7 +151,7 @@ def generate_cf_explanations(
 
     # Prepare `pred_fn`, `cf_module`, and `strategy`.
     pred_fn = prepare_pred_fn(cf_module, data, pred_fn, pred_fn_args)
-    cf_module = prepare_cf_module(cf_module, data, train_config)
+    cf_module = prepare_cf_module(cf_module, data, pred_fn, train_config)
     if strategy is None:
         strategy = StrategyFactory.get_default_strategy()
     strategy = StrategyFactory.get_strategy(strategy)
