@@ -259,6 +259,20 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         return cls(features=features, label=label, config=config, data=data)
     
     @classmethod
+    def from_numpy(
+        cls,
+        xs: np.ndarray, # Input data
+        ys: np.ndarray, # Labels
+        name: str = None, # Name of `DataModule`
+        transformation='minmax'
+    ) -> DataModule: # Initialized `DataModule` from numpy arrays
+        """Create `DataModule` from numpy arrays. Note that the `xs` are treated as continuous features."""
+        
+        features = FeaturesList([Feature(f"feature_{i}", xs[:, i].reshape(-1, 1), transformation=transformation) for i in range(xs.shape[1])])
+        labels = FeaturesList([Feature(f"label", ys.reshape(-1, 1), transformation='identity')])
+        return cls(features=features, label=labels, name=name)
+    
+    @classmethod
     def from_features(
         cls, 
         features: FeaturesList, # Features of `DataModule`
@@ -354,7 +368,7 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         'sample'
     ]
 
-# %% ../nbs/01_data.ipynb 24
+# %% ../nbs/01_data.ipynb 25
 class TabularDataModuleConfigs(DataModuleConfig):
     """!!!Deprecated!!! - Configurator of `TabularDataModule`."""
     def __ini__(self, *args, **kwargs):
@@ -362,7 +376,7 @@ class TabularDataModuleConfigs(DataModuleConfig):
         warnings.warn("TabularDataModuleConfigs is deprecated since v0.2, please use DataModuleConfig instead.", 
                       DeprecationWarning)
 
-# %% ../nbs/01_data.ipynb 25
+# %% ../nbs/01_data.ipynb 26
 class TabularDataModule(DataModule):
     """!!!Deprecated!!! - DataModule for tabular data."""
     def __init__(self, *args, **kwargs):
@@ -372,7 +386,7 @@ class TabularDataModule(DataModule):
         
     __ALL__ = []
 
-# %% ../nbs/01_data.ipynb 27
+# %% ../nbs/01_data.ipynb 28
 DEFAULT_DATA = [
     'adult',
     'heloc',
@@ -397,13 +411,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 32
+# %% ../nbs/01_data.ipynb 33
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 33
+# %% ../nbs/01_data.ipynb 34
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.

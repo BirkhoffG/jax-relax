@@ -94,16 +94,16 @@ class ProtoCF(ParametricCFModule):
 
     def __init__(
         self,
-        configs: dict | ProtoCFConfig = None,
+        config: dict | ProtoCFConfig = None,
         ae: keras.Model = None,
         name: str = None,
     ):
-        if configs is None:
-            configs = ProtoCFConfig()
-        configs = validate_configs(configs, ProtoCFConfig)
+        if config is None:
+            config = ProtoCFConfig()
+        config = validate_configs(config, ProtoCFConfig)
         self.ae = ae
         name = "ProtoCF" if name is None else name
-        super().__init__(configs, name=name)
+        super().__init__(config, name=name)
 
     def _init_model(self, config: ProtoCFConfig, model: keras.Model, output_size: int):
         if model is None:

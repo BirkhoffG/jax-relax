@@ -2,10 +2,11 @@ website:
   sidebar:
     contents:
       - index.ipynb
+      - tutorials/install.ipynb
+      - tutorials/getting_started.ipynb
       - section: Tutorials
         contents:
-        - tutorials/install.ipynb
-        - tutorials/getting_started.ipynb
+        - tutorials/methods.ipynb
         - tutorials/contribution.ipynb        
       - section: API Documentations
         contents:

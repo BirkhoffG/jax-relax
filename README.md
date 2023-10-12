@@ -54,11 +54,24 @@ right version for GPU or TPU.
 ## Dive into `ReLax`
 
 `ReLax` is a recourse explanation library for explaining (any) JAX-based
-ML models.
+ML models. We believe that it is important to give users flexibility to
+choose how to use `ReLax`. You can
+
+- only use methods implemeted in `ReLax` (as a recourse methods
+  library);
+- build a pipeline using `ReLax` to define data module, training ML
+  models, and generating CF explanation (for constructing recourse
+  benchmarking pipeline).
+
+### `ReLax` as a Recourse Explanation Library
+
+We introduce basic use cases of using methods in `ReLax` to generate
+recourse explanations. For more advanced usages of methods in `ReLax`,
+See this [tutorials](tutorials/methods.ipynb).
 
 ``` python
-from relax.ml_model import MLModule
 from relax.methods import VanillaCF
+from relax import DataModule, MLModule, generate_cf_explanations, benchmark_cfs
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 import functools as ft
@@ -72,14 +85,14 @@ xs, ys = make_classification(n_samples=1000, n_features=10, random_state=42)
 train_xs, test_xs, train_ys, test_ys = train_test_split(xs, ys, random_state=42)
 ```
 
-Next, we fit an MLP model for this data. This model can be any model
-implmented in JAX. We will use the
+Next, we fit an MLP model for this data. Note that this model can be any
+model implmented in JAX. We will use the
 [`MLModule`](https://birkhoffg.github.io/jax-relax/ml_model.html#mlmodule)
 in `ReLax` as an example.
 
 ``` python
 model = MLModule()
-model.train((train_xs, train_ys), epochs=5, batch_size=64)
+model.train((train_xs, train_ys), epochs=10, batch_size=64)
 ```
 
 Generating recourse explanations are straightforward. We can simply call
@@ -87,7 +100,7 @@ Generating recourse explanations are straightforward. We can simply call
 recourse explanation:
 
 ``` python
-vcf = VanillaCF()
+vcf = VanillaCF(config={'n_steps': 1000, 'lr': 0.05})
 cf = vcf.generate_cf(test_xs[0], model.pred_fn)
 assert cf.shape == test_xs[0].shape
 ```
@@ -100,12 +113,32 @@ cfs = jax.vmap(generate_fn)(test_xs)
 assert cfs.shape == test_xs.shape
 ```
 
-## An End-to-End Example of using `ReLax`
+### `ReLax` for Building Recourse Explanation Pipelines
+
+The above example illustrates the usage of the decoupled `relax.methods`
+to generate recourse explanations. However, users are required to write
+boilerplate code for tasks such as data preprocessing, model training,
+and generating recourse explanations with feature constraints.
+
+`ReLax` additionally offers a one-liner framework, streamlining the
+process and helping users in building a standardized pipeline for
+generating recourse explanations. You can write three lines of code to
+benchmark recourse explanations:
+
+``` python
+data_module = DataModule.from_numpy(xs, ys)
+exps = generate_cf_explanations(vcf, data_module, model.pred_fn)
+benchmark_cfs([exps])
+```
 
 See [Getting Started with
-ReLax](https://birkhoffg.github.io/ReLax/tutorials/getting_started.html).
+ReLax](https://birkhoffg.github.io/jax-relax/tutorials/getting_started.html)
+for an end-to-end example of using `ReLax`.
 
 ## Supported Recourse Methods
+
+`ReLax` currently provides implementations of 8 recourse explanation
+methods.
 
 | Method                                                                                     | Type            | Paper Title                                                                                    | Ref                                       |
 |--------------------------------------------------------------------------------------------|-----------------|------------------------------------------------------------------------------------------------|-------------------------------------------|
@@ -126,8 +159,8 @@ To cite this repository:
 @software{relax2023github,
   author = {Hangzhi Guo and Xinchang Xiong and Amulya Yadav},
   title = {{R}e{L}ax: Recourse Explanation Library in Jax},
-  url = {http://github.com/birkhoffg/ReLax},
-  version = {0.1.0},
+  url = {http://github.com/birkhoffg/jax-relax},
+  version = {0.2.0},
   year = {2023},
 }
 ```

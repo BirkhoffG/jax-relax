@@ -72,14 +72,14 @@ class VanillaCF(CFModule):
 
     def __init__(
         self,
-        configs: dict | VanillaCFConfig = None,
+        config: dict | VanillaCFConfig = None,
         name: str = None,
     ):
-        if configs is None:
-            configs = VanillaCFConfig()
-        configs = validate_configs(configs, VanillaCFConfig)
+        if config is None:
+            config = VanillaCFConfig()
+        config = validate_configs(config, VanillaCFConfig)
         name = "VanillaCF" if name is None else name
-        super().__init__(configs, name=name)
+        super().__init__(config, name=name)
 
     @auto_reshaping('x')
     def generate_cf(
