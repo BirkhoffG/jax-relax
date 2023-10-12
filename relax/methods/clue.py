@@ -240,6 +240,7 @@ class CLUE(ParametricCFModule):
     def train(
         self, 
         data: DataModule, # data module
+        pred_fn: Callable = None,
         batch_size: int = 128,
         epochs: int = 10,
         **fit_kwargs
