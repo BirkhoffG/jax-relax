@@ -61,6 +61,7 @@ class VmapStrategy(BaseStrategy):
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         
+        @jit
         def partial_fn(x, y_target, rng_key):
             return fn(x, pred_fn=pred_fn, y_target=y_target, rng_key=rng_key, **kwargs)
         
@@ -106,6 +107,7 @@ class PmapStrategy(BaseStrategy):
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         
+        @jit
         def partial_fn(x, y_target, rng_key, **kwargs):
             return fn(x, pred_fn=pred_fn, y_target=y_target, rng_key=rng_key, **kwargs)
 
@@ -143,6 +145,7 @@ def _batched_generation(
 ) -> Array: # Generated counterfactual explanations
     """Batched  of counterfactuals."""
 
+    @jit
     def gs_fn_partial(state):
         x, y_target, rng_key = state
         return gs_fn(cf_fn, x, pred_fn, y_target, rng_key, **kwargs)
