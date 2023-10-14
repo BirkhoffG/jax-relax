@@ -78,4 +78,7 @@ class CFModule(BaseModule):
 # %% ../../nbs/methods/00_base.ipynb 4
 class ParametricCFModule(CFModule, TrainableMixedin):
     """Base class for parametric counterfactual modules."""
-    pass
+    
+    def train(self, data, pred_fn, **kwargs):
+        """Train the module."""
+        raise NotImplementedError

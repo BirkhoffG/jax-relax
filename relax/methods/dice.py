@@ -48,7 +48,7 @@ def _diverse_cf(
         loss_1 = validity_fn(y_target, cf_y_pred).mean()
         loss_2 = cost_fn(x, cfs).mean()
         loss_3 = - dpp_style_vmap(cfs).mean()
-        loss_4 = compute_reg_loss_fn(x, cfs)
+        loss_4 = compute_reg_loss_fn(x, cfs).mean()
         return (
             lambda_1 * loss_1 + 
             lambda_2 * loss_2 + 
@@ -113,10 +113,11 @@ class DiverseCF(CFModule):
         if y_target is None:
             y_target = 1 - pred_fn(x)
         else:
-            y_target = jnp.array(y_target, copy=True)
+            y_target = jnp.array(y_target, copy=True).reshape(1, -1)
         if rng_key is None:
             rng_key = jax.random.PRNGKey(self.config.seed)
         
+        assert y_target.shape == (1, 2)
         return _diverse_cf(
             x=x,  # `x` shape: (k,), where `k` is the number of features
             y_target=y_target,  # `y_target` shape: (1,)

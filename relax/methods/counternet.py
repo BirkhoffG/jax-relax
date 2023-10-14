@@ -310,8 +310,9 @@ class CounterNet(ParametricCFModule, PredFnMixedin):
     def train(
         self, 
         data: DataModule, # data module
+        pred_fn: Callable = None,
         batch_size: int = 128,
-        epochs: int = 10,
+        epochs: int = 100,
         **kwargs
     ):
         self.module = self._init_model(self.config, self.module)
@@ -327,5 +328,5 @@ class CounterNet(ParametricCFModule, PredFnMixedin):
     
     def pred_fn(self, xs: jax.Array):
         y_pred = self.module.pred_fn(self.params, rng_key=jrand.PRNGKey(0), xs=xs)
-        return y_pred
+        return jnp.concatenate([1 - y_pred, y_pred], axis=-1)
 
