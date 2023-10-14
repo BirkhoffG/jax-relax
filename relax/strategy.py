@@ -71,14 +71,17 @@ class VmapStrategy(BaseStrategy):
 
 # %% ../nbs/03_explain.strategy.ipynb 6
 def _pad_divisible_X(
-    X: Array,
+    xs: Array,
     n_devices: int
 ):
     """Pad `X` to be divisible by `n_devices`."""
-    if X.shape[0] % n_devices != 0:
-        pad_size = n_devices - X.shape[0] % n_devices
-        X = jnp.concatenate([X, jnp.zeros((pad_size, *X.shape[1:]))])
-    X_padded = X.reshape(n_devices, -1, *X.shape[1:])
+    if xs.shape[0] % n_devices != 0:
+        pad_size = n_devices - xs.shape[0] % n_devices
+        xs_pad = einops.repeat(
+            xs[-1:], "n ... -> (pad n) ...", pad=pad_size
+        )
+        xs = jnp.concatenate([xs, xs_pad])
+    X_padded = xs.reshape(n_devices, -1, *xs.shape[1:])
     return X_padded
 
 
@@ -96,41 +99,64 @@ class PmapStrategy(BaseStrategy):
     def __call__(
         self, 
         fn: Callable, # Function to generate cf for a single input
-        X: Array, # Input instances to be explained
+        xs: Array, # Input instances to be explained
         pred_fn: Callable[[Array], Array],
+        y_targets: Array,
+        rng_keys: Iterable[jrand.PRNGKey],
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         
-        assert X.ndim == 2
-        X_padded = _pad_divisible_X(X, self.n_devices)
-        partial_fn = partial(fn, pred_fn=pred_fn, **kwargs)
-        cfs = jax.pmap(jax.vmap(partial_fn))(X_padded)
+        def partial_fn(x, y_target, rng_key, **kwargs):
+            return fn(x, pred_fn=pred_fn, y_target=y_target, rng_key=rng_key, **kwargs)
+
+        assert xs.ndim == 2
+        X_padded = _pad_divisible_X(xs, self.n_devices)
+        y_targets = _pad_divisible_X(y_targets, self.n_devices)
+        rng_keys = _pad_divisible_X(rng_keys, self.n_devices)
+        cfs = jax.pmap(jax.vmap(partial_fn))(X_padded, y_targets, rng_keys)
         cfs = cfs.reshape(-1, *cfs.shape[2:])
-        cfs = cfs[:X.shape[0]]
+        cfs = cfs[:xs.shape[0]]
         return cfs
 
 
 # %% ../nbs/03_explain.strategy.ipynb 9
+def _pad_xs(
+    xs: Array, pad_size: int, batch_size: int
+):
+    """Pad `X` to be divisible by `n_devices`."""
+    xs_pad = einops.repeat(
+        xs[-1:], "n ... -> (pad n) ...", pad=pad_size
+    )
+    xs = jnp.concatenate([xs, xs_pad])
+    xs = einops.rearrange(xs, "(b n) ... -> b n ...", b=batch_size)
+    return xs
+
 def _batched_generation(
     gs_fn: Callable, # Generation strategy function
     cf_fn: Callable, # Function to generate cf for a single input
-    X: Array, # Input instances to be explained
+    xs: Array, # Input instances to be explained
     pred_fn: Callable[[Array], Array],
+    y_targets: Array,
+    rng_keys: Iterable[jrand.PRNGKey],
     batch_size: int,
     **kwargs
 ) -> Array: # Generated counterfactual explanations
     """Batched  of counterfactuals."""
+
+    def gs_fn_partial(state):
+        x, y_target, rng_key = state
+        return gs_fn(cf_fn, x, pred_fn, y_target, rng_key, **kwargs)
     
-    assert X.ndim == 2, f"X must be a 2D array, got {X.ndim}D array"
-    x_shape = X.shape
+    assert xs.ndim == 2, f"X must be a 2D array, got {xs.ndim}D array"
+    x_shape = xs.shape
     batch_size = min(batch_size, x_shape[0])
     # pad X to be divisible by batch_size
-    pad_size = batch_size - (X.shape[0] % batch_size)
-    X = jnp.pad(X, ((0, pad_size), (0, 0)))
-    X = einops.rearrange(X, "(n b) k -> n b k", b=batch_size)
+    pad_size = batch_size - (xs.shape[0] % batch_size)
+    xs = _pad_xs(xs, pad_size, batch_size)
+    y_targets = _pad_xs(y_targets, pad_size, batch_size)
+    rng_keys = _pad_xs(rng_keys, pad_size, batch_size)
     # generate cfs via lax.map
-    gs_fn_partial = lambda x: gs_fn(cf_fn, x, pred_fn=pred_fn, **kwargs)
-    cfs = lax.map(gs_fn_partial, X)
+    cfs = lax.map(gs_fn_partial, (xs, y_targets, rng_keys))
     # cfs = cfs.reshape(-1, *x_shape[1:])[:x_shape[0]]
     cfs = einops.rearrange(cfs, "n b ... k -> (n b) ... k")
     cfs = cfs[:x_shape[0]]
@@ -145,13 +171,15 @@ class BatchedVmapStrategy(BaseStrategy):
     def __call__(
         self, 
         fn: Callable, # Function to generate cf for a single input
-        X: Array, # Input instances to be explained
+        xs: Array, # Input instances to be explained
         pred_fn: Callable[[Array], Array],
+        y_targets: Array,
+        rng_keys: Iterable[jrand.PRNGKey],
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         vmap_g = VmapStrategy()    
         cfs = _batched_generation(
-            vmap_g, fn, X, pred_fn, self.batch_size, **kwargs
+            vmap_g, fn, xs, pred_fn, y_targets, rng_keys, self.batch_size, **kwargs
         )
         return cfs
 
@@ -166,13 +194,15 @@ class BatchedPmapStrategy(BaseStrategy):
     def __call__(
         self, 
         fn: Callable, # Function to generate cf for a single input
-        X: Array, # Input instances to be explained
+        xs: Array, # Input instances to be explained
         pred_fn: Callable[[Array], Array],
+        y_targets: Array,
+        rng_keys: Iterable[jrand.PRNGKey],
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         pmap_g = PmapStrategy(self.n_devices)
         cfs = _batched_generation(
-            pmap_g, fn, X, pred_fn, self.batch_size, **kwargs
+            pmap_g, fn, xs, pred_fn, y_targets, rng_keys, self.batch_size, **kwargs
         )
         return cfs
 
