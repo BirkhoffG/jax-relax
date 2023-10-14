@@ -16,8 +16,10 @@ class BaseStrategy:
     def __call__(
         self, 
         fn: Callable, # Function to generate cf for a single input
-        X: Array, # Input instances to be explained
+        xs: Array, # Input instances to be explained
         pred_fn: Callable[[Array], Array],
+        y_targets: Array,
+        rng_keys: Iterable[jrand.PRNGKey],
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         raise NotImplementedError
@@ -32,13 +34,16 @@ class IterativeStrategy(BaseStrategy):
     def __call__(
         self, 
         fn: Callable, # Function to generate cf for a single input
-        X: Array, # Input instances to be explained
+        xs: Array, # Input instances to be explained
         pred_fn: Callable[[Array], Array],
+        y_targets: Array,
+        rng_keys: Iterable[jrand.PRNGKey],
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         
-        assert X.ndim == 2
-        cfs = jnp.stack([fn(X[i], pred_fn=pred_fn, **kwargs) for i in range(X.shape[0])])
+        assert xs.ndim == 2
+        cfs = jnp.stack([fn(xs[i], pred_fn=pred_fn, y_target=y_targets[i], rng_key=rng_keys[i], **kwargs) 
+            for i in range(xs.shape[0])])
         return cfs
 
 
@@ -49,14 +54,18 @@ class VmapStrategy(BaseStrategy):
     def __call__(
         self, 
         fn: Callable, # Function to generate cf for a single input
-        X: Array, # Input instances to be explained
+        xs: Array, # Input instances to be explained
         pred_fn: Callable[[Array], Array],
+        y_targets: Array,
+        rng_keys: Iterable[jrand.PRNGKey],
         **kwargs
     ) -> Array: # Generated counterfactual explanations
         
-        assert X.ndim == 2
-        partial_fn = partial(fn, pred_fn=pred_fn, **kwargs)
-        cfs = jax.vmap(partial_fn)(X)
+        def partial_fn(x, y_target, rng_key):
+            return fn(x, pred_fn=pred_fn, y_target=y_target, rng_key=rng_key, **kwargs)
+        
+        assert xs.ndim == 2
+        cfs = jax.vmap(partial_fn)(xs, y_targets, rng_keys)
         return cfs
 
 

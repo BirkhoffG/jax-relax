@@ -8,11 +8,13 @@ from .base import *
 from .methods import *
 from .strategy import *
 from .ml_model import *
+from .utils import get_config
 import einops
 from sklearn.datasets import make_classification
 
 # %% auto 0
-__all__ = ['Explanation', 'fake_explanation', 'prepare_pred_fn', 'prepare_cf_module', 'generate_cf_explanations']
+__all__ = ['Explanation', 'fake_explanation', 'prepare_pred_fn', 'prepare_cf_module', 'prepare_rng_keys',
+           'generate_cf_explanations']
 
 # %% ../nbs/03_explain.ipynb 4
 class Explanation:
@@ -137,6 +139,16 @@ def prepare_cf_module(
     cf_module.before_generate_cf()
     return cf_module
 
+def prepare_rng_keys(
+    rng_key: jrand.PRNGKey,
+    n_instances: int,
+):
+    """Prepare random number generator keys."""
+    if rng_key is None:
+        rng_key = jrand.PRNGKey(get_config().global_seed)
+    rng_keys = jrand.split(rng_key, n_instances)
+    return rng_keys
+
 
 # %% ../nbs/03_explain.ipynb 9
 def generate_cf_explanations(
@@ -145,7 +157,8 @@ def generate_cf_explanations(
     pred_fn: Callable[[Array, ...], Array] = None, # Predictive function
     strategy: str | BaseStrategy = None, # Parallelism Strategy for generating CFs. Default to `vmap`.
     train_config: Dict[str, Any] = None, 
-    pred_fn_args: dict = None # auxiliary arguments for `pred_fn` 
+    pred_fn_args: dict = None, # auxiliary arguments for `pred_fn` 
+    rng_key: jrand.PRNGKey = None, # Random number generator key
 ) -> Explanation: # Return counterfactual explanations.
     """Generate CF explanations."""
 
@@ -155,10 +168,15 @@ def generate_cf_explanations(
     if strategy is None:
         strategy = StrategyFactory.get_default_strategy()
     strategy = StrategyFactory.get_strategy(strategy)
+    # n_instances
+    n_instances = data.xs.shape[0]
+    # Prepare random number generator keys.
+    rng_keys = prepare_rng_keys(rng_key, n_instances)
+    y_targets = 1 - pred_fn(data.xs).round()
     
     # Generate CF explanations.
     start_time = time.time()
-    cfs = strategy(cf_module.generate_cf, data.xs, pred_fn).block_until_ready()
+    cfs = strategy(cf_module.generate_cf, data.xs, pred_fn, y_targets, rng_keys)
     total_time = time.time() - start_time
 
     # Return CF explanations.

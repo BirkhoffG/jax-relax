@@ -251,10 +251,10 @@ class VAECF(ParametricCFModule):
         if y_target is None:
             y_target = 1 - pred_fn(x).argmax(axis=1, keepdims=True)
         else:
-            y_target = jnp.array(y_target, copy=True)
+            y_target = y_target.reshape(1, -1).argmax(axis=1, keepdims=True)
         if rng_key is None:
             raise ValueError("`rng_key` must be provided, but got `None`.")
-        
+                
         @jit
         def sample_step(rng_key, y_target):
             inputs = jnp.concatenate([x, y_target], axis=-1)
