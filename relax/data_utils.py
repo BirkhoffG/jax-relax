@@ -420,7 +420,7 @@ class FeaturesList:
     
     @property
     def feature_name_indices(self) -> dict[str, tuple[int, int]]: # Return {feature_name: (feat_idx, start, end), ...}
-        if not hasattr(self, "_feature_indices") or self._feature_indices is None:
+        if not hasattr(self, "_feature_name_indices") or self._feature_name_indices is None:
             self._transform_data()
         return self._feature_name_indices
     
