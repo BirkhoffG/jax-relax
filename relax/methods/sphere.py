@@ -65,11 +65,18 @@ def perturb_function_with_features(
 ):
     def perturb_feature(rng_key, x, feat):
         if feat.is_categorical:
-            return feat.transform(
-                sample_categorical(
-                    rng_key, feat.transformation.num_categories, n_samples
-                ) #<== sampled labels
-            ) #<== transformed labels
+            sampled_cat = sample_categorical(
+                rng_key, feat.transformation.num_categories, n_samples
+            ) #<== sampled labels
+            transformation = feat.transformation.name
+            if transformation == 'ohe':
+                return jax.nn.one_hot(
+                    sampled_cat.reshape(-1), num_classes=feat.transformation.num_categories
+                ) #<== transformed labels
+            elif transformation == 'ordinal':
+                return sampled_cat
+            else:
+                raise NotImplementedError
         else: 
             return hyper_sphere_coordindates(
                 rng_key, x, n_samples, high, low, p_norm
