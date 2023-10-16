@@ -74,7 +74,7 @@ class DataModuleInfoMixin:
         return self.config.test_indices
 
 
-# %% ../nbs/01_data.ipynb 9
+# %% ../nbs/01_data.ipynb 10
 class DataModuleConfig(BaseConfig):
     """Configurator of `DataModule`."""
 
@@ -103,7 +103,7 @@ class DataModuleConfig(BaseConfig):
         if len(self.test_indices) == 0:
             self.test_indices = jrand.permutation(key, total_length)[train_length:].tolist()
 
-# %% ../nbs/01_data.ipynb 12
+# %% ../nbs/01_data.ipynb 13
 def features2config(
     features: FeaturesList, # FeaturesList to be converted
     name: str, # Name of the data used for `DataModuleConfig`
@@ -135,7 +135,7 @@ def features2config(
     return DataModuleConfig(**configs_dict)
 
 
-# %% ../nbs/01_data.ipynb 14
+# %% ../nbs/01_data.ipynb 15
 def features2pandas(
     features: FeaturesList, # FeaturesList to be converted
     labels: FeaturesList # labels to be converted
@@ -147,7 +147,7 @@ def features2pandas(
     df = pd.concat([feats_df, labels_df], axis=1)
     return df
 
-# %% ../nbs/01_data.ipynb 17
+# %% ../nbs/01_data.ipynb 18
 def to_feature(col: str, data: pd.DataFrame, config: DataModuleConfig, transformation: str):
     return Feature(
         name=col, data=data[col].to_numpy().reshape(-1, 1),
@@ -155,7 +155,7 @@ def to_feature(col: str, data: pd.DataFrame, config: DataModuleConfig, transform
         is_immutable=col in config.imutable_cols
     )
 
-# %% ../nbs/01_data.ipynb 18
+# %% ../nbs/01_data.ipynb 19
 def dataframe2features(
     data: pd.DataFrame,
     config: DataModuleConfig,
@@ -178,7 +178,7 @@ def dataframe2labels(
     labels = [to_feature(col, data, config, 'identity') for col in label_cols]
     return FeaturesList(labels)
 
-# %% ../nbs/01_data.ipynb 20
+# %% ../nbs/01_data.ipynb 21
 class DataModule(BaseDataModule, DataModuleInfoMixin):
     """DataModule for tabular data."""
 
@@ -360,6 +360,7 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         'load_from_path', 
         'from_config', 
         'from_features',
+        'from_numpy',
         'save',
         'transform',
         'inverse_transform',
@@ -368,7 +369,21 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         'sample'
     ]
 
-# %% ../nbs/01_data.ipynb 25
+# %% ../nbs/01_data.ipynb 22
+def dm_equals(dm1: DataModule, dm2: DataModule):
+    # data_equals = np.allclose(dm1.data.to_numpy(), dm2.data.to_numpy())
+    assert_frame_equal(dm1.data, dm2.data)
+    xs_equals = np.allclose(dm1.xs, dm2.xs)
+    ys_equals = np.allclose(dm1.ys, dm2.ys)
+    train_indices_equals = np.array_equal(dm1.train_indices, dm2.train_indices)
+    test_indices_equals = np.array_equal(dm1.test_indices, dm2.test_indices)
+    # print(f"data_equals: {data_equals}, xs_equals: {xs_equals}, ys_equals: {ys_equals}, train_indices_equals: {train_indices_equals}, test_indices_equals: {test_indices_equals}")
+    return (
+        xs_equals and ys_equals and 
+        train_indices_equals and test_indices_equals
+    )
+
+# %% ../nbs/01_data.ipynb 28
 class TabularDataModuleConfigs(DataModuleConfig):
     """!!!Deprecated!!! - Configurator of `TabularDataModule`."""
     def __ini__(self, *args, **kwargs):
@@ -376,7 +391,7 @@ class TabularDataModuleConfigs(DataModuleConfig):
         warnings.warn("TabularDataModuleConfigs is deprecated since v0.2, please use DataModuleConfig instead.", 
                       DeprecationWarning)
 
-# %% ../nbs/01_data.ipynb 26
+# %% ../nbs/01_data.ipynb 29
 class TabularDataModule(DataModule):
     """!!!Deprecated!!! - DataModule for tabular data."""
     def __init__(self, *args, **kwargs):
@@ -386,7 +401,7 @@ class TabularDataModule(DataModule):
         
     __ALL__ = []
 
-# %% ../nbs/01_data.ipynb 28
+# %% ../nbs/01_data.ipynb 31
 DEFAULT_DATA = [
     'adult',
     'heloc',
@@ -411,13 +426,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 33
+# %% ../nbs/01_data.ipynb 36
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 34
+# %% ../nbs/01_data.ipynb 37
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.
