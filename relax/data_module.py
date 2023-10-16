@@ -320,23 +320,33 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
 
     def transform(
         self, 
-        data: pd.DataFrame # Data to be transformed
+        data: pd.DataFrame | Dict[str, Array] # Data to be transformed
     ) -> Array: # Transformed data
         """Transform data to `jax.Array`."""
         # TODO: test this function
         if isinstance(data, pd.DataFrame):
             data_dict = {k: np.array(v).reshape(-1, 1) for k, v in data.iloc[:, :-1].to_dict(orient='list').items()}
             return self._features.transform(data_dict)
+        elif isinstance(data, dict):
+            data = jax.tree_util.tree_map(lambda x: np.array(x).reshape(-1, 1), data)
+            return self._features.transform(data)
         else:
-            raise ValueError("data should be a pandas DataFrame.")
+            raise ValueError("data should be a pandas DataFrame or `Dict[str, jax.Array]`.")
         
     def inverse_transform(
         self, 
-        data: Array # Data to be inverse transformed
+        data: Array, # Data to be inverse transformed
+        return_type: str = 'pandas' # Type of the returned data. Should be one of ['pandas', 'dict']
     ) -> pd.DataFrame: # Inverse transformed data
         """Inverse transform data to `pandas.DataFrame`."""
         # TODO: test this function
-        return self._features.inverse_transform(data)
+        inversed = self._features.inverse_transform(data)
+        if return_type == 'pandas':
+            return inversed
+        elif return_type == 'dict':
+            raise NotImplementedError
+        else:
+            raise ValueError(f"Unknown return type: {return_type}. Should be one of ['pandas', 'dict']")
         
     def apply_constraints(
         self, 
@@ -383,7 +393,7 @@ def dm_equals(dm1: DataModule, dm2: DataModule):
         train_indices_equals and test_indices_equals
     )
 
-# %% ../nbs/01_data.ipynb 28
+# %% ../nbs/01_data.ipynb 29
 class TabularDataModuleConfigs(DataModuleConfig):
     """!!!Deprecated!!! - Configurator of `TabularDataModule`."""
     def __ini__(self, *args, **kwargs):
@@ -391,7 +401,7 @@ class TabularDataModuleConfigs(DataModuleConfig):
         warnings.warn("TabularDataModuleConfigs is deprecated since v0.2, please use DataModuleConfig instead.", 
                       DeprecationWarning)
 
-# %% ../nbs/01_data.ipynb 29
+# %% ../nbs/01_data.ipynb 30
 class TabularDataModule(DataModule):
     """!!!Deprecated!!! - DataModule for tabular data."""
     def __init__(self, *args, **kwargs):
@@ -401,7 +411,7 @@ class TabularDataModule(DataModule):
         
     __ALL__ = []
 
-# %% ../nbs/01_data.ipynb 31
+# %% ../nbs/01_data.ipynb 32
 DEFAULT_DATA = [
     'adult',
     'heloc',
@@ -426,13 +436,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 36
+# %% ../nbs/01_data.ipynb 37
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 37
+# %% ../nbs/01_data.ipynb 38
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.
