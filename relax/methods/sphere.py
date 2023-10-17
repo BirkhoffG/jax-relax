@@ -54,6 +54,44 @@ def default_perturb_function(
         rng_key, x, n_samples, high, low, p_norm
     )
 
+# def perturb_function_with_features(
+#     rng_key: jrand.PRNGKey,
+#     x: np.ndarray, # Shape: (1, k)
+#     n_samples: int,
+#     high, 
+#     low,
+#     p_norm,
+#     feats: FeaturesList,
+# ):
+#     def perturb_feature(rng_key, x, feat):
+#         if feat.is_categorical:
+#             sampled_cat = sample_categorical(
+#                 rng_key, feat.transformation.num_categories, n_samples
+#             ) #<== sampled labels
+#             transformation = feat.transformation.name
+#             if transformation == 'ohe':
+#                 return jax.nn.one_hot(
+#                     sampled_cat.reshape(-1), num_classes=feat.transformation.num_categories
+#                 ) #<== transformed labels
+#             elif transformation == 'ordinal':
+#                 return sampled_cat
+#             else:
+#                 raise NotImplementedError
+#         else: 
+#             return hyper_sphere_coordindates(
+#                 rng_key, x, n_samples, high, low, p_norm
+#             ) #<== transformed continuous features
+        
+#     rng_keys = jrand.split(rng_key, len(feats))
+#     perturbed = jnp.repeat(x, n_samples, axis=0)
+#     for rng_key, (start, end), feat in zip(rng_keys, feats.feature_indices, feats):
+#         _perturbed_feat = perturb_feature(rng_keys[0], x[:, start: end], feat)
+#         perturbed = perturbed.at[:, start: end].set(_perturbed_feat)
+#     return perturbed
+
+
+# %% ../../nbs/methods/05_sphere.ipynb 8
+@partial(jit, static_argnums=(2, 3, 4, 5, 6, 7))
 def perturb_function_with_features(
     rng_key: jrand.PRNGKey,
     x: np.ndarray, # Shape: (1, k)
@@ -61,36 +99,58 @@ def perturb_function_with_features(
     high, 
     low,
     p_norm,
-    feats: FeaturesList,
+    feats_info: List[Tuple[int, int, int]], # [(start, end, num_categories)]
+    cat_perturb_fn: Callable
 ):
-    def perturb_feature(rng_key, x, feat):
-        if feat.is_categorical:
-            sampled_cat = sample_categorical(
-                rng_key, feat.transformation.num_categories, n_samples
-            ) #<== sampled labels
-            transformation = feat.transformation.name
-            if transformation == 'ohe':
-                return jax.nn.one_hot(
-                    sampled_cat.reshape(-1), num_classes=feat.transformation.num_categories
-                ) #<== transformed labels
-            elif transformation == 'ordinal':
-                return sampled_cat
-            else:
-                raise NotImplementedError
+    def perturb_feature(rng_key, x_sliced, num_categories):
+        if num_categories > 0:
+            return cat_perturb_fn(rng_key, num_categories, n_samples)
         else: 
             return hyper_sphere_coordindates(
-                rng_key, x, n_samples, high, low, p_norm
-            ) #<== transformed continuous features
+                rng_key, x_sliced, n_samples, high, low, p_norm
+            )
         
-    rng_keys = jrand.split(rng_key, len(feats))
+    rng_keys = jrand.split(rng_key, len(feats_info))
     perturbed = jnp.repeat(x, n_samples, axis=0)
-    for rng_key, (start, end), feat in zip(rng_keys, feats.feature_indices, feats):
-        _perturbed_feat = perturb_feature(rng_keys[0], x[:, start: end], feat)
+    for rng_key, (start, end, num_categories) in zip(rng_keys, feats_info):
+        x_sliced = lax.dynamic_slice(x, (0, start), (1, end - start))
+        _perturbed_feat = perturb_feature(rng_key, x_sliced, num_categories)
         perturbed = perturbed.at[:, start: end].set(_perturbed_feat)
     return perturbed
 
 
 # %% ../../nbs/methods/05_sphere.ipynb 9
+def features_to_infos_and_perturb_fn(features: FeaturesList):
+    feats_info = []
+    cat_transformation_name = None
+    for (start, end), feat in zip(features.feature_indices, features):
+        if feat.is_categorical:
+            feat_info = (start, end, feat.transformation.num_categories)
+            cat_transformation_name = feat.transformation.name
+        else:
+            feat_info = (start, end, -1)
+        feats_info.append(feat_info)
+    return tuple(feats_info), cat_perturb_fn(cat_transformation_name)
+
+def cat_perturb_fn(transformation):
+    def ohe_perturb_fn(rng_key, num_categories, n_samples):
+        sampled_cat = sample_categorical(rng_key, num_categories, n_samples)
+        return jax.nn.one_hot(
+            sampled_cat.reshape(-1), num_classes=num_categories
+        )
+    
+    def ordinal_perturb_fn(rng_key, num_categories, n_samples):
+        return sample_categorical(
+            rng_key, num_categories, n_samples
+        )
+    
+    if transformation == 'ohe':         return ohe_perturb_fn
+    elif transformation == 'ordinal':   return ordinal_perturb_fn
+    else:                               return sample_categorical
+
+
+# %% ../../nbs/methods/05_sphere.ipynb 11
+@ft.partial(jit, static_argnums=(3, 4, 5, 6, 7, 8, 9))
 def _growing_spheres(
     rng_key: jrand.PRNGKey, # Random number generator key
     y_target: Array, # Target label
@@ -122,7 +182,7 @@ def _growing_spheres(
         
         # Apply immutable constraints
         candidates = apply_constraints_fn(x, candidates, hard=True)
-        assert candidates.shape[1] == x.shape[1], f"candidates.shape = {candidates.shape}, x.shape = {x.shape}"
+        # assert candidates.shape[1] == x.shape[1], f"candidates.shape = {candidates.shape}, x.shape = {x.shape}"
 
         # Calculate distance
         dist = dist_fn(x, candidates)
@@ -154,15 +214,15 @@ def _growing_spheres(
     candidate_cf = jnp.where(jnp.isinf(candidate_cf), x, candidate_cf)
     return candidate_cf
 
-# %% ../../nbs/methods/05_sphere.ipynb 10
+# %% ../../nbs/methods/05_sphere.ipynb 12
 class GSConfig(BaseParser):
     n_steps: int = 100
-    n_samples: int = 1000
+    n_samples: int = 300
     step_size: float = 0.05
     p_norm: int = 2
 
 
-# %% ../../nbs/methods/05_sphere.ipynb 11
+# %% ../../nbs/methods/05_sphere.ipynb 13
 class GrowingSphere(CFModule):
     def __init__(self, config: dict | GSConfig = None, *, name: str = None, perturb_fn = None):
         if config is None:
@@ -175,8 +235,11 @@ class GrowingSphere(CFModule):
     def before_generate_cf(self, *args, **kwargs):
         if self.perturb_fn is None:
             if hasattr(self, 'data_module'):
+                feats_info, perturb_fn = features_to_infos_and_perturb_fn(self.data_module.features)
                 self.perturb_fn = ft.partial(
-                    perturb_function_with_features, feats=self.data_module.features
+                    perturb_function_with_features, 
+                    feats_info=feats_info,
+                    cat_perturb_fn=perturb_fn
                 )
             else:
                 self.perturb_fn = default_perturb_function
@@ -194,7 +257,7 @@ class GrowingSphere(CFModule):
         if y_target is None:
             y_target = 1 - pred_fn(x)
         else:
-            y_target = jnp.array(y_target, copy=True)
+            y_target = y_target.reshape(1, -1)
         if rng_key is None:
             raise ValueError("`rng_key` must be provided, but got `None`.")
         

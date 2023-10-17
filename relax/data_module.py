@@ -16,6 +16,7 @@ from urllib.request import urlretrieve
 from pydantic.fields import ModelField, Field
 from typing import List, Dict, Union, Optional, Tuple, Callable, Any, Iterable
 import warnings
+from pandas.testing import assert_frame_equal
 
 # %% auto 0
 __all__ = ['BaseDataModule', 'DataModuleConfig', 'features2config', 'features2pandas', 'dataframe2features', 'dataframe2labels',
