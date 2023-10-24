@@ -37,8 +37,6 @@ def _vanilla_cf(
         x: Array,  # `x` shape: (k, 1)
         pred_fn: Callable[[Array], Array],
     ):
-        y_pred = pred_fn(x)
-        # cf_y_true = 1.0 - y_pred
         cf_y_pred = pred_fn(cf)
         return loss_fn_1(y_target, cf_y_pred) + lambda_ * loss_fn_2(x, cf)
 

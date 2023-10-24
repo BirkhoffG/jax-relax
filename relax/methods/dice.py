@@ -44,28 +44,33 @@ def _diverse_cf(
         pred_fn: Callable[[Array], Array], # y = pred_fn(x)
         y_target: Array,
     ):
-        cf_y_pred = pred_fn(cfs)
-        loss_1 = validity_fn(y_target, cf_y_pred).mean()
-        loss_2 = cost_fn(x, cfs).mean()
-        loss_3 = - dpp_style_vmap(cfs).mean()
-        loss_4 = compute_reg_loss_fn(x, cfs)
-        return (
-            lambda_1 * loss_1 + 
-            lambda_2 * loss_2 + 
-            lambda_3 * loss_3 + 
-            lambda_4 * loss_4
-        )
+        def loss_fn_per_sample(cf, x):
+            cf = cf.reshape(1, -1)
+            cf_y_pred = pred_fn(cf)
+            loss_1 = validity_fn(y_target, cf_y_pred)
+            loss_2 = cost_fn(x, cf)
+            loss_3 = - dpp_style_vmap(cf)
+            loss_4 = compute_reg_loss_fn(x, cf)
+            return (
+                lambda_1 * loss_1 + 
+                lambda_2 * loss_2 + 
+                lambda_3 * loss_3 + 
+                lambda_4 * loss_4
+            )
+
+        return jax.vmap(loss_fn_per_sample, in_axes=(0, None))(cfs, x).mean()
     
     @loop_tqdm(n_steps)
     def gen_cf_step(i, states: Tuple[Array, optax.OptState]):
         cf, opt_state = states
         grads = jax.grad(loss_fn)(cf, x, pred_fn, y_target)
+        # grads = jax.grad(loss_fn)(cf, x, pred_fn, y_target)
         cf_updates, opt_state = grad_update(grads, cf, opt_state, opt)
-        return cf, opt_state
+        return cf_updates, opt_state
     
     lambda_1, lambda_2, lambda_3, lambda_4 = lambdas
     key, subkey = jrand.split(key)
-    cfs = jrand.normal(key, (n_cfs, x.shape[-1]))
+    cfs = jrand.uniform(key, (n_cfs, x.shape[-1]))
     opt = optax.adam(lr)
     opt_state = opt.init(cfs)
     
@@ -82,7 +87,7 @@ class DiverseCFConfig(BaseConfig):
     n_steps: int = 1000
     lr: float = 0.001
     lambda_1: float = 1.0
-    lambda_2: float = 0.1
+    lambda_2: float = 1.0
     lambda_3: float = 1.0
     lambda_4: float = 0.1
     validity_fn: str = 'KLDivergence'
@@ -115,9 +120,10 @@ class DiverseCF(CFModule):
         else:
             y_target = jnp.array(y_target, copy=True).reshape(1, -1)
         if rng_key is None:
-            rng_key = jax.random.PRNGKey(self.config.seed)
+            raise ValueError("`rng_key` must be provided.")
         
         assert y_target.shape == (1, 2)
+        # print(y_target)
         return _diverse_cf(
             x=x,  # `x` shape: (k,), where `k` is the number of features
             y_target=y_target,  # `y_target` shape: (1,)
