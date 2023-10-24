@@ -221,7 +221,8 @@ class OneHotTransformation(Transformation):
         )
     
     def compute_reg_loss(self, xs, cfs, hard: bool = False):
-        return (cfs.sum(axis=-1, keepdims=True) - 1.0) ** 2
+        reg_loss_per_xs = (cfs.sum(axis=-1, keepdims=True) - 1.0) ** 2
+        return reg_loss_per_xs.mean()
 
 # %% ../nbs/01_data.utils.ipynb 24
 class OrdinalTransformation(Transformation):

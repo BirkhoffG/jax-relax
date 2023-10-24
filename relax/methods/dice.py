@@ -48,7 +48,7 @@ def _diverse_cf(
         loss_1 = validity_fn(y_target, cf_y_pred).mean()
         loss_2 = cost_fn(x, cfs).mean()
         loss_3 = - dpp_style_vmap(cfs).mean()
-        loss_4 = compute_reg_loss_fn(x, cfs).mean()
+        loss_4 = compute_reg_loss_fn(x, cfs)
         return (
             lambda_1 * loss_1 + 
             lambda_2 * loss_2 + 
