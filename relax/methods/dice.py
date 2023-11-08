@@ -104,6 +104,14 @@ class DiverseCF(CFModule):
         config = validate_configs(config, DiverseCFConfig)
         name = "DiverseCF" if name is None else name
         super().__init__(config, name=name)
+    
+    def save(self, path: str):
+        self.config.save(Path(path) / 'config.json')
+    
+    @classmethod
+    def load_from_path(cls, path: str):
+        config = DiverseCFConfig.load_from_json(Path(path) / 'config.json')
+        return cls(config=config)
 
     @auto_reshaping('x', reshape_output=False)
     def generate_cf(
