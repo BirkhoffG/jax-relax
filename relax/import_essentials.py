@@ -2,7 +2,7 @@
 # https://github.com/fastai/fastai/blob/master/fastai/imports.py
 from __future__ import annotations
 import matplotlib.pyplot as plt,numpy as np,pandas as pd,scipy
-from typing import Union,Optional,Dict,List,Tuple,Sequence,Mapping,Callable,Iterable,Any,NamedTuple
+from typing import Union,Optional,Dict,List,Tuple,Sequence,Mapping,Callable,Iterable,Any,NamedTuple,Literal
 import io,operator,sys,os,re,mimetypes,csv,itertools,json,shutil,glob,pickle,tarfile,collections
 import hashlib,itertools,types,inspect,functools,time,math,bz2,typing,numbers,string
 import multiprocessing,threading,urllib,tempfile,concurrent.futures,matplotlib,warnings,zipfile

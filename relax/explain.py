@@ -38,6 +38,20 @@ class Explanation:
         return f"Explanation(data_name={self.data_name}, cf_name={self.cf_name}, " \
                f"total_time={self.total_time}, xs={self.xs}, ys={self.ys}, cfs={self.cfs})"
 
+    def __getitem__(self, name: Literal['train', 'val', 'test']) -> Dict[str, Array]:
+        if name == 'train':
+            indices = self.train_indices
+        elif name in ['val', 'test']:
+            indices = self.test_indices
+        else:
+            raise ValueError(f"Unknown data name: {name}. Should be one of ['train', 'val', 'test']")
+
+        return {
+            'xs': self.xs[indices],
+            'ys': self.ys[indices],
+            'cfs': self.cfs[indices],
+        }
+    
     @property
     def data(self):
         return self._data
