@@ -3,9 +3,10 @@
 # %% ../../nbs/methods/05_sphere.ipynb 3
 from __future__ import annotations
 from ..import_essentials import *
-from .base import CFModule
+from .base import CFModule, BaseConfig
 from ..utils import auto_reshaping, grad_update, validate_configs
 from ..data_utils import Feature, FeaturesList
+from ..data_module import DataModule
 
 # %% auto 0
 __all__ = ['hyper_sphere_coordindates', 'sample_categorical', 'default_perturb_function', 'perturb_function_with_features',
@@ -215,7 +216,7 @@ def _growing_spheres(
     return candidate_cf
 
 # %% ../../nbs/methods/05_sphere.ipynb 12
-class GSConfig(BaseParser):
+class GSConfig(BaseConfig):
     n_steps: int = 100
     n_samples: int = 300
     step_size: float = 0.05
@@ -232,9 +233,26 @@ class GrowingSphere(CFModule):
         self.perturb_fn = perturb_fn
         super().__init__(config, name=name)
 
+    def has_data_module(self):
+        return hasattr(self, 'data_module') and self.data_module is not None
+    
+    def save(self, path: str, *, save_data_module: bool = True):
+        self.config.save(Path(path) / 'config.json')
+        if self.has_data_module() and save_data_module:
+            self.data_module.save(Path(path) / 'data_module')
+    
+    @classmethod
+    def load_from_path(cls, path: str):
+        config = GSConfig.load_from_json(Path(path) / 'config.json')
+        gs = cls(config=config)
+        if (Path(path) / 'data_module').exists():
+            dm = DataModule.load_from_path(Path(path) / 'data_module')
+            gs.set_data_module(dm)
+        return gs
+
     def before_generate_cf(self, *args, **kwargs):
         if self.perturb_fn is None:
-            if hasattr(self, 'data_module'):
+            if self.has_data_module():
                 feats_info, perturb_fn = features_to_infos_and_perturb_fn(self.data_module.features)
                 self.perturb_fn = ft.partial(
                     perturb_function_with_features, 
