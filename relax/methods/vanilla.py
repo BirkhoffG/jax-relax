@@ -79,6 +79,14 @@ class VanillaCF(CFModule):
         name = "VanillaCF" if name is None else name
         super().__init__(config, name=name)
 
+    def save(self, path: str):
+        self.config.save(Path(path) / 'config.json')
+    
+    @classmethod
+    def load_from_path(cls, path: str):
+        config = VanillaCFConfig.load_from_json(Path(path) / 'config.json')
+        return cls(config=config)
+
     @auto_reshaping('x')
     def generate_cf(
         self,

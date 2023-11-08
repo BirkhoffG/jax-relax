@@ -3,18 +3,18 @@
 # %% auto 0
 __all__ = ['CFModule', 'ParametricCFModule']
 
-# %% ../../nbs/methods/00_base.ipynb 1
+# %% ../../nbs/methods/00_base.ipynb 2
 from ..import_essentials import *
 from ..base import BaseConfig, BaseModule, PredFnMixedin, TrainableMixedin
 
-# %% ../../nbs/methods/00_base.ipynb 2
+# %% ../../nbs/methods/00_base.ipynb 3
 def default_apply_constraints_fn(x, cf, hard, **kwargs):
     return cf
 
 def default_compute_reg_loss_fn(x, cf, **kwargs):
     return 0.
 
-# %% ../../nbs/methods/00_base.ipynb 3
+# %% ../../nbs/methods/00_base.ipynb 4
 class CFModule(BaseModule):
     """Base class for all counterfactual modules."""
 
@@ -71,11 +71,13 @@ class CFModule(BaseModule):
         "set_compute_reg_loss_fn",
         "apply_constraints",
         "compute_reg_loss",
+        "save",
+        "load_from_path",
         "before_generate_cf",
         "generate_cf"
     ]
 
-# %% ../../nbs/methods/00_base.ipynb 4
+# %% ../../nbs/methods/00_base.ipynb 5
 class ParametricCFModule(CFModule, TrainableMixedin):
     """Base class for parametric counterfactual modules."""
     
