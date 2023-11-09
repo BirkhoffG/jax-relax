@@ -46,6 +46,9 @@ class Explanation:
         else:
             raise ValueError(f"Unknown data name: {name}. Should be one of ['train', 'val', 'test']")
 
+        if isinstance(indices, list):
+            indices = jnp.array(indices)
+        
         return {
             'xs': self.xs[indices],
             'ys': self.ys[indices],
