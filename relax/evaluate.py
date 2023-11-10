@@ -125,7 +125,7 @@ class Sparsity(BaseEvalMetrics):
         super().__init__(name=name)
     
     def __call__(self, explanation: Explanation) -> float:
-        xs, cfs, feature_indices = explanation.xs, explanation.cfs, explanation.data._features.feature_indices
+        xs, cfs, feature_indices = explanation.xs, explanation.cfs, explanation.feature_indices
         return compute_sparsity(xs, cfs, feature_indices)
 
 # %% ../nbs/04_evaluate.ipynb 20

@@ -8,7 +8,7 @@ from .base import *
 from .methods import *
 from .strategy import *
 from .ml_model import *
-from .utils import get_config
+from .utils import get_config, save_pytree, load_pytree
 import einops
 from sklearn.datasets import make_classification
 
@@ -17,22 +17,47 @@ __all__ = ['Explanation', 'fake_explanation', 'prepare_pred_fn', 'prepare_cf_mod
            'generate_cf_explanations']
 
 # %% ../nbs/03_explain.ipynb 4
-class Explanation:
-    """Generated CF Explanations class. It behaves like a `DataModule`, except a few more attributes."""
+class Explanation(DataModule):
+    """Generated CF Explanations class. It inherits a `DataModule`."""
 
     def __init__(
         self,
-        data: DataModule,  # Data module
         cfs: Array,  # Generated cf explanation of `xs` in `data`
         pred_fn: Callable[[Array], Array],  # Predict function
+        data_module: DataModule = None,  # Data module
+        xs: Array = None,  # Input data
+        ys: Array = None,  # Target data
         total_time: float = None,  # Total runtime
         cf_name: str = "CFModule",  # CF method's name
+        data=None, # Deprecated argument
     ):
-        self._data = data
+        if data is not None:
+            warnings.warn(
+                "Argument `data` is deprecated. Use `data_module` instead.",
+                DeprecationWarning,
+            )
+            data_module = data
+
+        if (xs is None or ys is None) and data_module is None:
+            raise ValueError(
+                "Either `xs` and `ys` or `data_module` must be provided."
+            )
+        
+        if data_module is None:
+            data_module = DataModule.from_numpy(xs, ys, transformation='identity')
+        # assign attributes
+        # self.recourses = data_module.features.with_transformed_data(cfs)
         self._cfs = cfs
         self.pred_fn = pred_fn
         self.total_time = total_time
         self.cf_name = cf_name
+        
+        super().__init__(
+            features=data_module.features, 
+            label=data_module.label,
+            config=data_module.config,
+            data=data_module.data,
+        )
 
     def __repr__(self):
         return f"Explanation(data_name={self.data_name}, cf_name={self.cf_name}, " \
@@ -53,20 +78,8 @@ class Explanation:
             'xs': self.xs[indices],
             'ys': self.ys[indices],
             'cfs': self.cfs[indices],
-        }
-    
-    @property
-    def data(self):
-        return self._data
+        }    
 
-    @property
-    def xs(self):
-        return self.data.xs
-    
-    @property
-    def ys(self):
-        return self.data.ys
-    
     @property
     def cfs(self) -> Array:
         """Return the counterfactuals in the shape of (n, c, k)"""
@@ -76,21 +89,47 @@ class Explanation:
     
     @property
     def data_name(self):
-        return self.data.name
+        return self.name
+    
+    @property
+    def feature_indices(self):
+        return self.features.feature_indices
+    
+    @property
+    def features_and_indices(self):
+        return self.features.features_and_indices
+        
+    def save(self, path: str):
+        """Save the explanation to a directory."""
+        # create directories
+        dm_path = Path(path) / 'data'
+        exp_path = Path(path) / 'explanations'
+        exp_path.mkdir(parents=True, exist_ok=True)
+        # save data module and explanations
+        super().save(dm_path)        
+        save_pytree({
+            'cfs': self.cfs,
+            'total_time': self.total_time,
+            'cf_name': self.cf_name,
+        }, exp_path)
+    
+    @classmethod
+    def load_from_path(cls, path: str, *, ml_module_path: str = None):
+        dm_path = Path(path) / 'data'
+        exp_path = Path(path) / 'explanations'
+        dm = DataModule.load_from_path(dm_path)
+        explanations = load_pytree(exp_path)
+        if ml_module_path is not None:
+            pred_fn = MLModule.load_from_path(ml_module_path).pred_fn
+        else:
+            warnings.warn("`ml_module_path` is not provided. Setting `pred_fn=None`.")
+            pred_fn = None
+        return cls(
+            pred_fn=pred_fn,
+            data_module=dm,
+            **explanations
+        )
 
-    @property
-    def train_indices(self):
-        return self.data.train_indices
-    
-    @property
-    def test_indices(self):
-        return self.data.test_indices
-    
-    def apply_constraints(self, *args, **kwargs):
-        return self.data.apply_constraints(*args, **kwargs)
-    
-    def compute_reg_loss(self, *args, **kwargs):
-        return self.data.compute_reg_loss(*args, **kwargs)
 
 # %% ../nbs/03_explain.ipynb 5
 def fake_explanation(n_cfs: int=1):
@@ -105,10 +144,10 @@ def fake_explanation(n_cfs: int=1):
         cfs = einops.repeat(dm.xs, "n k -> n c k", c=n_cfs)
 
     return Explanation(
-        data=dm, cfs=cfs, pred_fn=ml_model.pred_fn, total_time=0.0, cf_name='dummy_method'
+        data_module=dm, cfs=cfs, pred_fn=ml_model.pred_fn, total_time=0.0, cf_name='dummy_method'
     )
 
-# %% ../nbs/03_explain.ipynb 8
+# %% ../nbs/03_explain.ipynb 9
 def prepare_pred_fn(
     cf_module: CFModule,
     data: DataModule,
@@ -167,7 +206,7 @@ def prepare_rng_keys(
     return rng_keys
 
 
-# %% ../nbs/03_explain.ipynb 9
+# %% ../nbs/03_explain.ipynb 10
 def generate_cf_explanations(
     cf_module: CFModule, # CF Explanation Module
     data: DataModule, # Data Module
