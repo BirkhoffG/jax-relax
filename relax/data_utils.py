@@ -256,7 +256,7 @@ class IdentityTransformation(Transformation):
         self.name = params["name"]
         return self
 
-# %% ../nbs/01_data.utils.ipynb 26
+# %% ../nbs/01_data.utils.ipynb 27
 class Feature:
     
     def __init__(
@@ -291,6 +291,23 @@ class Feature:
         else:
             self._is_categorical = self.transformation.is_categorical
 
+    def with_transformed_data(
+        self,
+        transformed_data: np.ndarray,
+        **kwargs        
+    ) -> Feature:
+        """Create a new feature with transformed data."""
+        
+        org_data = self.inverse_transform(transformed_data)
+        return Feature(
+            name=self.name,
+            data=org_data,
+            transformation=self.transformation,
+            transformed_data=transformed_data,
+            is_immutable=self.is_immutable,
+            is_categorical=self.is_categorical,
+        )
+    
     @property
     def is_categorical(self) -> bool:
         return self._is_categorical
@@ -358,7 +375,7 @@ class Feature:
     def compute_reg_loss(self, xs, cfs, hard: bool = False):
         return self.transformation.compute_reg_loss(xs, cfs, hard)
 
-# %% ../nbs/01_data.utils.ipynb 27
+# %% ../nbs/01_data.utils.ipynb 28
 PREPROCESSING_TRANSFORMATIONS = {
     'ohe': OneHotTransformation,
     'minmax': MinMaxTransformation,
@@ -366,7 +383,7 @@ PREPROCESSING_TRANSFORMATIONS = {
     'identity': IdentityTransformation,
 }
 
-# %% ../nbs/01_data.utils.ipynb 30
+# %% ../nbs/01_data.utils.ipynb 31
 class FeaturesList:
     def __init__(
         self,
@@ -404,7 +421,10 @@ class FeaturesList:
         else:
             self.pose = 0
             raise StopIteration
-
+    
+    #############################
+    # Properties
+    #############################
     @property
     def features(self) -> list[Feature]: # Return [Feature(...), ...]
         return self._features
@@ -430,6 +450,21 @@ class FeaturesList:
         if not hasattr(self, "_transformed_data") or self._transformed_data is None:
             self._transform_data()
         return self._transformed_data
+    
+    #############################
+    # Methods
+    #############################
+    def with_transformed_data(
+        self,
+        transformed_data: np.ndarray,
+        **kwargs        
+    ) -> FeaturesList:
+        """Create a new feature with transformed data."""
+        
+        return FeaturesList(
+            features=[feat.with_transformed_data(transformed_data[:, start:end], **kwargs) 
+                      for feat, (start, end) in self.features_and_indices],
+        )
     
     def _transform_data(self):
         self._feature_indices = []
@@ -489,7 +524,8 @@ class FeaturesList:
     
     def to_pandas(self, use_transformed: bool = False) -> pd.DataFrame:
         if use_transformed:
-            data = {feat.name: feat.transformed_data.reshape(-1) for feat in self.features}
+            # data = {feat.name: feat.transformed_data.reshape(-1) for feat in self.features}
+            raise NotImplementedError
         else:
             data = {feat.name: feat.data.reshape(-1) for feat in self.features}
         return pd.DataFrame(data=data)
