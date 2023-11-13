@@ -11,7 +11,8 @@ from fastcore.test import *
 from jax.core import InconclusiveDimensionOperation
 
 # %% auto 0
-__all__ = ['validate_configs', 'save_pytree', 'load_pytree', 'auto_reshaping', 'grad_update', 'load_json', 'get_config']
+__all__ = ['validate_configs', 'save_pytree', 'load_pytree', 'auto_reshaping', 'grad_update', 'load_json', 'get_config',
+           'set_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -138,3 +139,39 @@ main_config = Config.default()
 # %% ../nbs/00_utils.ipynb 36
 def get_config() -> Config: 
     return main_config
+
+# %% ../nbs/00_utils.ipynb 37
+def set_config(
+        *,
+        rng_reserve_size: int = None,
+        global_seed: int = None,
+        **kwargs
+) -> None:
+    """
+    set_config() sets the global configurations.
+    :param rng_reserve_size: set the number of random number generators to reserve.
+    :param global_seed: set the global seed for random number generators.
+    :param kwargs: A dictionary of keyword arguments, where the keys are the config keys to set and the values are the new values for those keys.
+    """
+
+    def arg_check(arg, arg_value, arg_min):
+        """
+         arg_check() checks the validity of the argument and returns the argument value.
+        :param arg: The name of the argument.
+        :param arg_value: The value of the argument.
+        :param arg_min: The minimum value of the argument.
+        :return: The argument value.
+        """
+
+        if arg_value is not None:
+            if not isinstance(arg_value, int):
+                raise TypeError(f"`{arg}` must be an integer, but got {type(arg_value).__name__}.")
+            if arg_value < arg_min:
+                raise ValueError(f"`{arg}` must be non-negative, but got {arg_value}.")
+            return arg_value
+
+    if arg_check('rng_reserve_size', rng_reserve_size, 0) is not None:
+        main_config.rng_reserve_size = rng_reserve_size
+
+    if arg_check('global_seed', global_seed, 0) is not None:
+        main_config.global_seed = global_seed
