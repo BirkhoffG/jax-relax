@@ -12,7 +12,7 @@ from ..data_module import DataModule
 from keras_core.random import SeedGenerator
 
 # %% auto 0
-__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel']
+__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel', 'qcut']
 
 # %% ../../nbs/methods/09_l2c.ipynb 5
 def gumbel_softmax(
@@ -80,6 +80,7 @@ class L2CModel(keras.Model):
         generator_layers: list[int],
         selector_layers: list[int],
         feature_indices: list[tuple[int, int]] = None,
+        pred_fn: Callable = None,
         alpha: float = 1e-4, # Sparsity regularization
         tau: float = 0.7,
         seed: int = None,
@@ -89,6 +90,7 @@ class L2CModel(keras.Model):
         self.generator_layers = generator_layers
         self.selector_layers = selector_layers
         self.feature_indices = feature_indices
+        self.pred_fn = pred_fn
         self.tau = tau
         self.alpha = alpha
         seed = seed or get_config().global_seed
@@ -152,3 +154,18 @@ class L2CModel(keras.Model):
         self.add_loss(loss)
         return cfs   
 
+
+# %% ../../nbs/methods/09_l2c.ipynb 10
+def qcut(
+    x: Array, # Input array
+    q: int, # Number of quantiles
+    axis: int = 0, # Axis to quantile
+) -> tuple[Array, Array]: # (digitized array, quantiles)
+    """Quantile binning."""
+    
+    # Handle edge cases: empty array or single element
+    if x.size <= 1:
+        return jnp.zeros_like(x), jnp.array([])
+    quantiles = jnp.quantile(x, jnp.linspace(0, 1, q + 1)[1:-1], axis=axis)
+    unique_quantiles = jnp.unique(quantiles)
+    return jnp.digitize(x, unique_quantiles), unique_quantiles
