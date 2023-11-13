@@ -10,6 +10,7 @@ from ..data_utils import Feature, FeaturesList
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
 from keras_core.random import SeedGenerator
+import einops
 
 # %% auto 0
 __all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel', 'qcut']
@@ -167,5 +168,5 @@ def qcut(
     if x.size <= 1:
         return jnp.zeros_like(x), jnp.array([])
     quantiles = jnp.quantile(x, jnp.linspace(0, 1, q + 1)[1:-1], axis=axis)
-    unique_quantiles = jnp.unique(quantiles)
-    return jnp.digitize(x, unique_quantiles), unique_quantiles
+    # unique_quantiles = jnp.unique(quantiles)
+    return jnp.digitize(x, quantiles), quantiles
