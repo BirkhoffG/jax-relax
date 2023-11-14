@@ -13,7 +13,8 @@ from keras_core.random import SeedGenerator
 import einops
 
 # %% auto 0
-__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel', 'qcut']
+__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel', 'qcut', 'qcut_inverse', 'discretize_xs',
+           'inverse_discretize_xs', 'discretized_pred_fn', 'L2CConfig', 'L2C']
 
 # %% ../../nbs/methods/09_l2c.ipynb 5
 def gumbel_softmax(
@@ -113,46 +114,50 @@ class L2CModel(keras.Model):
             last_activation="linear",
         )
         self.selector = MLP(
-            sizes=n_feats,
-            output_size=input_shape[-1],
+            sizes=self.selector_layers,
+            output_size=n_feats,
             dropout_rate=0.0,
             last_activation="sigmoid",
         )
 
-    def compute_loss(self, inputs, cfs, probs):
+    def compute_l2c_loss(self, inputs, cfs, probs):
         y_target = self.pred_fn(inputs).argmin(axis=-1)
         y_pred = self.pred_fn(cfs)
         validity_loss = keras.losses.sparse_categorical_crossentropy(
             y_target, y_pred
-        )
-        sparsity = jnp.linalg.norm(probs, p=1) * self.alpha
-        return validity_loss + sparsity
-
+        ).mean()
+        sparsity = jnp.linalg.norm(probs, ord=1) * self.alpha
+        # self.add_metric(validity_loss, name="validity_loss")
+        # self.add_metric(sparsity, name="sparsity")
+        return validity_loss, sparsity
     
-    def call(self, inputs, training=False):
-        def perturb(cfs, probs, i, start, end):
-            return (
-                cfs[:, start:end] * probs[:, i : i + 1] +
-                inputs[:, start:end] * (1 - probs[:, i : i + 1])
-            )
-
+    def perturb(self, inputs, cfs, probs, i, start, end):
+        return cfs[:, start:end] * probs[:, i : i + 1] + inputs[:, start:end] * (1 - probs[:, i : i + 1])
+    
+    def forward(self, inputs, training=False):
         select_probs = self.selector(inputs, training=training)
         probs = sample_bernouli(
-            self.seed_generator().next(), select_probs, 
+            self.seed_generator.next(), select_probs, 
             tau=self.tau, training=training
         )
         cfs_logits = self.generator(inputs, training=training)
         cfs = sample_categorical(
-            self.seed_generator().next(), cfs_logits, 
+            self.seed_generator.next(), cfs_logits, 
             tau=self.tau, training=training
         )
         cfs = jnp.concatenate([
-                perturb(cfs, probs, i, start, end)
+                self.perturb(inputs, cfs, probs, i, start, end)
                 for i, (start, end) in enumerate(self.feature_indices)
             ], axis=-1,
         )
-        loss = self.compute_loss(inputs, cfs, probs)
-        self.add_loss(loss)
+        return cfs, probs
+    
+    def call(self, inputs, training=False):
+        cfs, probs = self.forward(inputs, training=training)
+        # loss = self.compute_l2c_loss(inputs, cfs, probs)
+        validity_loss, sparsity = self.compute_l2c_loss(inputs, cfs, probs)
+        self.add_loss(validity_loss)
+        self.add_loss(sparsity)
         return cfs   
 
 
@@ -168,5 +173,150 @@ def qcut(
     if x.size <= 1:
         return jnp.zeros_like(x), jnp.array([])
     quantiles = jnp.quantile(x, jnp.linspace(0, 1, q + 1)[1:-1], axis=axis)
-    # unique_quantiles = jnp.unique(quantiles)
-    return jnp.digitize(x, quantiles), quantiles
+    
+    digitized = jnp.digitize(x, quantiles)
+    ohe_digitized = jax.nn.one_hot(digitized, q)
+    quantiles = jnp.concatenate([
+        x.min(axis=axis, keepdims=True), quantiles, 
+        x.max(axis=axis, keepdims=True)])
+    quantiles = (quantiles[1:] + quantiles[:-1]) / 2
+    return ohe_digitized, quantiles
+
+# %% ../../nbs/methods/09_l2c.ipynb 12
+def qcut_inverse(
+    digitized: Array, # Digitized array
+    quantiles: Array, # Quantiles
+) -> Array:
+    """Inverse of qcut."""
+    
+    return digitized @ quantiles
+
+# %% ../../nbs/methods/09_l2c.ipynb 14
+def discretize_xs(
+    xs: Array, # Input array
+    features_and_indices: list[tuple[Feature, tuple[int, int]]], # Features list
+    q: int = 4, # Number of quantiles
+) -> tuple[Array, list[tuple[tuple[int, int], Array]]]: # (discretized array, feature_indices_and_quantiles)
+    """Discretize continuous features."""
+    
+    discretized_xs = []
+    feature_indices_and_quantiles = []
+    discretized_start, discretized_end = 0, 0
+
+    for feat, (start, end) in features_and_indices:
+        if feat.is_categorical:
+            discretized = xs[:, start:end]
+            quantiles = None
+            discretized_end += end - start
+        else:
+            discretized, quantiles = qcut(xs[:, start:end].reshape(-1), q=q)
+            discretized_end += discretized.shape[-1]      
+        
+        discretized_xs.append(discretized)
+        feature_indices_and_quantiles.append(
+            ((discretized_start, discretized_end), quantiles)
+        )
+        discretized_start = discretized_end
+    discretized_xs = jnp.concatenate(discretized_xs, axis=-1)
+    return discretized_xs, feature_indices_and_quantiles
+
+# %% ../../nbs/methods/09_l2c.ipynb 15
+def inverse_discretize_xs(
+    xs: Array, # Discretized input array
+    feature_indices_and_quantiles: list[tuple[tuple[int, int], Array]], # Feature indices and quantiles
+):
+    """Continutize discretized features."""
+    
+    continutized_xs = []
+    for (start, end), quantiles in feature_indices_and_quantiles:
+        if quantiles is None:
+            cont_feat = xs[:, start:end]
+        else:
+            cont_feat = qcut_inverse(xs[:, start:end], quantiles).reshape(-1, 1)
+        continutized_xs.append(cont_feat)
+            
+    return jnp.concatenate(continutized_xs, axis=-1)
+
+# %% ../../nbs/methods/09_l2c.ipynb 16
+def discretized_pred_fn(
+    pred_fn: Callable, # Prediction function
+    feature_indices_and_quantiles: list[tuple[tuple[int, int], Array]], # Feature indices and quantiles
+) -> Callable[[Array], Array]:
+    """Continutize discretized features."""
+    
+    def _pred_fn(xs):
+        continutized_xs = inverse_discretize_xs(xs, feature_indices_and_quantiles)
+        return pred_fn(continutized_xs)
+    return _pred_fn
+
+# %% ../../nbs/methods/09_l2c.ipynb 17
+class L2CConfig(BaseConfig):
+    generator_layers: list[int] = Field(
+        [64, 64, 64], description="Generator MLP layers."
+    )
+    selector_layers: list[int] = Field(
+        [64], description="Selector MLP layers."
+    )
+    lr: float = Field(1e-3, description="Model learning rate.")
+    opt_name: str = Field("adam", description="Optimizer name of training L2C.")
+    alpha: float = Field(1e-4, description="Sparsity regularization.")
+    tau: float = Field(0.7, description="Temperature for the Gumbel softmax.")
+    q: int = Field(4, description="Number of quantiles.")
+
+# %% ../../nbs/methods/09_l2c.ipynb 18
+class L2C(ParametricCFModule):
+    def __init__(
+        self,
+        config: Dict | L2CConfig = None,
+        l2c_model: L2CModel = None,
+        name: str = "l2c",
+    ):
+        if config is None:
+            config = L2CConfig()
+        config = validate_configs(config, L2CConfig)
+        name = name or "l2c"
+        self.l2c_model = l2c_model
+        super().__init__(config=config, name=name)
+
+    def train(
+        self, 
+        data: DataModule, 
+        pred_fn: Callable,
+        batch_size: int = 128,
+        epochs: int = 10,
+        **fit_kwargs
+    ):
+        if not isinstance(data, DataModule):
+            raise ValueError(f"Only support `data` to be `DataModule`, "
+                             f"got type=`{type(data).__name__}` instead.")
+        
+        xs_train, ys_train = data['train']
+        discretized_xs_train, self.feature_indices_and_quantiles = discretize_xs(
+            xs_train, data.features.features_and_indices, q=self.config.q
+        )
+        pred_fn = discretized_pred_fn(pred_fn, self.feature_indices_and_quantiles)
+        features_indices = [indices for indices, _ in self.feature_indices_and_quantiles]
+        
+        self.l2c_model = L2CModel(
+            generator_layers=self.config.generator_layers,
+            selector_layers=self.config.selector_layers,
+            feature_indices=features_indices,
+            pred_fn=pred_fn,
+            alpha=self.config.alpha,
+            tau=self.config.tau,
+        )
+        self.l2c_model.compile(
+            optimizer=keras.optimizers.get({
+                    'class_name': self.config.opt_name, 
+                    'config': {'learning_rate': self.config.lr}
+                }),
+            loss=None
+        )
+        self.l2c_model.fit(
+            discretized_xs_train, ys_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            **fit_kwargs
+        )
+        self._is_trained = True
+        return self
