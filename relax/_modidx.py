@@ -736,4 +736,5 @@ d = { 'settings': { 'branch': 'master',
                              'relax.utils.load_json': ('utils.html#load_json', 'relax/utils.py'),
                              'relax.utils.load_pytree': ('utils.html#load_pytree', 'relax/utils.py'),
                              'relax.utils.save_pytree': ('utils.html#save_pytree', 'relax/utils.py'),
+                             'relax.utils.set_config': ('utils.html#set_config', 'relax/utils.py'),
                              'relax.utils.validate_configs': ('utils.html#validate_configs', 'relax/utils.py')}}}

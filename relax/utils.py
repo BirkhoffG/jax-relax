@@ -11,7 +11,8 @@ from fastcore.test import *
 from jax.core import InconclusiveDimensionOperation
 
 # %% auto 0
-__all__ = ['validate_configs', 'save_pytree', 'load_pytree', 'auto_reshaping', 'grad_update', 'load_json', 'get_config']
+__all__ = ['validate_configs', 'save_pytree', 'load_pytree', 'auto_reshaping', 'grad_update', 'load_json', 'get_config',
+           'set_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -138,3 +139,31 @@ main_config = Config.default()
 # %% ../nbs/00_utils.ipynb 36
 def get_config() -> Config: 
     return main_config
+
+# %% ../nbs/00_utils.ipynb 37
+def set_config(
+    *,
+    rng_reserve_size: int = None, # The number of random number generators to reserve.
+    global_seed: int = None, # The global seed for random number generators.
+    **kwargs
+) -> None:
+    """Sets the global configurations."""
+
+    def set_val(
+        arg_name: str, # The name of the argument.
+        arg_value: int, # The value of the argument.
+        arg_min: int # The minimum value of the argument.
+    ) -> None:
+        """Checks the validity of the argument and sets the value."""
+        
+        if arg_value is None or not hasattr(main_config, arg_name):
+            return
+        
+        if not isinstance(arg_value, int):
+            raise TypeError(f"`{arg_name}` must be an integer, but got {type(arg_value).__name__}.")
+        if arg_value < arg_min:
+            raise ValueError(f"`{arg_name}` must be non-negative, but got {arg_value}.")
+        setattr(main_config, arg_name, arg_value)
+
+    set_val('rng_reserve_size', rng_reserve_size, 1)
+    set_val('global_seed', global_seed, 0)
