@@ -143,35 +143,27 @@ def get_config() -> Config:
 # %% ../nbs/00_utils.ipynb 37
 def set_config(
         *,
-        rng_reserve_size: int = None,
-        global_seed: int = None,
+        rng_reserve_size: int = None, # The number of random number generators to reserve.
+        global_seed: int = None, # The global seed for random number generators.
         **kwargs
 ) -> None:
-    """
-    set_config() sets the global configurations.
-    :param rng_reserve_size: set the number of random number generators to reserve.
-    :param global_seed: set the global seed for random number generators.
-    :param kwargs: A dictionary of keyword arguments, where the keys are the config keys to set and the values are the new values for those keys.
-    """
+    """Sets the global configurations."""
 
-    def arg_check(arg, arg_value, arg_min):
-        """
-         arg_check() checks the validity of the argument and returns the argument value.
-        :param arg: The name of the argument.
-        :param arg_value: The value of the argument.
-        :param arg_min: The minimum value of the argument.
-        :return: The argument value.
-        """
+    def set_val(
+            arg_name: str, # The name of the argument.
+            arg_value: int, # The value of the argument.
+            arg_min: int # The minimum value of the argument.
+    ) -> None:
+        """Checks the validity of the argument and sets the value."""
+        
+        if arg_value is None or not hasattr(main_config, arg_name):
+            return
+        
+        if not isinstance(arg_value, int):
+            raise TypeError(f"`{arg_name}` must be an integer, but got {type(arg_value).__name__}.")
+        if arg_value < arg_min:
+            raise ValueError(f"`{arg_name}` must be non-negative, but got {arg_value}.")
+        setattr(main_config, arg_name, arg_value)
 
-        if arg_value is not None:
-            if not isinstance(arg_value, int):
-                raise TypeError(f"`{arg}` must be an integer, but got {type(arg_value).__name__}.")
-            if arg_value < arg_min:
-                raise ValueError(f"`{arg}` must be non-negative, but got {arg_value}.")
-            return arg_value
-
-    if arg_check('rng_reserve_size', rng_reserve_size, 0) is not None:
-        main_config.rng_reserve_size = rng_reserve_size
-
-    if arg_check('global_seed', global_seed, 0) is not None:
-        main_config.global_seed = global_seed
+    set_val('rng_reserve_size', rng_reserve_size, 1)
+    set_val('global_seed', global_seed, 0)
