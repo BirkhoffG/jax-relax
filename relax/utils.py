@@ -142,17 +142,17 @@ def get_config() -> Config:
 
 # %% ../nbs/00_utils.ipynb 37
 def set_config(
-        *,
-        rng_reserve_size: int = None, # The number of random number generators to reserve.
-        global_seed: int = None, # The global seed for random number generators.
-        **kwargs
+    *,
+    rng_reserve_size: int = None, # The number of random number generators to reserve.
+    global_seed: int = None, # The global seed for random number generators.
+    **kwargs
 ) -> None:
     """Sets the global configurations."""
 
     def set_val(
-            arg_name: str, # The name of the argument.
-            arg_value: int, # The value of the argument.
-            arg_min: int # The minimum value of the argument.
+        arg_name: str, # The name of the argument.
+        arg_value: int, # The value of the argument.
+        arg_min: int # The minimum value of the argument.
     ) -> None:
         """Checks the validity of the argument and sets the value."""
         
