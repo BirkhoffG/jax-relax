@@ -13,10 +13,10 @@ from keras_core.random import SeedGenerator
 import einops
 
 # %% auto 0
-__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel', 'qcut', 'qcut_inverse', 'discretize_xs',
-           'inverse_discretize_xs', 'discretized_pred_fn', 'L2CConfig', 'L2C']
+__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel', 'qcut', 'qcut_inverse', 'cut_quantiles',
+           'discretize_xs', 'Discretizer', 'L2CConfig', 'L2C']
 
-# %% ../../nbs/methods/09_l2c.ipynb 5
+# %% ../../nbs/methods/09_l2c.ipynb 6
 def gumbel_softmax(
     key: jrand.PRNGKey, # Random key
     logits: Array, # Logits for each class. Shape (batch_size, num_classes)
@@ -28,7 +28,7 @@ def gumbel_softmax(
     y = logits + gumbel_noise
     return jax.nn.softmax(y / tau, axis=-1)
 
-# %% ../../nbs/methods/09_l2c.ipynb 6
+# %% ../../nbs/methods/09_l2c.ipynb 7
 def sample_categorical(
     key: jrand.PRNGKey, # Random key
     logits: Array, # Logits for each class. Shape (batch_size, num_classes)
@@ -48,7 +48,7 @@ def sample_categorical(
         None,
     )
 
-# %% ../../nbs/methods/09_l2c.ipynb 8
+# %% ../../nbs/methods/09_l2c.ipynb 9
 def sample_bernouli(
     key: jrand.PRNGKey, # Random key
     prob: Array, # Logits for each class. Shape (batch_size, 1)
@@ -75,7 +75,7 @@ def sample_bernouli(
         None,
     )
 
-# %% ../../nbs/methods/09_l2c.ipynb 9
+# %% ../../nbs/methods/09_l2c.ipynb 10
 class L2CModel(keras.Model):
     def __init__(
         self,
@@ -127,8 +127,6 @@ class L2CModel(keras.Model):
             y_target, y_pred
         ).mean()
         sparsity = jnp.linalg.norm(probs, ord=1) * self.alpha
-        # self.add_metric(validity_loss, name="validity_loss")
-        # self.add_metric(sparsity, name="sparsity")
         return validity_loss, sparsity
     
     def perturb(self, inputs, cfs, probs, i, start, end):
@@ -161,7 +159,7 @@ class L2CModel(keras.Model):
         return cfs   
 
 
-# %% ../../nbs/methods/09_l2c.ipynb 10
+# %% ../../nbs/methods/09_l2c.ipynb 12
 def qcut(
     x: Array, # Input array
     q: int, # Number of quantiles
@@ -173,83 +171,113 @@ def qcut(
     if x.size <= 1:
         return jnp.zeros_like(x), jnp.array([])
     quantiles = jnp.quantile(x, jnp.linspace(0, 1, q + 1)[1:-1], axis=axis)
-    
     digitized = jnp.digitize(x, quantiles)
-    ohe_digitized = jax.nn.one_hot(digitized, q)
-    quantiles = jnp.concatenate([
-        x.min(axis=axis, keepdims=True), quantiles, 
-        x.max(axis=axis, keepdims=True)])
-    quantiles = (quantiles[1:] + quantiles[:-1]) / 2
-    return ohe_digitized, quantiles
+    return digitized, quantiles
 
-# %% ../../nbs/methods/09_l2c.ipynb 12
+# %% ../../nbs/methods/09_l2c.ipynb 14
 def qcut_inverse(
-    digitized: Array, # Digitized array
+    digitized: Array, # Digitized One-Hot Encoding Array
     quantiles: Array, # Quantiles
 ) -> Array:
     """Inverse of qcut."""
     
     return digitized @ quantiles
 
-# %% ../../nbs/methods/09_l2c.ipynb 14
+# %% ../../nbs/methods/09_l2c.ipynb 16
+def cut_quantiles(
+    quantiles: Array, # Quantiles
+    xs: Array, # Input array
+):
+    quantiles = jnp.concatenate([
+        xs.min(axis=0, keepdims=True), 
+        quantiles, 
+        xs.max(axis=0, keepdims=True)
+    ])
+    quantiles = (quantiles[1:] + quantiles[:-1]) / 2
+    return quantiles
+
+# %% ../../nbs/methods/09_l2c.ipynb 17
 def discretize_xs(
     xs: Array, # Input array
-    features_and_indices: list[tuple[Feature, tuple[int, int]]], # Features list
+    is_categorical_and_indices: list[tuple[bool, tuple[int, int]]], # Features list
     q: int = 4, # Number of quantiles
-) -> tuple[Array, list[tuple[tuple[int, int], Array]]]: # (discretized array, feature_indices_and_quantiles)
+) -> tuple[Array, list[Array], list[tuple[tuple[int, int], Array]]]: # (discretized array, indices_and_quantiles_and_mid)
     """Discretize continuous features."""
     
     discretized_xs = []
-    feature_indices_and_quantiles = []
+    indices_and_mid = []
+    quantiles_feats = []
     discretized_start, discretized_end = 0, 0
 
-    for feat, (start, end) in features_and_indices:
-        if feat.is_categorical:
-            discretized = xs[:, start:end]
-            quantiles = None
+    for is_categorical, (start, end) in is_categorical_and_indices:
+        if is_categorical:
+            discretized, quantiles, mid = xs[:, start:end], None, None
             discretized_end += end - start
         else:
             discretized, quantiles = qcut(xs[:, start:end].reshape(-1), q=q)
-            discretized_end += discretized.shape[-1]      
+            mid = cut_quantiles(quantiles, xs[:, start])
+            discretized = jax.nn.one_hot(discretized, q)
+            discretized_end += discretized.shape[-1]
         
         discretized_xs.append(discretized)
-        feature_indices_and_quantiles.append(
-            ((discretized_start, discretized_end), quantiles)
+        quantiles_feats.append(quantiles)
+        indices_and_mid.append(
+            ((discretized_start, discretized_end), mid)
         )
+        
         discretized_start = discretized_end
     discretized_xs = jnp.concatenate(discretized_xs, axis=-1)
-    return discretized_xs, feature_indices_and_quantiles
+    return discretized_xs, quantiles_feats, indices_and_mid
 
-# %% ../../nbs/methods/09_l2c.ipynb 15
-def inverse_discretize_xs(
-    xs: Array, # Discretized input array
-    feature_indices_and_quantiles: list[tuple[tuple[int, int], Array]], # Feature indices and quantiles
-):
-    """Continutize discretized features."""
+# %% ../../nbs/methods/09_l2c.ipynb 19
+class Discretizer:
+    """Discretize continuous features."""
     
-    continutized_xs = []
-    for (start, end), quantiles in feature_indices_and_quantiles:
-        if quantiles is None:
-            cont_feat = xs[:, start:end]
-        else:
-            cont_feat = qcut_inverse(xs[:, start:end], quantiles).reshape(-1, 1)
-        continutized_xs.append(cont_feat)
-            
-    return jnp.concatenate(continutized_xs, axis=-1)
+    def __init__(
+        self, 
+        is_cat_and_indices: list[tuple[bool, tuple[int, int]]], # Features list
+        q: int = 4 # Number of quantiles
+    ):
+        self.is_cat_and_indices = is_cat_and_indices
+        self.q = q
 
-# %% ../../nbs/methods/09_l2c.ipynb 16
-def discretized_pred_fn(
-    pred_fn: Callable, # Prediction function
-    feature_indices_and_quantiles: list[tuple[tuple[int, int], Array]], # Feature indices and quantiles
-) -> Callable[[Array], Array]:
-    """Continutize discretized features."""
+    def fit(self, xs: Array):
+        _, self.quantiles, self.indices_and_mid_quantiles = discretize_xs(
+            xs, self.is_cat_and_indices, self.q
+        )
+
+    def transform(self, xs: Array):
+        digitized_xs = []
+        for quantiles, (_, (start, end)) in zip(self.quantiles, self.is_cat_and_indices):
+            if quantiles is None: 
+                digitized = xs[:, start:end]
+            else:
+                digitized = jnp.digitize(xs[:, start], quantiles)
+                digitized = jax.nn.one_hot(digitized, self.q)
+            digitized_xs.append(digitized)
+        return jnp.concatenate(digitized_xs, axis=-1)
+
+    def fit_transform(self, xs: Array):
+        self.fit(xs)
+        return self.transform(xs)
+
+    def inverse_transform(self, xs: Array):
+        continutized_xs = []
+        for (start, end), mid_quantiles in self.indices_and_mid_quantiles:
+            if mid_quantiles is None:
+                cont_feat = xs[:, start:end]
+            else:
+                cont_feat = qcut_inverse(xs[:, start:end], mid_quantiles).reshape(-1, 1)
+            continutized_xs.append(cont_feat)
+        return jnp.concatenate(continutized_xs, axis=-1)
     
-    def _pred_fn(xs):
-        continutized_xs = inverse_discretize_xs(xs, feature_indices_and_quantiles)
-        return pred_fn(continutized_xs)
-    return _pred_fn
+    def get_pred_fn(self, pred_fn: Callable[[Array], Array]):
+        def _pred_fn(xs: Array):
+            return pred_fn(self.inverse_transform(xs))
+        return _pred_fn
 
-# %% ../../nbs/methods/09_l2c.ipynb 17
+
+# %% ../../nbs/methods/09_l2c.ipynb 22
 class L2CConfig(BaseConfig):
     generator_layers: list[int] = Field(
         [64, 64, 64], description="Generator MLP layers."
@@ -263,7 +291,7 @@ class L2CConfig(BaseConfig):
     tau: float = Field(0.7, description="Temperature for the Gumbel softmax.")
     q: int = Field(4, description="Number of quantiles.")
 
-# %% ../../nbs/methods/09_l2c.ipynb 18
+# %% ../../nbs/methods/09_l2c.ipynb 23
 class L2C(ParametricCFModule):
     def __init__(
         self,
@@ -291,12 +319,14 @@ class L2C(ParametricCFModule):
                              f"got type=`{type(data).__name__}` instead.")
         
         xs_train, ys_train = data['train']
-        discretized_xs_train, self.feature_indices_and_quantiles = discretize_xs(
-            xs_train, data.features.features_and_indices, q=self.config.q
+        self.discretizer = Discretizer(
+            [(feat.is_categorical, indices) for feat, indices in zip(data.features, data.features.feature_indices)],
+            q=self.config.q
         )
-        pred_fn = discretized_pred_fn(pred_fn, self.feature_indices_and_quantiles)
-        features_indices = [indices for indices, _ in self.feature_indices_and_quantiles]
-        
+        discretized_xs_train = self.discretizer.fit_transform(xs_train)
+        pred_fn = self.discretizer.get_pred_fn(pred_fn)
+        features_indices = [indices for indices, _ in self.discretizer.indices_and_mid_quantiles]
+
         self.l2c_model = L2CModel(
             generator_layers=self.config.generator_layers,
             selector_layers=self.config.selector_layers,
@@ -307,9 +337,9 @@ class L2C(ParametricCFModule):
         )
         self.l2c_model.compile(
             optimizer=keras.optimizers.get({
-                    'class_name': self.config.opt_name, 
-                    'config': {'learning_rate': self.config.lr}
-                }),
+                'class_name': self.config.opt_name, 
+                'config': {'learning_rate': self.config.lr}
+            }),
             loss=None
         )
         self.l2c_model.fit(
@@ -320,3 +350,14 @@ class L2C(ParametricCFModule):
         )
         self._is_trained = True
         return self
+    
+    @auto_reshaping('x')
+    def generate_cf(
+        self, 
+        x: Array, 
+        **kwargs
+    ) -> Array:
+        # TODO: Does not support passing apply_constraints        
+        discretized_x = self.discretizer.transform(x)
+        cfs, probs = self.l2c_model.forward(discretized_x, training=False)
+        return self.discretizer.inverse_transform(cfs)
