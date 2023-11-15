@@ -150,6 +150,7 @@ methods.
 | [`CCHVAE`](https://birkhoffg.github.io/jax-relax/methods/cchvae.html#cchvae)               | Semi-Parametric | Learning Model-Agnostic Counterfactual Explanations for Tabular Data.                          | [\[6\]](https://arxiv.org/abs/1910.09398) |
 | [`VAECF`](https://birkhoffg.github.io/jax-relax/methods/vaecf.html#vaecf)                  | Parametric      | Preserving Causal Constraints in Counterfactual Explanations for Machine Learning Classifiers. | [\[7\]](https://arxiv.org/abs/1912.03277) |
 | [`CLUE`](https://birkhoffg.github.io/jax-relax/methods/clue.html#clue)                     | Semi-Parametric | Getting a CLUE: A Method for Explaining Uncertainty Estimates.                                 | [\[8\]](https://arxiv.org/abs/2006.06848) |
+| [`L2C`](https://birkhoffg.github.io/jax-relax/methods/l2c.html#l2c)                        | Parametric      | Feature-based Learning for Diverse and Privacy-Preserving Counterfactual Explanations          | [\[9\]](https://arxiv.org/abs/2209.13446) |
 
 ## Citing `ReLax`
 
