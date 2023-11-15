@@ -86,8 +86,9 @@ train_xs, test_xs, train_ys, test_ys = train_test_split(xs, ys, random_state=42)
 ```
 
 Next, we fit an MLP model for this data. Note that this model can be any
-model implmented in JAX. We will use the `MLModule` in `ReLax` as an
-example.
+model implmented in JAX. We will use the
+[`MLModule`](https://birkhoffg.github.io/jax-relax/ml_model.html#mlmodule)
+in `ReLax` as an example.
 
 ``` python
 model = MLModule()
@@ -139,17 +140,17 @@ for an end-to-end example of using `ReLax`.
 `ReLax` currently provides implementations of 8 recourse explanation
 methods.
 
-| Method          | Type            | Paper Title                                                                                    | Ref                                       |
-|-----------------|-----------------|------------------------------------------------------------------------------------------------|-------------------------------------------|
-| `VanillaCF`     | Non-Parametric  | Counterfactual Explanations without Opening the Black Box: Automated Decisions and the GDPR.   | [\[1\]](https://arxiv.org/abs/1711.00399) |
-| `DiverseCF`     | Non-Parametric  | Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations.           | [\[2\]](https://arxiv.org/abs/1905.07697) |
-| `ProtoCF`       | Semi-Parametric | Interpretable Counterfactual Explanations Guided by Prototypes.                                | [\[3\]](https://arxiv.org/abs/1907.02584) |
-| `CounterNet`    | Parametric      | CounterNet: End-to-End Training of Prediction Aware Counterfactual Explanations.               | [\[4\]](https://arxiv.org/abs/2109.07557) |
-| `GrowingSphere` | Non-Parametric  | Inverse Classification for Comparison-based Interpretability in Machine Learning.              | [\[5\]](https://arxiv.org/abs/1712.08443) |
-| `CCHVAE`        | Semi-Parametric | Learning Model-Agnostic Counterfactual Explanations for Tabular Data.                          | [\[6\]](https://arxiv.org/abs/1910.09398) |
-| `VAECF`         | Parametric      | Preserving Causal Constraints in Counterfactual Explanations for Machine Learning Classifiers. | [\[7\]](https://arxiv.org/abs/1912.03277) |
-| `CLUE`          | Semi-Parametric | Getting a CLUE: A Method for Explaining Uncertainty Estimates.                                 | [\[8\]](https://arxiv.org/abs/2006.06848) |
-| `L2C`           | Parametric      | Feature-based Learning for Diverse and Privacy-Preserving Counterfactual Explanations          | [\[9\]](https://arxiv.org/abs/2209.13446) |
+| Method                                                                                     | Type            | Paper Title                                                                                    | Ref                                       |
+|--------------------------------------------------------------------------------------------|-----------------|------------------------------------------------------------------------------------------------|-------------------------------------------|
+| [`VanillaCF`](https://birkhoffg.github.io/jax-relax/methods/vanilla.html#vanillacf)        | Non-Parametric  | Counterfactual Explanations without Opening the Black Box: Automated Decisions and the GDPR.   | [\[1\]](https://arxiv.org/abs/1711.00399) |
+| [`DiverseCF`](https://birkhoffg.github.io/jax-relax/methods/dice.html#diversecf)           | Non-Parametric  | Explaining Machine Learning Classifiers through Diverse Counterfactual Explanations.           | [\[2\]](https://arxiv.org/abs/1905.07697) |
+| [`ProtoCF`](https://birkhoffg.github.io/jax-relax/methods/proto.html#protocf)              | Semi-Parametric | Interpretable Counterfactual Explanations Guided by Prototypes.                                | [\[3\]](https://arxiv.org/abs/1907.02584) |
+| [`CounterNet`](https://birkhoffg.github.io/jax-relax/methods/counternet.html#counternet)   | Parametric      | CounterNet: End-to-End Training of Prediction Aware Counterfactual Explanations.               | [\[4\]](https://arxiv.org/abs/2109.07557) |
+| [`GrowingSphere`](https://birkhoffg.github.io/jax-relax/methods/sphere.html#growingsphere) | Non-Parametric  | Inverse Classification for Comparison-based Interpretability in Machine Learning.              | [\[5\]](https://arxiv.org/abs/1712.08443) |
+| [`CCHVAE`](https://birkhoffg.github.io/jax-relax/methods/cchvae.html#cchvae)               | Semi-Parametric | Learning Model-Agnostic Counterfactual Explanations for Tabular Data.                          | [\[6\]](https://arxiv.org/abs/1910.09398) |
+| [`VAECF`](https://birkhoffg.github.io/jax-relax/methods/vaecf.html#vaecf)                  | Parametric      | Preserving Causal Constraints in Counterfactual Explanations for Machine Learning Classifiers. | [\[7\]](https://arxiv.org/abs/1912.03277) |
+| [`CLUE`](https://birkhoffg.github.io/jax-relax/methods/clue.html#clue)                     | Semi-Parametric | Getting a CLUE: A Method for Explaining Uncertainty Estimates.                                 | [\[8\]](https://arxiv.org/abs/2006.06848) |
+| [`L2C`](https://birkhoffg.github.io/jax-relax/methods/l2c.html#l2c)                        | Parametric      | Feature-based Learning for Diverse and Privacy-Preserving Counterfactual Explanations          | [\[9\]](https://arxiv.org/abs/2209.13446) |
 
 ## Citing `ReLax`
 
