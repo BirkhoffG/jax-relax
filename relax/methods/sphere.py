@@ -3,7 +3,7 @@
 # %% ../../nbs/methods/05_sphere.ipynb 3
 from __future__ import annotations
 from ..import_essentials import *
-from .base import CFModule, BaseConfig
+from .base import CFModule, BaseConfig, default_apply_constraints_fn
 from ..utils import auto_reshaping, grad_update, validate_configs
 from ..data_utils import Feature, FeaturesList
 from ..data_module import DataModule
@@ -35,7 +35,6 @@ def hyper_sphere_coordindates(
     return candidates
 
 # %% ../../nbs/methods/05_sphere.ipynb 6
-@partial(jit, static_argnums=(1, 2))
 def sample_categorical(rng_key: jrand.PRNGKey, col_size: int, n_samples: int):
     rng_key, _ = jrand.split(rng_key)
     prob = jnp.ones(col_size) / col_size
@@ -92,46 +91,69 @@ def default_perturb_function(
 
 
 # %% ../../nbs/methods/05_sphere.ipynb 8
-@partial(jit, static_argnums=(2, 3, 4, 5, 6, 7))
+@partial(jit, static_argnums=(2, 5, 8, 9))
 def perturb_function_with_features(
     rng_key: jrand.PRNGKey,
     x: np.ndarray, # Shape: (1, k)
     n_samples: int,
-    high, 
-    low,
-    p_norm,
-    feats_info: List[Tuple[int, int, int]], # [(start, end, num_categories)]
+    high: float, 
+    low: float,
+    p_norm: int,
+    cont_masks: Array,
+    immut_masks: Array,
+    num_categories: list[int],
     cat_perturb_fn: Callable
 ):
-    def perturb_feature(rng_key, x_sliced, num_categories):
-        if num_categories > 0:
-            return cat_perturb_fn(rng_key, num_categories, n_samples)
-        else: 
-            return hyper_sphere_coordindates(
-                rng_key, x_sliced, n_samples, high, low, p_norm
-            )
         
-    rng_keys = jrand.split(rng_key, len(feats_info))
-    perturbed = jnp.repeat(x, n_samples, axis=0)
-    for rng_key, (start, end, num_categories) in zip(rng_keys, feats_info):
-        x_sliced = lax.dynamic_slice(x, (0, start), (1, end - start))
-        _perturbed_feat = perturb_feature(rng_key, x_sliced, num_categories)
-        perturbed = perturbed.at[:, start: end].set(_perturbed_feat)
+    def perturb_cat_feat(rng_key, num_categories):
+        rng_key, next_key = jrand.split(rng_key)
+        sampled = cat_perturb_fn(rng_key, num_categories, n_samples)
+        return next_key, sampled
+    
+    # cont_masks, immut_masks, num_categories = feats_info
+    key_1, key_2 = jrand.split(rng_key)
+    perturbed_cont = cont_masks * hyper_sphere_coordindates(
+        key_1, x, n_samples, high, low, p_norm
+    )
+    cat_masks = jnp.where(cont_masks, 0, 1)
+    perturbed_cat = cat_masks * jnp.concatenate([
+        perturb_cat_feat(key_2, num_cat)[1] for num_cat in num_categories
+    ], axis=1)
+
+    perturbed = jnp.where(
+        immut_masks,
+        jnp.repeat(x, n_samples, axis=0),
+        perturbed_cont + perturbed_cat
+    )
+    
     return perturbed
 
-
 # %% ../../nbs/methods/05_sphere.ipynb 9
-def features_to_infos_and_perturb_fn(features: FeaturesList):
-    feats_info = []
+def features_to_infos_and_perturb_fn(
+    features: FeaturesList
+) -> Tuple[List[Array,Array,Array,Array,Array], Callable]:
+    cont_masks = []
+    immut_masks = []
+    n_categories = []
     cat_transformation_name = None
     for (start, end), feat in zip(features.feature_indices, features):
         if feat.is_categorical:
-            feat_info = (start, end, feat.transformation.num_categories)
+            cont_mask = jnp.zeros(feat.transformation.num_categories)
+            immut_mask = cont_mask * np.array([feat.is_immutable], dtype=np.int32)
+            n_categorie = feat.transformation.num_categories
             cat_transformation_name = feat.transformation.name
         else:
-            feat_info = (start, end, -1)
-        feats_info.append(feat_info)
-    return tuple(feats_info), cat_perturb_fn(cat_transformation_name)
+            cont_mask = jnp.ones(1)
+            immut_mask = cont_mask * np.array([feat.is_immutable], dtype=np.int32)
+            n_categorie = 1
+        
+        cont_masks, immut_masks, n_categories = map(lambda x, y: x + [y], 
+            [cont_masks, immut_masks, n_categories],
+            [cont_mask, immut_mask, n_categorie]
+        )
+    
+    cont_masks, immut_masks = map(lambda x: jnp.concatenate(x, axis=0), [cont_masks, immut_masks])
+    return (cont_masks, immut_masks, tuple(n_categories)), cat_perturb_fn(cat_transformation_name)
 
 def cat_perturb_fn(transformation):
     def ohe_perturb_fn(rng_key, num_categories, n_samples):
@@ -162,7 +184,8 @@ def _growing_spheres(
     step_size: float, # Step size
     p_norm: int, # Norm
     perturb_fn: Callable, # Perturbation function
-    apply_constraints_fn: Callable # Apply immutable constraints
+    apply_constraints_fn: Callable, # Apply immutable constraints
+    dtype: jnp.dtype = jnp.float32, # Data type
 ): 
     @jit
     def dist_fn(x, cf):
@@ -176,7 +199,7 @@ def _growing_spheres(
     @loop_tqdm(n_steps)
     def step(i, state):
         candidate_cf, count, rng_key = state
-        rng_key, subkey_1, subkey_2 = jrand.split(rng_key, num=3)
+        rng_key, subkey = jrand.split(rng_key)
         low, high = step_size * count, step_size * (count + 1)
         # Sample around x
         candidates = perturb_fn(rng_key, x, n_samples, high=high, low=low, p_norm=p_norm)
@@ -189,12 +212,14 @@ def _growing_spheres(
         dist = dist_fn(x, candidates)
 
         # Calculate counterfactual labels
-        candidate_preds = pred_fn(candidates).argmax(axis=1)
-        indices = jnp.where(candidate_preds == y_target, 1, 0).astype(bool)
+        candidate_preds = pred_fn(candidates).argmax(axis=1, keepdims=True)
+        indices = candidate_preds == y_target
 
-        candidates = jnp.where(indices.reshape(-1, 1), 
-                               candidates, jnp.ones_like(candidates) * jnp.inf)
-        dist = jnp.where(indices.reshape(-1, 1), dist, jnp.ones_like(dist) * jnp.inf)
+        # Select valid candidates and their distances
+        candidates, dist = jax.tree_util.tree_map(
+            lambda x: jnp.where(indices, x, jnp.ones_like(x) * jnp.inf), 
+            (candidates, dist)
+        )
 
         closest_idx = dist.argmin()
         candidate_cf_update = candidates[closest_idx].reshape(1, -1)
@@ -204,7 +229,7 @@ def _growing_spheres(
             candidate_cf_update, 
             candidate_cf
         )
-        return candidate_cf, count + 1, rng_key
+        return candidate_cf, count + 1, subkey
     
     y_target = y_target.reshape(1, -1).argmax(axis=1)
     candidate_cf = jnp.ones_like(x) * jnp.inf
@@ -254,11 +279,15 @@ class GrowingSphere(CFModule):
         if self.perturb_fn is None:
             if self.has_data_module():
                 feats_info, perturb_fn = features_to_infos_and_perturb_fn(self.data_module.features)
+                cont_masks, immut_masks, num_categories = feats_info
                 self.perturb_fn = ft.partial(
                     perturb_function_with_features, 
-                    feats_info=feats_info,
+                    cont_masks=cont_masks,
+                    immut_masks=immut_masks,
+                    num_categories=num_categories,
                     cat_perturb_fn=perturb_fn
                 )
+                self.apply_constraints = default_apply_constraints_fn
             else:
                 self.perturb_fn = default_perturb_function
         

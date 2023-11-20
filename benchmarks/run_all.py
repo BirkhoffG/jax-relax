@@ -65,6 +65,8 @@ def main(args):
                                   
             # load data and data configs
             dm = relax.load_data(data_name)
+
+            keras.mixed_precision.set_global_policy("mixed_float16")
             
             # load predict function
             ml_model = relax.load_ml_module(data_name)
@@ -130,5 +132,8 @@ if __name__ == "__main__":
     
     if args.disable_jit:
         jax.config.update("jax_disable_jit", True)
+    
+    jax.profiler.start_trace("/tmp/tensorboard")
     main(args)
+    jax.profiler.stop_trace()
 
