@@ -111,12 +111,13 @@ def perturb_function_with_features(
         return next_key, sampled
     
     # cont_masks, immut_masks, num_categories = feats_info
+    key_1, key_2 = jrand.split(rng_key)
     perturbed_cont = cont_masks * hyper_sphere_coordindates(
-        rng_key, x, n_samples, high, low, p_norm
+        key_1, x, n_samples, high, low, p_norm
     )
     cat_masks = jnp.where(cont_masks, 0, 1)
     perturbed_cat = cat_masks * jnp.concatenate([
-        perturb_cat_feat(rng_key, num_cat)[1] for num_cat in num_categories
+        perturb_cat_feat(key_2, num_cat)[1] for num_cat in num_categories
     ], axis=1)
 
     perturbed = jnp.where(
