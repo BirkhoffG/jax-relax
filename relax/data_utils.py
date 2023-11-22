@@ -444,6 +444,20 @@ class FeaturesList:
         else:
             self.pose = 0
             raise StopIteration
+        
+    # Indexing
+    def __getitem__(self, idx: str | list[str]) -> Feature | list[Feature]:
+        if not hasattr(self, "_feature_name_list_indices"):
+            self._feature_name_list_indices = {feat.name: i for i, feat in enumerate(self._features)}
+        indices = self._feature_name_list_indices
+        if isinstance(idx, str):
+            if idx not in indices:
+                raise ValueError(f"Invalid feature name: {idx}")
+            return self._features[indices[idx]]
+        elif isinstance(idx, list):
+            return [self[i] for i in idx]
+        else:
+            raise ValueError(f"Invalid idx type: {type(idx).__name__}")
     
     #############################
     # Properties
@@ -469,7 +483,7 @@ class FeaturesList:
         return self._feature_name_indices
     
     @property
-    def transformed_data(self):
+    def transformed_data(self) -> jax.Array:
         if not hasattr(self, "_transformed_data") or self._transformed_data is None:
             self._transform_data()
         return self._transformed_data
@@ -489,6 +503,13 @@ class FeaturesList:
                       for feat, (start, end) in self.features_and_indices],
         )
     
+    def set_transformations(self, feat_names_and_transformation: dict[str, Transformation]) -> FeaturesList:
+        """Set the transformations for the features."""
+        for feat, transformation in feat_names_and_transformation.items():
+            self[feat].set_transformation(transformation)
+        self._transformed_data = None # Reset transformed data
+        return self
+        
     def _transform_data(self):
         self._feature_indices = []
         self._feature_name_indices = {}
