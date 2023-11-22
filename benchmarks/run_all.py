@@ -11,7 +11,7 @@ import gc
 DATASET_NAMES = list(DEFAULT_DATA_CONFIGS.keys())
 
 # CFs for benchmarking
-CF_NAMES = ["VanillaCF", "DiverseCF", "ProtoCF", "CounterNet", "CCHVAE", "CLUE", "GrowingSphere", "VAECF"]
+CF_NAMES = ["VanillaCF", "DiverseCF", "ProtoCF", "CounterNet", "CCHVAE", "CLUE", "GrowingSphere", "VAECF", "L2C"]
 
 def load_cf_configs(
     cf_method: str, # The name of cf method
@@ -66,7 +66,7 @@ def main(args):
             # load data and data configs
             dm = relax.load_data(data_name)
 
-            keras.mixed_precision.set_global_policy("mixed_float16")
+            # keras.mixed_precision.set_global_policy("mixed_float16")
             
             # load predict function
             ml_model = relax.load_ml_module(data_name)
