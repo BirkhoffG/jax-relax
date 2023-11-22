@@ -549,11 +549,8 @@ class FeaturesList:
         return orignial_data
 
     def apply_constraints(self, xs, cfs, hard: bool = False):
-        constrainted_cfs = []
-        for feat, (start, end) in self.features_and_indices:
-            _cfs = feat.apply_constraints(xs[:, start:end], cfs[:, start:end], hard)
-            constrainted_cfs.append(_cfs)
-        return jnp.concatenate(constrainted_cfs, axis=-1)
+        return jnp.concatenate(
+            [feat.apply_constraints(xs[:, start:end], cfs[:, start:end], hard) for feat, (start, end) in self.features_and_indices], axis=-1)
     
     def compute_reg_loss(self, xs, cfs, hard: bool = False):
         reg_loss = 0.
