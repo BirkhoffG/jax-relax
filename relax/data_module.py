@@ -227,13 +227,15 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
     def load_from_path(
         cls, 
         path: str,  # Path to the directory to load `DataModule`
-        config: Dict|DataModuleConfig = None # Configs of `DataModule`
+        config: Dict|DataModuleConfig = None # Configs of `DataModule`. This argument is ignored.
     ) -> DataModule: # Initialized `DataModule` from path
         """Load `DataModule` from a directory."""
+        if config is not None:
+            warnings.warn("Passing `config` will have no effect.")
+        
         path = Path(path)
-        if config is None:
-            config = DataModuleConfig.load_from_json(path / 'config.json')
-        config = validate_configs(config, DataModuleConfig)
+        config = DataModuleConfig.load_from_json(path / 'config.json')
+        # config = validate_configs(config, DataModuleConfig)
         features = FeaturesList.load_from_path(path / 'features')
         label = FeaturesList.load_from_path(path / 'label')
         data = pd.read_csv(path / 'data.csv')
