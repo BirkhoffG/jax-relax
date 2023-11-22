@@ -503,9 +503,15 @@ class FeaturesList:
                       for feat, (start, end) in self.features_and_indices],
         )
     
-    def set_transformations(self, feat_names_and_transformation: dict[str, Transformation]) -> FeaturesList:
+    def set_transformations(self, feature_names_to_transformation: dict[str, Transformation]) -> FeaturesList:
         """Set the transformations for the features."""
-        for feat, transformation in feat_names_and_transformation.items():
+        
+        if not isinstance(feature_names_to_transformation, dict):
+            raise ValueError(f"Invalid feature_names_to_transformation type: "
+                             f"{type(feature_names_to_transformation).__name__}."
+                             f"Should be dict[str, Transformation]")
+        
+        for feat, transformation in feature_names_to_transformation.items():
             self[feat].set_transformation(transformation)
         self._transformed_data = None # Reset transformed data
         return self
