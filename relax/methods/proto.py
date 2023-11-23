@@ -13,7 +13,7 @@ from ..data_module import DataModule
 __all__ = ['ProtoCFConfig', 'ProtoCF']
 
 # %% ../../nbs/methods/03_proto.ipynb 5
-@ft.partial(jit, static_argnums=(2, 3, 4, 8, 9, 10, 12))
+@ft.partial(jit, static_argnums=(2, 3, 9, 10, 12))
 def _proto_cf(
     x: Array, 
     y_target: Array,
@@ -161,7 +161,7 @@ class ProtoCF(ParametricCFModule):
         if y_target is None:
             y_target = 1 - pred_fn(x)
         else:
-            y_target = y_target.reshape(1, -1)
+            y_target = jnp.array(y_target, copy=True).reshape(1, -1)
 
         sampled_data = jnp.where(
             y_target.argmax(axis=1) == self.sampled_data[1],
