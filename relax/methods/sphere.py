@@ -243,7 +243,7 @@ def _growing_spheres(
 # %% ../../nbs/methods/05_sphere.ipynb 12
 class GSConfig(BaseConfig):
     n_steps: int = 100
-    n_samples: int = 300
+    n_samples: int = 100
     step_size: float = 0.05
     p_norm: int = 2
 
