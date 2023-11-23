@@ -280,7 +280,6 @@ class GrowingSphere(CFModule):
             if self.has_data_module():
                 feats_info, perturb_fn = features_to_infos_and_perturb_fn(self.data_module.features)
                 cont_masks, immut_masks, num_categories = feats_info
-                print(immut_masks)
                 self.perturb_fn = ft.partial(
                     perturb_function_with_features, 
                     cont_masks=cont_masks,
