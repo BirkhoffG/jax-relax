@@ -170,12 +170,12 @@ def _cchvae(
 # %% ../../nbs/methods/06_cchvae.ipynb 7
 class CCHVAEConfig(BaseConfig):
     vae_layers: List[int] = Field(
-        [64, 32, 16, 8], description="List of hidden layer sizes for VAE."
+        [20, 16, 14, 12], description="List of hidden layer sizes for VAE."
     )
     opt_name: str = Field("adam", description="Optimizer name of VAE.")
     vae_lr: float = Field(0.001, description="Learning rate of VAE.")
     max_steps: int = Field(100, description="Max steps")
-    n_search_samples: int = Field(300, description="Number of generated candidate counterfactuals.")
+    n_search_samples: int = Field(100, description="Number of generated candidate counterfactuals.")
     step_size: float = Field(0.1, description="Step size")    
 
 # %% ../../nbs/methods/06_cchvae.ipynb 8

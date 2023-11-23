@@ -109,10 +109,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--data_name', 
+                        '-d',
                         type=str, 
                         default='adult', 
                         choices=['all'] + DATASET_NAMES)
     parser.add_argument('--cf_methods', 
+                        '-c',
                         type=str, 
                         default='VanillaCF', 
                         choices=['all'] + CF_NAMES)
