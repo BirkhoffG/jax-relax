@@ -107,7 +107,7 @@ def _hyper_sphere_coordindates(
     return candidates
      
 
-@auto_reshaping('x')
+@ft.partial(jit, static_argnums=(3, 4, 5, 7))
 def _cchvae(
     x: Array,
     rng_key: jrand.PRNGKey,

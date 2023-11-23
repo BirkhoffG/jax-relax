@@ -11,7 +11,7 @@ from ..utils import auto_reshaping, grad_update, validate_configs
 __all__ = ['VanillaCFConfig', 'VanillaCF']
 
 # %% ../../nbs/methods/01_vanilla.ipynb 5
-@auto_reshaping('x')
+@ft.partial(jit, static_argnums=(2, 3, 6, 7, 8))
 def _vanilla_cf(
     x: jnp.DeviceArray,  # `x` shape: (k,), where `k` is the number of features
     y_target: Array, # `y_target` shape: (1,)

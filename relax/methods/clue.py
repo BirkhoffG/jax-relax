@@ -116,7 +116,7 @@ class VAEGaussCat(keras.Model):
         return reconstruct_x
 
 # %% ../../nbs/methods/08_clue.ipynb 10
-@auto_reshaping('x')
+@ft.partial(jit, static_argnums=(3, 4, 6, 9, 12, 13))
 def _clue_generate(
     x: Array,
     rng_key: jrand.PRNGKey,

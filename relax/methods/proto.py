@@ -13,7 +13,7 @@ from ..data_module import DataModule
 __all__ = ['ProtoCFConfig', 'ProtoCF']
 
 # %% ../../nbs/methods/03_proto.ipynb 5
-@auto_reshaping('x')
+@ft.partial(jit, static_argnums=(2, 3, 4, 8, 9, 10, 12))
 def _proto_cf(
     x: Array, 
     y_target: Array,

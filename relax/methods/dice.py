@@ -22,6 +22,7 @@ def dpp_style_vmap(cfs: Array):
     return jnp.linalg.det(det_entries)
 
 # %% ../../nbs/methods/02_dice.ipynb 13
+@ft.partial(jit, static_argnums=(2, 3, 4, 8, 9, 10, 11))
 def _diverse_cf(
     x: jnp.DeviceArray,  # `x` shape: (k,), where `k` is the number of features
     y_target: Array, # `y_target` shape: (1,)

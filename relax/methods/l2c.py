@@ -357,7 +357,10 @@ class L2C(ParametricCFModule):
         x: Array, 
         **kwargs
     ) -> Array:
-        # TODO: Does not support passing apply_constraints        
-        discretized_x = self.discretizer.transform(x)
-        cfs, probs = self.l2c_model.forward(discretized_x, training=False)
-        return self.discretizer.inverse_transform(cfs)
+        # TODO: Does not support passing apply_constraints
+        @jax.jit
+        def generate_cf(x: Array):
+            discretized_x = self.discretizer.transform(x)
+            cfs, probs = self.l2c_model.forward(discretized_x, training=False)
+            return self.discretizer.inverse_transform(cfs)
+        return generate_cf(x)
