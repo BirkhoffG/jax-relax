@@ -12,7 +12,7 @@ from ..data_module import DataModule
 # %% auto 0
 __all__ = ['ProtoCFConfig', 'ProtoCF']
 
-# %% ../../nbs/methods/03_proto.ipynb 6
+# %% ../../nbs/methods/03_proto.ipynb 5
 @ft.partial(jit, static_argnums=(2, 3, 9, 10, 12))
 def _proto_cf(
     x: Array, 
@@ -36,6 +36,8 @@ def _proto_cf(
     
     @jit
     def cost_fn(cf, x):
+        # For some reasons, calling jnp.linalg.norm(cf - x) 
+        # directly will lead to significant performance drop.
         return beta * jnp.abs(cf - x).mean() + optax.l2_loss(cf, x).mean()
     
     @ft.partial(jit, static_argnums=(3))
@@ -62,7 +64,7 @@ def _proto_cf(
         cf, opt_state = cf_opt_state
         cf_grads = jax.grad(loss_fn)(cf, x, y_target, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
-        # cf = apply_constraints_fn(x, cf, hard=False)
+        cf = apply_constraints_fn(x, cf, hard=False)
         return cf, opt_state
     
     # Calculate the number of samples
@@ -76,7 +78,7 @@ def _proto_cf(
     cf = apply_constraints_fn(x, cf, hard=True)
     return cf
 
-# %% ../../nbs/methods/03_proto.ipynb 7
+# %% ../../nbs/methods/03_proto.ipynb 6
 class ProtoCFConfig(BaseConfig):
     """Configurator of `ProtoCF`."""
     
@@ -96,7 +98,7 @@ class ProtoCFConfig(BaseConfig):
     ae_loss: str = Field("mse", description="Loss function name of AutoEncoder.")
 
 
-# %% ../../nbs/methods/03_proto.ipynb 8
+# %% ../../nbs/methods/03_proto.ipynb 7
 class ProtoCF(ParametricCFModule):
 
     def __init__(
