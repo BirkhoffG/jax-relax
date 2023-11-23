@@ -12,7 +12,7 @@ from ..data_module import DataModule
 # %% auto 0
 __all__ = ['ProtoCFConfig', 'ProtoCF']
 
-# %% ../../nbs/methods/03_proto.ipynb 5
+# %% ../../nbs/methods/03_proto.ipynb 6
 @ft.partial(jit, static_argnums=(2, 3, 9, 10, 12))
 def _proto_cf(
     x: Array, 
@@ -30,9 +30,15 @@ def _proto_cf(
     apply_constraints_fn: Callable,
 ) -> Array:
     
+    @jit
     def encode(x):
         return ae.encoder(x)
     
+    @jit
+    def cost_fn(cf, x):
+        return beta * jnp.abs(cf - x).mean() + optax.l2_loss(cf, x).mean()
+    
+    @ft.partial(jit, static_argnums=(3))
     def loss_fn(
         cf: Array,
         x: Array,
@@ -41,7 +47,8 @@ def _proto_cf(
     ):
         y_cf = pred_fn(cf)
         loss_val = c * validity_fn(y_target, y_cf)
-        loss_cost = beta * jnp.linalg.norm(cf - x, ord=1) + jnp.linalg.norm(cf - x, ord=2)
+        # loss_cost = beta * jnp.linalg.norm(cf - x, ord=1) + jnp.linalg.norm(cf - x, ord=2)
+        loss_cost = cost_fn(cf, x)
         loss_ae = gamma * jnp.square(ae(cf) - cf).mean()
         loss_proto = theta * jnp.square(
             jnp.linalg.norm(encode(cf) - encode(sampled_data).sum(axis=0) / n_sampled_data, ord=2)
@@ -55,7 +62,7 @@ def _proto_cf(
         cf, opt_state = cf_opt_state
         cf_grads = jax.grad(loss_fn)(cf, x, y_target, pred_fn)
         cf, opt_state = grad_update(cf_grads, cf, opt_state, opt)
-        cf = apply_constraints_fn(x, cf, hard=False)
+        # cf = apply_constraints_fn(x, cf, hard=False)
         return cf, opt_state
     
     # Calculate the number of samples
@@ -69,7 +76,7 @@ def _proto_cf(
     cf = apply_constraints_fn(x, cf, hard=True)
     return cf
 
-# %% ../../nbs/methods/03_proto.ipynb 6
+# %% ../../nbs/methods/03_proto.ipynb 7
 class ProtoCFConfig(BaseConfig):
     """Configurator of `ProtoCF`."""
     
@@ -89,7 +96,7 @@ class ProtoCFConfig(BaseConfig):
     ae_loss: str = Field("mse", description="Loss function name of AutoEncoder.")
 
 
-# %% ../../nbs/methods/03_proto.ipynb 7
+# %% ../../nbs/methods/03_proto.ipynb 8
 class ProtoCF(ParametricCFModule):
 
     def __init__(
@@ -142,11 +149,7 @@ class ProtoCF(ParametricCFModule):
         self._is_trained = True
         # self.sampled_data = data.sample(self.config.n_samples)
         sampled_xs, sampled_ys = data.sample(self.config.n_samples)
-        self.sampled_data = (sampled_xs, sampled_ys)
-        self.sampled_data_dict = {
-            label.item(): sampled_xs[(sampled_ys == label).reshape(-1)]
-                for label in jnp.unique(sampled_ys)
-        }
+        self.sampled_data = tuple(map(jax.device_put, (sampled_xs, sampled_ys)))
         return self
     
     @auto_reshaping('x')
@@ -184,3 +187,4 @@ class ProtoCF(ParametricCFModule):
             validity_fn=keras.losses.get({'class_name': self.config.validity_fn, 'config': {'reduction': None}}),
             apply_constraints_fn=self.apply_constraints,
         )
+
