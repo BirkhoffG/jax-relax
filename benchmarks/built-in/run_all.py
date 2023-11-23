@@ -96,8 +96,10 @@ def main(args):
 
     # Output as csv
     if args.to_csv:
-        csv_name = args.csv_name
-        results.to_csv(f'assets/{csv_name}.csv')
+        f_dir = Path(os.getcwd()) / "benchmarks" / "built-in" / "assets"
+        # if not os.path.exists(f_dir):
+        f_dir.mkdir(parents=True, exist_ok=True)
+        results.to_csv(f_dir / f"{args.csv_name}.csv")
     else:
         print(results)
         return None
@@ -120,11 +122,11 @@ if __name__ == "__main__":
                         choices=['iter' ,'vmap', 'pmap'])
     parser.add_argument('--to_csv', 
                         type=bool, 
-                        default=False, 
+                        default=True, 
                         choices=[False,True])
     parser.add_argument('--csv_name', 
                         type=str, 
-                        default='benchmark_results')
+                        default='results')
     parser.add_argument('--disable_jit',
                         type=bool,
                         default=False)
@@ -133,7 +135,7 @@ if __name__ == "__main__":
     if args.disable_jit:
         jax.config.update("jax_disable_jit", True)
     
-    jax.profiler.start_trace("/tmp/tensorboard")
+    # jax.profiler.start_trace("/tmp/tensorboard")
     main(args)
-    jax.profiler.stop_trace()
+    # jax.profiler.stop_trace()
 
