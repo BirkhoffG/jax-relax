@@ -132,15 +132,16 @@ class L2CModel(keras.Model):
     def perturb(self, inputs, cfs, probs, i, start, end):
         return cfs[:, start:end] * probs[:, i : i + 1] + inputs[:, start:end] * (1 - probs[:, i : i + 1])
     
-    def forward(self, inputs, training=False):
+    def forward(self, rng_key, inputs, training=False):
+        key_1, key_2 = jrand.split(rng_key)
         select_probs = self.selector(inputs, training=training)
         probs = sample_bernouli(
-            self.seed_generator.next(), select_probs, 
+            key_1, select_probs, 
             tau=self.tau, training=training
         )
         cfs_logits = self.generator(inputs, training=training)
         cfs = sample_categorical(
-            self.seed_generator.next(), cfs_logits, 
+            key_2, cfs_logits, 
             tau=self.tau, training=training
         )
         cfs = jnp.concatenate([
@@ -151,7 +152,8 @@ class L2CModel(keras.Model):
         return cfs, probs
     
     def call(self, inputs, training=False):
-        cfs, probs = self.forward(inputs, training=training)
+        rng_key = self.seed_generator.next()
+        cfs, probs = self.forward(rng_key, inputs, training=training)
         # loss = self.compute_l2c_loss(inputs, cfs, probs)
         validity_loss, sparsity = self.compute_l2c_loss(inputs, cfs, probs)
         self.add_loss(validity_loss)
@@ -353,14 +355,17 @@ class L2C(ParametricCFModule):
     
     @auto_reshaping('x')
     def generate_cf(
-        self, 
-        x: Array, 
+        self,
+        x: Array,
+        pred_fn: Callable = None,
+        y_target: Array = None,
+        rng_key: jrand.PRNGKey = None,
         **kwargs
     ) -> Array:
         # TODO: Does not support passing apply_constraints
         @jax.jit
         def generate_cf(x: Array):
             discretized_x = self.discretizer.transform(x)
-            cfs, probs = self.l2c_model.forward(discretized_x, training=False)
+            cfs, probs = self.l2c_model.forward(rng_key, discretized_x, training=False)
             return self.discretizer.inverse_transform(cfs)
         return generate_cf(x)
