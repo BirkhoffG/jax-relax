@@ -477,7 +477,7 @@ def download_data_module_files(
 
 def load_data(
     data_name: str, # The name of data
-    return_config: bool = False, # Return `data_config `or not
+    return_config: bool = False, # Deprecated
     data_configs: dict = None, # Data configs to override default configuration
 ) -> DataModule | Tuple[DataModule, DataModuleConfig]: # Return `DataModule` or (`DataModule`, `DataModuleConfig`)
     """High-level util function for loading `data` and `data_config`."""
@@ -494,19 +494,20 @@ def load_data(
         download_original_data=True
     )
 
-    # read config
-    conf_path = data_parent_dir / f'{data_name}/data/config.json'
-    config = load_json(conf_path)
-
-    if not (data_configs is None):
-        config.update(data_configs)
-
-    config = DataModuleConfig(**config)
-    data_dir = data_parent_dir / f'{data_name}/data'
-    data_module = DataModule.load_from_path(data_dir, config=config)
-
     if return_config:
-        return data_module, config
-    else:
-        return data_module
+        warnings.warn("`return_config` is deprecated since v0.2. "
+                      "Please access `config` from `DataModule`.", DeprecationWarning)
+
+    # read and override config
+    # comment them for now since we cannot garantee the override configs are valid
+    # conf_path = data_parent_dir / f'{data_name}/data/config.json'
+    # config = load_json(conf_path)
+    # if not (data_configs is None):
+    #     config.update(data_configs)
+    # config = DataModuleConfig(**config)
+
+    data_dir = data_parent_dir / f'{data_name}/data'
+    data_module = DataModule.load_from_path(data_dir, config=data_configs)
+
+    return data_module
 
