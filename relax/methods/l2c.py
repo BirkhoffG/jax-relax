@@ -13,10 +13,10 @@ from keras_core.random import SeedGenerator
 import einops
 
 # %% auto 0
-__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'L2CModel', 'qcut', 'qcut_inverse', 'cut_quantiles',
-           'discretize_xs', 'Discretizer', 'L2CConfig', 'L2C']
+__all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'split_fn', 'L2CModel', 'qcut', 'qcut_inverse',
+           'cut_quantiles', 'discretize_xs', 'Discretizer', 'L2CConfig', 'L2C']
 
-# %% ../../nbs/methods/09_l2c.ipynb 6
+# %% ../../nbs/methods/09_l2c.ipynb 7
 def gumbel_softmax(
     key: jrand.PRNGKey, # Random key
     logits: Array, # Logits for each class. Shape (batch_size, num_classes)
@@ -28,7 +28,7 @@ def gumbel_softmax(
     y = logits + gumbel_noise
     return jax.nn.softmax(y / tau, axis=-1)
 
-# %% ../../nbs/methods/09_l2c.ipynb 7
+# %% ../../nbs/methods/09_l2c.ipynb 8
 def sample_categorical(
     key: jrand.PRNGKey, # Random key
     logits: Array, # Logits for each class. Shape (batch_size, num_classes)
@@ -48,7 +48,7 @@ def sample_categorical(
         None,
     )
 
-# %% ../../nbs/methods/09_l2c.ipynb 9
+# %% ../../nbs/methods/09_l2c.ipynb 10
 def sample_bernouli(
     key: jrand.PRNGKey, # Random key
     prob: Array, # Logits for each class. Shape (batch_size, 1)
@@ -75,13 +75,29 @@ def sample_bernouli(
         None,
     )
 
-# %% ../../nbs/methods/09_l2c.ipynb 10
+# %% ../../nbs/methods/09_l2c.ipynb 11
+def split_fn(feature_indices: list[tuple[int, int]]):
+    feature_indices = tuple([x[1] for x in feature_indices[:-1]])
+
+    @ft.partial(jit, static_argnums=1)
+    def split_xs(xs, feature_indices):
+        return jnp.split(xs, list(feature_indices), axis=-1)
+    
+    @ft.partial(jit, static_argnums=1)
+    def split_prob(prob, feature_indices):
+        return jnp.split(prob, len(feature_indices) + 1, axis=-1)
+    
+    return ft.partial(split_xs, feature_indices=feature_indices), ft.partial(split_prob, feature_indices=feature_indices)
+
+# %% ../../nbs/methods/09_l2c.ipynb 13
 class L2CModel(keras.Model):
+
     def __init__(
         self,
         generator_layers: list[int],
         selector_layers: list[int],
         feature_indices: list[tuple[int, int]] = None,
+        immutable_mask: Array = None,
         pred_fn: Callable = None,
         alpha: float = 1e-4, # Sparsity regularization
         tau: float = 0.7,
@@ -91,16 +107,31 @@ class L2CModel(keras.Model):
         super().__init__(**kwargs)
         self.generator_layers = generator_layers
         self.selector_layers = selector_layers
-        self.feature_indices = feature_indices
         self.pred_fn = pred_fn
         self.tau = tau
         self.alpha = alpha
         seed = seed or get_config().global_seed
         self.seed_generator = SeedGenerator(seed)
+        self.set_features_info(feature_indices)
+        self.set_immutable_mask(immutable_mask)
+        
+        # split functions
+        self.split_xs_fn, self.split_prob_fn = split_fn(self.feature_indices)
+
+    @property
+    def start_end_indices(self):
+        feature_indices = jnp.array(list(map(lambda x: list(x), self.feature_indices)))
+        return feature_indices[:-1, 1]
 
     def set_features_info(self, feature_indices: list[tuple[int, int]]):
         self.feature_indices = feature_indices
+        # self.feature_indices = jnp.array(
+        #     list(map(lambda x: list(x), feature_indices)))
+        # assert self.feature_indices.shape == (len(feature_indices), 2)
         # TODO: check if the feature indices are valid
+
+    def set_immutable_mask(self, immutable_mask: Array):
+        self.immutable_mask = immutable_mask
 
     def set_pred_fn(self, pred_fn: Callable):
         self.pred_fn = pred_fn
@@ -121,6 +152,8 @@ class L2CModel(keras.Model):
         )
 
     def compute_l2c_loss(self, inputs, cfs, probs):
+        # inputs = self.split_xs_fn(inputs)
+        # cfs = self.split_xs_fn(cfs)
         y_target = self.pred_fn(inputs).argmin(axis=-1)
         y_pred = self.pred_fn(cfs)
         validity_loss = keras.losses.sparse_categorical_crossentropy(
@@ -128,11 +161,16 @@ class L2CModel(keras.Model):
         ).mean()
         sparsity = jnp.linalg.norm(probs, ord=1) * self.alpha
         return validity_loss, sparsity
-    
-    def perturb(self, inputs, cfs, probs, i, start, end):
-        return cfs[:, start:end] * probs[:, i : i + 1] + inputs[:, start:end] * (1 - probs[:, i : i + 1])
-    
+        
     def forward(self, rng_key, inputs, training=False):
+        
+        def perturb(x, cf, prob, immutable):
+            cf = sample_categorical(
+                key_2, cf, tau=tau, training=training
+            )
+            prob = prob * (1 - immutable)
+            return x * (1 - prob) + cf * prob
+
         key_1, key_2 = jrand.split(rng_key)
         select_probs = self.selector(inputs, training=training)
         probs = sample_bernouli(
@@ -140,28 +178,34 @@ class L2CModel(keras.Model):
             tau=self.tau, training=training
         )
         cfs_logits = self.generator(inputs, training=training)
-        cfs = sample_categorical(
-            key_2, cfs_logits, 
-            tau=self.tau, training=training
+                
+        # xs = jnp.split(inputs, start_end, axis=-1)
+        # cfs = jnp.split(cfs_logits, start_end, axis=-1)
+        # probs = jnp.split(prob, len(self.feature_indices), axis=-1)
+        xs = self.split_xs_fn(inputs)
+        cfs = self.split_xs_fn(cfs_logits)
+        probs = self.split_prob_fn(probs)
+        immutables = self.split_prob_fn(self.immutable_mask)
+        tau = self.tau
+        
+        cfs = jax.tree_util.tree_map(
+            perturb, xs, cfs, probs, immutables #self.tau, training
         )
-        cfs = jnp.concatenate([
-                self.perturb(inputs, cfs, probs, i, start, end)
-                for i, (start, end) in enumerate(self.feature_indices)
-            ], axis=-1,
-        )
+        cfs = jnp.concatenate(cfs, axis=-1)
+        probs = jnp.concatenate(probs, axis=-1)
         return cfs, probs
     
     def call(self, inputs, training=False):
         rng_key = self.seed_generator.next()
         cfs, probs = self.forward(rng_key, inputs, training=training)
         # loss = self.compute_l2c_loss(inputs, cfs, probs)
+
         validity_loss, sparsity = self.compute_l2c_loss(inputs, cfs, probs)
         self.add_loss(validity_loss)
         self.add_loss(sparsity)
         return cfs   
 
-
-# %% ../../nbs/methods/09_l2c.ipynb 12
+# %% ../../nbs/methods/09_l2c.ipynb 15
 def qcut(
     x: Array, # Input array
     q: int, # Number of quantiles
@@ -176,16 +220,19 @@ def qcut(
     digitized = jnp.digitize(x, quantiles)
     return digitized, quantiles
 
-# %% ../../nbs/methods/09_l2c.ipynb 14
+# %% ../../nbs/methods/09_l2c.ipynb 17
 def qcut_inverse(
     digitized: Array, # Digitized One-Hot Encoding Array
     quantiles: Array, # Quantiles
 ) -> Array:
     """Inverse of qcut."""
     
-    return digitized @ quantiles
+    result = digitized @ quantiles
+    if result.ndim == 1:
+        result = result[..., None]
+    return result
 
-# %% ../../nbs/methods/09_l2c.ipynb 16
+# %% ../../nbs/methods/09_l2c.ipynb 19
 def cut_quantiles(
     quantiles: Array, # Quantiles
     xs: Array, # Input array
@@ -198,22 +245,23 @@ def cut_quantiles(
     quantiles = (quantiles[1:] + quantiles[:-1]) / 2
     return quantiles
 
-# %% ../../nbs/methods/09_l2c.ipynb 17
+# %% ../../nbs/methods/09_l2c.ipynb 20
 def discretize_xs(
     xs: Array, # Input array
     is_categorical_and_indices: list[tuple[bool, tuple[int, int]]], # Features list
     q: int = 4, # Number of quantiles
-) -> tuple[Array, list[Array], list[tuple[tuple[int, int], Array]]]: # (discretized array, indices_and_quantiles_and_mid)
+) -> tuple[list[Array], list[Array], list[Array], list[list[int, int]]]: # (discretized array, indices_and_quantiles_and_mid)
     """Discretize continuous features."""
     
     discretized_xs = []
-    indices_and_mid = []
+    mid_quantiles = []
     quantiles_feats = []
+    feature_indices = []
     discretized_start, discretized_end = 0, 0
 
     for is_categorical, (start, end) in is_categorical_and_indices:
         if is_categorical:
-            discretized, quantiles, mid = xs[:, start:end], None, None
+            discretized, quantiles, mid = xs[:, start:end], None, jnp.identity(end - start)
             discretized_end += end - start
         else:
             discretized, quantiles = qcut(xs[:, start:end].reshape(-1), q=q)
@@ -223,15 +271,13 @@ def discretize_xs(
         
         discretized_xs.append(discretized)
         quantiles_feats.append(quantiles)
-        indices_and_mid.append(
-            ((discretized_start, discretized_end), mid)
-        )
-        
+        mid_quantiles.append(mid)
+        feature_indices.append([discretized_start, discretized_end])
         discretized_start = discretized_end
-    discretized_xs = jnp.concatenate(discretized_xs, axis=-1)
-    return discretized_xs, quantiles_feats, indices_and_mid
+    # discretized_xs = jnp.concatenate(discretized_xs, axis=-1)
+    return discretized_xs, quantiles_feats, mid_quantiles, feature_indices
 
-# %% ../../nbs/methods/09_l2c.ipynb 19
+# %% ../../nbs/methods/09_l2c.ipynb 22
 class Discretizer:
     """Discretize continuous features."""
     
@@ -243,43 +289,63 @@ class Discretizer:
         self.is_cat_and_indices = is_cat_and_indices
         self.q = q
 
+    @property
+    def transform_indices(self):
+        return [x[1][1] for x in self.is_cat_and_indices[:-1]]
+    
+    @property
+    def inverse_transform_indices(self):
+        return [x[1] for x in self.indices[:-1]]
+        
     def fit(self, xs: Array):
-        _, self.quantiles, self.indices_and_mid_quantiles = discretize_xs(
+        _, self.quantiles, self.mid_quantiles, self.indices = discretize_xs(
             xs, self.is_cat_and_indices, self.q
         )
+        self.transform_indices, self.inverse_transform_indices
+        return self
 
+    # @ft.partial(jit, static_argnums=0)
     def transform(self, xs: Array):
-        digitized_xs = []
-        for quantiles, (_, (start, end)) in zip(self.quantiles, self.is_cat_and_indices):
-            if quantiles is None: 
-                digitized = xs[:, start:end]
-            else:
-                digitized = jnp.digitize(xs[:, start], quantiles)
-                digitized = jax.nn.one_hot(digitized, self.q)
-            digitized_xs.append(digitized)
+        def digitize_fn(x, quantile):
+            if quantile is None: 
+                return x
+            else: 
+                digitized = jnp.digitize(x.reshape(-1), quantile)
+                return jax.nn.one_hot(digitized, self.q)
+
+        # indices = [x[1][1] for x in self.is_cat_and_indices[:-1]]
+        # print(indices)
+        digitized_xs = jnp.split(xs, self.transform_indices, axis=-1) # [feat_1, ..., feat_n]
+        digitized_xs = jax.tree_util.tree_map(
+            digitize_fn, digitized_xs, self.quantiles
+        )        
         return jnp.concatenate(digitized_xs, axis=-1)
 
     def fit_transform(self, xs: Array):
         self.fit(xs)
         return self.transform(xs)
 
+    # @ft.partial(jit, static_argnums=0)
     def inverse_transform(self, xs: Array):
-        continutized_xs = []
-        for (start, end), mid_quantiles in self.indices_and_mid_quantiles:
-            if mid_quantiles is None:
-                cont_feat = xs[:, start:end]
-            else:
-                cont_feat = qcut_inverse(xs[:, start:end], mid_quantiles).reshape(-1, 1)
-            continutized_xs.append(cont_feat)
-        return jnp.concatenate(continutized_xs, axis=-1)
+        xs = jnp.split(xs, self.inverse_transform_indices, axis=-1)
+        xs = jax.tree_util.tree_map(
+            lambda x, q: qcut_inverse(x, q), xs, self.mid_quantiles
+        )
+        return jnp.concatenate(xs, axis=-1)
+    
+    def inversed_transform_pytree(self, xs: list[Array]):
+        xs = jax.tree_util.tree_map(
+            lambda x, q: qcut(x, q), xs, self.mid_quantiles)
+        return jnp.concatenate(xs, axis=-1)
     
     def get_pred_fn(self, pred_fn: Callable[[Array], Array]):
         def _pred_fn(xs: Array):
             return pred_fn(self.inverse_transform(xs))
+            # return pred_fn(self.inversed_transform_pytree(xs))
         return _pred_fn
 
 
-# %% ../../nbs/methods/09_l2c.ipynb 22
+# %% ../../nbs/methods/09_l2c.ipynb 25
 class L2CConfig(BaseConfig):
     generator_layers: list[int] = Field(
         [64, 64, 64], description="Generator MLP layers."
@@ -293,7 +359,7 @@ class L2CConfig(BaseConfig):
     tau: float = Field(0.7, description="Temperature for the Gumbel softmax.")
     q: int = Field(4, description="Number of quantiles.")
 
-# %% ../../nbs/methods/09_l2c.ipynb 23
+# %% ../../nbs/methods/09_l2c.ipynb 26
 class L2C(ParametricCFModule):
     def __init__(
         self,
@@ -327,12 +393,13 @@ class L2C(ParametricCFModule):
         )
         discretized_xs_train = self.discretizer.fit_transform(xs_train)
         pred_fn = self.discretizer.get_pred_fn(pred_fn)
-        features_indices = [indices for indices, _ in self.discretizer.indices_and_mid_quantiles]
+        features_indices = self.discretizer.indices
 
         self.l2c_model = L2CModel(
             generator_layers=self.config.generator_layers,
             selector_layers=self.config.selector_layers,
             feature_indices=features_indices,
+            immutable_mask=jnp.array([feat.is_immutable for feat in data.features], dtype=jnp.int32),
             pred_fn=pred_fn,
             alpha=self.config.alpha,
             tau=self.config.tau,
@@ -342,7 +409,7 @@ class L2C(ParametricCFModule):
                 'class_name': self.config.opt_name, 
                 'config': {'learning_rate': self.config.lr}
             }),
-            loss=None
+            loss=None,
         )
         self.l2c_model.fit(
             discretized_xs_train, ys_train,
@@ -362,7 +429,7 @@ class L2C(ParametricCFModule):
         rng_key: jrand.PRNGKey = None,
         **kwargs
     ) -> Array:
-        # TODO: Does not support passing apply_constraints
+        
         @jax.jit
         def generate_cf(x: Array):
             discretized_x = self.discretizer.transform(x)
