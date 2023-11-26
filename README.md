@@ -137,7 +137,7 @@ for an end-to-end example of using `ReLax`.
 
 ## Supported Recourse Methods
 
-`ReLax` currently provides implementations of 8 recourse explanation
+`ReLax` currently provides implementations of 9 recourse explanation
 methods.
 
 | Method                                                                                     | Type            | Paper Title                                                                                    | Ref                                       |
