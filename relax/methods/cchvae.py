@@ -9,7 +9,7 @@ from ..utils import auto_reshaping, grad_update, validate_configs, get_config
 from ..data_utils import Feature, FeaturesList
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
-from keras_core.random import SeedGenerator
+from keras.random.seed_generator import SeedGenerator
 
 # %% auto 0
 __all__ = ['CHVAE', 'CCHVAEConfig', 'CCHVAE']

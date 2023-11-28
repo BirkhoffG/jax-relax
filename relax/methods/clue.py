@@ -9,7 +9,7 @@ from ..utils import auto_reshaping, validate_configs, get_config, grad_update
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
 from jax.scipy.stats.norm import logpdf as gaussian_logpdf
-from keras_core.random import SeedGenerator
+from keras.random.seed_generator import SeedGenerator
 
 # %% auto 0
 __all__ = ['Encoder', 'Decoder', 'kl_divergence', 'VAEGaussCat', 'CLUEConfig', 'get_reconstruction_loss_fn', 'CLUE']
