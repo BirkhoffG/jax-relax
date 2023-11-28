@@ -9,7 +9,7 @@ from ..utils import auto_reshaping, grad_update, validate_configs, get_config
 from ..data_utils import Feature, FeaturesList
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
-from keras.random.seed_generator import SeedGenerator
+from keras.random import SeedGenerator
 
 # %% auto 0
 __all__ = ['CHVAE', 'CCHVAEConfig', 'CCHVAE']
@@ -61,7 +61,7 @@ class CHVAE(keras.Model):
     
     def reparameterize(self, mu, log_var):
         std = keras.ops.exp(0.5 * log_var)
-        eps = keras.random.random.normal(std.shape, seed=self.seed_generator)
+        eps = keras.random.normal(std.shape, seed=self.seed_generator)
         return mu + eps * std
     
     def forward(self, x, training=None):
