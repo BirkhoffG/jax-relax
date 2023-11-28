@@ -61,7 +61,7 @@ class CHVAE(keras.Model):
     
     def reparameterize(self, mu, log_var):
         std = keras.ops.exp(0.5 * log_var)
-        eps = keras.random.normal(std.shape, seed=self.seed_generator)
+        eps = keras.random.random.normal(std.shape, seed=self.seed_generator)
         return mu + eps * std
     
     def forward(self, x, training=None):
