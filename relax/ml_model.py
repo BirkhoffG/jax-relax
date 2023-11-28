@@ -107,14 +107,14 @@ class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
                 output_size=config.output_size,
                 dropout_rate=config.dropout_rate
             )
-            model.compile(
-                optimizer=keras.optimizers.get({
-                    'class_name': config.opt_name, 
-                    'config': {'learning_rate': config.lr}
-                }),
-                loss=config.loss,
-                metrics=config.metrics
-            )
+        model.compile(
+            optimizer=keras.optimizers.get({
+                'class_name': config.opt_name, 
+                'config': {'learning_rate': config.lr}
+            }),
+            loss=config.loss,
+            metrics=config.metrics
+        )
         return model
             
     def train(
@@ -154,7 +154,8 @@ class MLModule(BaseModule, TrainableMixedin, PredFnMixedin):
     def load_from_path(cls, path):
         path = Path(path)
         config = MLModuleConfig(**json.load(open(path / "config.json")))
-        model = keras.models.load_model(path / "model.keras")
+        # model = keras.models.load_model(path / "model.keras")
+        model = keras.saving.load_model(path / "model.keras", compile=False)
         module = cls(config, model=model)
         module._is_trained = True
         return module
