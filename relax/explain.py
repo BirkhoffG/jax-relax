@@ -191,7 +191,8 @@ def prepare_cf_module(
     cf_module.set_compute_reg_loss_fn(data_module.compute_reg_loss)
     train_config = train_config or {}
     if isinstance(cf_module, ParametricCFModule):
-        cf_module.train(data_module, pred_fn=pred_fn, **train_config)
+        if not cf_module.is_trained:
+            cf_module.train(data_module, pred_fn=pred_fn, **train_config)
     cf_module.before_generate_cf()
     return cf_module
 
