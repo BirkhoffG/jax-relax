@@ -2,11 +2,11 @@
 
 # %% ../nbs/04_evaluate.ipynb 3
 from __future__ import annotations
+
 from .import_essentials import *
-from .methods import *
 from .base import *
 from .explain import *
-from keras_core.metrics import sparse_categorical_accuracy
+from keras.metrics import sparse_categorical_accuracy
 import einops
 
 # %% auto 0

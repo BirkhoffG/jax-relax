@@ -9,7 +9,8 @@ from .utils import validate_configs, load_json
 from .ckpt_manager import CheckpointManager, load_checkpoint
 from ..data_module import DataModule
 from urllib.request import urlretrieve
-from keras_core.src.trainers.epoch_iterator import EpochIterator
+from keras.src.trainers.epoch_iterator import EpochIterator
+
 
 # %% auto 0
 __all__ = ['TrainingConfigs', 'train_model_with_states', 'train_model']

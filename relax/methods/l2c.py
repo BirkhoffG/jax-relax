@@ -9,8 +9,7 @@ from ..utils import *
 from ..data_utils import Feature, FeaturesList
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
-from keras_core.random import SeedGenerator
-import einops
+from keras.random import SeedGenerator
 
 # %% auto 0
 __all__ = ['gumbel_softmax', 'sample_categorical', 'sample_bernouli', 'split_fn', 'L2CModel', 'qcut', 'qcut_inverse',

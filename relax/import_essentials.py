@@ -34,7 +34,8 @@ import chex
 
 # keras
 os.environ['KERAS_BACKEND'] = 'jax'
-import keras_core as keras
+# import keras_core as keras
+import keras
 
 # nn related
 # import haiku as hk

@@ -7,7 +7,7 @@ from .base import ParametricCFModule
 from ..ml_model import MLP, MLPBlock
 from ..data_module import DataModule
 from ..utils import auto_reshaping, validate_configs, get_config
-from keras_core.random import SeedGenerator
+from keras.random import SeedGenerator
 
 # %% auto 0
 __all__ = ['sample_latent', 'VAE', 'VAECFConfig', 'VAECF']
