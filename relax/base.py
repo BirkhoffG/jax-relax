@@ -65,7 +65,8 @@ class TrainableMixedin:
     @property
     def is_trained(self) -> bool:
         """Return whether the module is trained or not."""
-        raise NotImplementedError
+        self._is_trained = getattr(self, '_is_trained', False)
+        return self._is_trained
     
     def train(self, data, **kwargs):
         """Train the module."""
