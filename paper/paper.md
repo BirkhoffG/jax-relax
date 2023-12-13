@@ -57,18 +57,23 @@ Recourse and counterfactual explanation methods concentrate on the generation of
 
 Despite progress made in counterfactual explanation research [@wachter2017counterfactual;@mothilal2020explaining;@ustun2019actionable;@upadhyay2021towards;@vo2023feature;@guo2021counternet;@guo2023rocoursenet], current research practices often restrict the evaluation of recourse explanation methods on medium-sized datasets (with under 50k data points). 
 This constraint primarily stems from the excessive runtime overhead of recourse generation by the existing open-source recourse libraries [@pawelczyk2021carla;@mothilal2020explaining;@klaise2021alibi].
-For instance, as shown in \autoref{fig:speed}, the CARLA library [@pawelczyk2021carla], a popular recourse explanation library, requires roughly 30 minutes to benchmark the adult dataset containing $\sim32,000$ data points. At this speed, it would take CARLA approximately 15 hours to benchmark a dataset with one million samples, and nearly one week to benchmark a dataset with 10 million samples.
-Consequently, this severe runtime overhead hinders the large-scale analysis of recourse explanations, impedes the pace of research development of new recourse methods, and raises concerns about the scalability of existing methods being deployed in data-intensive ML applications.
+For instance, as shown in \autoref{fig:speed}, the CARLA library [@pawelczyk2021carla] requires roughly 30 minutes to benchmark the adult dataset containing $\sim32,000$ data points. At this speed, it would take CARLA approximately 15 hours to benchmark a dataset with 1 million samples, and nearly one week to benchmark a 10-million dataset.
+Consequently, this severe runtime overhead hinders the large-scale analysis of recourse explanations and the research development of new recourse methods.
 
 ![\label{fig:speed}Runtime comparison of the *adult* dataset between `ReLax` and three open-source recourse librarires (CARLA [@pawelczyk2021carla], DiCE [@mothilal2020explaining], and alibi [@klaise2021alibi].](./figs/speed-compare.pdf)
 
 
-We present `ReLax` (**Re**course Explanation **L**ibrary using J**ax**), an efficient and scalable benchmarking library for recourse and counterfactual explanations. `ReLax` is the *first* JAX-based library for recourse explanation which leverages language primitives such as vectorization, parallelization, and JIT compilation in JAX [@jax2018github;@frostig2018jax].
-`ReLax` is at least two order-of-magnitudes faster than the existing recourse explanation libraries (with a maximum speedup of 404,319.54X, as shown in Figure~\ref{fig:speed}). We further demonstrate that `ReLax` is capable of benchmarking real-world datasets of up to 10M data points with a reasonable amount of computational cost.
+To overcome this challenge, we present `ReLax` (**Re**course Explanation **L**ibrary using J**ax**), the *first* recourse explanation library in JAX [@jax2018github;@frostig2018jax]. `ReLax` is an *efficient and scalable benchmarking library* for recourse and counterfactual explanations; it runs order-of-magnitudes (up to 404,319.54X, as shown in Figure~\ref{fig:speed}) faster than the existing libraries. Furthermore, we demonstrate that `ReLax` can benchmark real-world datasets of up to 10M data points with a reasonable amount of computational cost.
 
 
-In addition, `ReLax` supports a diverse set of recourse methods and datasets. Notably, we implement 9 recourse explanation methods in JAX ranging from non-parametric, semi-parametric, and parametric recourse explanation methods. In addition, we include 14 medium-sized datasets, and one large-scale dataset. Furthermore, we perform comprehensive experiments on both medium-sized and large-sized datasets. 
+In addition, `ReLax` supports a diverse set of recourse methods and datasets. Notably, we implement 9 recourse explanation methods in JAX ranging from non-parametric, semi-parametric, and parametric recourse explanation methods. In addition, we include 14 medium-sized datasets, and one large-scale dataset. Finally, we perform comprehensive experiments on both medium-sized and large-sized datasets. 
 We have made `ReLax` fully open-sourced. This enables the reproduction of our experiments and supports efficient and scalable benchmarking for newly proposed recourse methods.
+
+
+# Benchmarking Details
+
+
+![\label{fig:comparison}Comparison of recourse method performance across 14 medium-sized datasets. It is desirable to achieve high validity, low proximity, and low runtime.](./figs/results.pdf)
 
 
 
