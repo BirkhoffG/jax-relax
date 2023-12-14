@@ -165,18 +165,15 @@ a Creative Commons Attribution 4.0 International License (CC BY
   <xref alt="[fig:speed]" rid="figU003Aspeed">[fig:speed]</xref>, the
   CARLA library
   (<xref alt="Pawelczyk et al., 2021" rid="ref-pawelczyk2021carla" ref-type="bibr">Pawelczyk
-  et al., 2021</xref>), a popular recourse explanation library, requires
-  roughly 30 minutes to benchmark the adult dataset containing
-  <inline-formula><alternatives>
+  et al., 2021</xref>) requires roughly 30 minutes to benchmark the
+  adult dataset containing <inline-formula><alternatives>
   <tex-math><![CDATA[\sim32,000]]></tex-math>
   <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mo>∼</mml:mo><mml:mn>32</mml:mn><mml:mo>,</mml:mo><mml:mn>000</mml:mn></mml:mrow></mml:math></alternatives></inline-formula>
   data points. At this speed, it would take CARLA approximately 15 hours
-  to benchmark a dataset with one million samples, and nearly one week
-  to benchmark a dataset with 10 million samples. Consequently, this
-  severe runtime overhead hinders the large-scale analysis of recourse
-  explanations, impedes the pace of research development of new recourse
-  methods, and raises concerns about the scalability of existing methods
-  being deployed in data-intensive ML applications.</p>
+  to benchmark a dataset with 1 million samples, and nearly one week to
+  benchmark a 10-million dataset. Consequently, this severe runtime
+  overhead hinders the large-scale analysis of recourse explanations and
+  the research development of new recourse methods.</p>
   <fig>
     <caption><p><styled-content id="figU003Aspeed"></styled-content>Runtime
     comparison of the <italic>adult</italic> dataset between
@@ -190,39 +187,121 @@ a Creative Commons Attribution 4.0 International License (CC BY
     et al., 2021</xref>).</p></caption>
     <graphic mimetype="application" mime-subtype="pdf" xlink:href="media/figs/speed-compare.pdf" />
   </fig>
-  <p>We present <monospace>ReLax</monospace> (<bold>Re</bold>course
-  Explanation <bold>L</bold>ibrary using J<bold>ax</bold>), an efficient
-  and scalable benchmarking library for recourse and counterfactual
-  explanations. <monospace>ReLax</monospace> is the
-  <italic>first</italic> JAX-based library for recourse explanation
-  which leverages language primitives such as vectorization,
-  parallelization, and JIT compilation in JAX
+  <p>In this work, we present <monospace>ReLax</monospace>
+  (<bold>Re</bold>course Explanation <bold>L</bold>ibrary using
+  J<bold>ax</bold>), the <italic>first</italic> recourse explanation
+  library in JAX
   (<xref alt="Bradbury et al., 2018" rid="ref-jax2018github" ref-type="bibr">Bradbury
   et al., 2018</xref>;
   <xref alt="Frostig et al., 2018" rid="ref-frostig2018jax" ref-type="bibr">Frostig
-  et al., 2018</xref>). <monospace>ReLax</monospace> is at least two
-  order-of-magnitudes faster than the existing recourse explanation
-  libraries (with a maximum speedup of 404,319.54X, as shown in
-  Figure~<xref alt="[fig:speed]" rid="figU003Aspeed">[fig:speed]</xref>).
-  We further demonstrate that <monospace>ReLax</monospace> is capable of
-  benchmarking real-world datasets of up to 10M data points with a
-  reasonable amount of computational cost.</p>
-  <p>In addition, <monospace>ReLax</monospace> supports a diverse set of
-  recourse methods and datasets. Notably, we implement 9 recourse
-  explanation methods in JAX ranging from non-parametric,
-  semi-parametric, and parametric recourse explanation methods. In
-  addition, we include 14 medium-sized datasets, and one large-scale
-  dataset. Furthermore, we perform comprehensive experiments on both
-  medium-sized and large-sized datasets. We have made
-  <monospace>ReLax</monospace> fully open-sourced. This enables the
-  reproduction of our experiments and supports efficient and scalable
-  benchmarking for newly proposed recourse methods.</p>
-</sec>
-<sec id="acknowledgements">
-  <title>Acknowledgements</title>
-  <p>We acknowledge contributions from Brigitta Sipocz, Syrtis Major,
-  and Semyeong Oh, and support from Kathryn Johnston during the genesis
-  of this project.</p>
+  et al., 2018</xref>). Our contributions are three-fold:</p>
+  <list list-type="bullet">
+    <list-item>
+      <p>(Fast and Scalable System) <monospace>ReLax</monospace> is an
+      <italic>efficient and scalable benchmarking library</italic> for
+      recourse and counterfactual explanations.</p>
+    </list-item>
+    <list-item>
+      <p>(Comprehensive set of Methods) <monospace>ReLax</monospace>
+      implements 9 recourse explanation methods. In addition,
+      <monospace>ReLax</monospace> include 14 medium-sized datasets, and
+      one large-scale dataset.</p>
+    </list-item>
+    <list-item>
+      <p>(Extensive Experiments) We perform comprehensive experiments on
+      both medium-sized and large-sized datasets, which showcases the
+      usability and scalability of the library.</p>
+    </list-item>
+  </list>
+  <sec id="efficiency-and-scalability-in-relax">
+    <title>Efficiency and Scalability in
+    <monospace>ReLax</monospace></title>
+    <p><monospace>ReLax</monospace> supports three recourse generation
+    strategies: <italic>sequential</italic>,
+    <italic>vectorized</italic>, and <italic>parallelized</italic>
+    strategy. In particular, the <italic>sequential</italic> generation
+    strategy is inefficient, albeit being adopted in most existing
+    libraries. On the other hand, the <italic>vectorized</italic> and
+    <italic>parallelized</italic> strategies play a vital role in
+    equipping <monospace>ReLax</monospace> to benchmark large-scale
+    datasets with a practical computational cost. In addition to these,
+    <monospace>ReLax</monospace> further enhances its performance by
+    fusing inner recourse generation steps via the Just-In-Time (JIT)
+    compilation. Together, <monospace>ReLax</monospace> ensures
+    efficient and scalable performance across diverse data scales and
+    complexities.</p>
+  </sec>
+  <sec id="recourse-methods-datasets">
+    <title>Recourse Methods &amp; Datasets</title>
+    <p><monospace>ReLax</monospace> implements nine recourse methods
+    using JAX including (i) three non-parametric methods (VanillaCF
+    (<xref alt="Wachter et al., 2017" rid="ref-wachter2017counterfactual" ref-type="bibr">Wachter
+    et al., 2017</xref>), DiverseCF
+    (<xref alt="Mothilal et al., 2020" rid="ref-mothilal2020explaining" ref-type="bibr">Mothilal
+    et al., 2020</xref>), GrowingSphere
+    (<xref alt="Laugel et al., 2017" rid="ref-laugel2017inverse" ref-type="bibr">Laugel
+    et al., 2017</xref>)); (ii) three semi-parametric methods (ProtoCF
+    (<xref alt="Van Looveren &amp; Klaise, 2019" rid="ref-van2019interpretable" ref-type="bibr">Van
+    Looveren &amp; Klaise, 2019</xref>), C-CHVAE
+    (<xref alt="Pawelczyk et al., 2020" rid="ref-pawelczyk2020learning" ref-type="bibr">Pawelczyk
+    et al., 2020</xref>), CLUE
+    (<xref alt="Antoran et al., 2021" rid="ref-antoran2021clue" ref-type="bibr">Antoran
+    et al., 2021</xref>)); and (iii) three parametric methods (VAE-CF
+    (<xref alt="Mahajan et al., 2019" rid="ref-mahajan2019preserving" ref-type="bibr">Mahajan
+    et al., 2019</xref>), CounterNet
+    (<xref alt="Guo, Nguyen, et al., 2023" rid="ref-guo2021counternet" ref-type="bibr">Guo,
+    Nguyen, et al., 2023</xref>), L2C
+    (<xref alt="Vo et al., 2023" rid="ref-vo2023feature" ref-type="bibr">Vo
+    et al., 2023</xref>)).</p>
+    <p>Furthermore, we gather 14 medium-sized binary-classification
+    tabular datasets. We also benchmark over the forktable dataset
+    (<xref alt="Ding et al., 2021" rid="ref-ding2021retiring" ref-type="bibr">Ding
+    et al., 2021</xref>) for predicting individuals’ annual income. This
+    US censuring dataset contains <inline-formula><alternatives>
+    <tex-math><![CDATA[\sim 10]]></tex-math>
+    <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mo>∼</mml:mo><mml:mn>10</mml:mn></mml:mrow></mml:math></alternatives></inline-formula>
+    million data points. To our knowledge, this is the first attempt to
+    benchmark a dataset at the scale of 10 million data points in the
+    recourse explanation community.</p>
+    <fig>
+      <caption><p><styled-content id="figU003Acomparison"></styled-content>Comparison
+      of recourse method performance across 14 medium-sized datasets. It
+      is desirable to achieve <italic>high</italic> validity,
+      <italic>low</italic> proximity, and <italic>low</italic>
+      runtime.</p></caption>
+      <graphic mimetype="application" mime-subtype="pdf" xlink:href="media/figs/results.pdf" />
+    </fig>
+    <fig>
+      <caption><p><styled-content id="figU003Astrategy_runtime"></styled-content>Runtime
+      comparison of different recourse generation strategies on the
+      forktable dataset.</p></caption>
+      <graphic mimetype="application" mime-subtype="pdf" xlink:href="media/figs/strategy_compare.pdf" />
+    </fig>
+  </sec>
+  <sec id="experimental-results">
+    <title>Experimental Results</title>
+    <p><xref alt="[fig:comparison]" rid="figU003Acomparison">[fig:comparison]</xref>
+    compares the validity, proximity, and runtime achieved by nine
+    recourse methods averaged on 14 medium-sized datasets. In
+    particular, validity and proximity measure the quality of the
+    generated counterfactual explanations. We observe that CounterNet
+    and Growing Sphere achieve the best validity score, and C-CHVAE
+    achieves the best proximity score. In terms of runtime, all recourse
+    methods complete the entire recourse generation process within 10
+    seconds, while CounterNet and VAECF outperform others by completing
+    under 2 seconds.</p>
+    <p><xref alt="[fig:strategy_runtime]" rid="figU003Astrategy_runtime">[fig:strategy_runtime]</xref>
+    compares the runtime for each recourse explanation method in
+    adopting the vectorized and parallelized strategies on the forktable
+    dataset (with 10M data points). First, <monospace>ReLax</monospace>
+    is highly efficient in benchmarking the large-scale dataset, with
+    the maximum runtime being under 30 minutes. On the other hand, by
+    estimation, existing libraries should take at least one week to
+    complete recourse generation on datasets at this scale. In addition,
+    the parallelized strategy cuts the runtime by roughly 4X, which
+    demonstrates that <monospace>ReLax</monospace>’s potential in
+    benchmarking even larger datasets.</p>
+  </sec>
 </sec>
 </body>
 <back>
@@ -317,6 +396,29 @@ a Creative Commons Attribution 4.0 International License (CC BY
       <lpage>617</lpage>
     </element-citation>
   </ref>
+  <ref id="ref-van2019interpretable">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Van Looveren</surname><given-names>Arnaud</given-names></name>
+        <name><surname>Klaise</surname><given-names>Janis</given-names></name>
+      </person-group>
+      <article-title>Interpretable counterfactual explanations guided by prototypes</article-title>
+      <source>arXiv preprint arXiv:1907.02584</source>
+      <year iso-8601-date="2019">2019</year>
+    </element-citation>
+  </ref>
+  <ref id="ref-mahajan2019preserving">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Mahajan</surname><given-names>Divyat</given-names></name>
+        <name><surname>Tan</surname><given-names>Chenhao</given-names></name>
+        <name><surname>Sharma</surname><given-names>Amit</given-names></name>
+      </person-group>
+      <article-title>Preserving causal constraints in counterfactual explanations for machine learning classifiers</article-title>
+      <source>arXiv preprint arXiv:1912.03277</source>
+      <year iso-8601-date="2019">2019</year>
+    </element-citation>
+  </ref>
   <ref id="ref-ustun2019actionable">
     <element-citation publication-type="paper-conference">
       <person-group person-group-type="author">
@@ -380,6 +482,20 @@ a Creative Commons Attribution 4.0 International License (CC BY
       <article-title>A survey of algorithmic recourse: Definitions, formulations, solutions, and prospects</article-title>
       <source>arXiv preprint arXiv:2010.04050</source>
       <year iso-8601-date="2020">2020</year>
+    </element-citation>
+  </ref>
+  <ref id="ref-pawelczyk2020learning">
+    <element-citation publication-type="paper-conference">
+      <person-group person-group-type="author">
+        <name><surname>Pawelczyk</surname><given-names>Martin</given-names></name>
+        <name><surname>Broelemann</surname><given-names>Klaus</given-names></name>
+        <name><surname>Kasneci</surname><given-names>Gjergji</given-names></name>
+      </person-group>
+      <article-title>Learning model-agnostic counterfactual explanations for tabular data</article-title>
+      <source>Proceedings of the web conference 2020</source>
+      <year iso-8601-date="2020">2020</year>
+      <fpage>3126</fpage>
+      <lpage>3132</lpage>
     </element-citation>
   </ref>
   <ref id="ref-guo2021counternet">
@@ -476,6 +592,49 @@ a Creative Commons Attribution 4.0 International License (CC BY
       <article-title>CARLA: A python library to benchmark algorithmic recourse and counterfactual explanation algorithms</article-title>
       <source>Advances in Neural Information Processing Systems Track on Datasets and Benchmarks</source>
       <year iso-8601-date="2021">2021</year>
+    </element-citation>
+  </ref>
+  <ref id="ref-ding2021retiring">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Ding</surname><given-names>Frances</given-names></name>
+        <name><surname>Hardt</surname><given-names>Moritz</given-names></name>
+        <name><surname>Miller</surname><given-names>John</given-names></name>
+        <name><surname>Schmidt</surname><given-names>Ludwig</given-names></name>
+      </person-group>
+      <article-title>Retiring adult: New datasets for fair machine learning</article-title>
+      <source>Advances in Neural Information Processing Systems</source>
+      <year iso-8601-date="2021">2021</year>
+      <volume>34</volume>
+    </element-citation>
+  </ref>
+  <ref id="ref-antoran2021clue">
+    <element-citation publication-type="paper-conference">
+      <person-group person-group-type="author">
+        <name><surname>Antoran</surname><given-names>Javier</given-names></name>
+        <name><surname>Bhatt</surname><given-names>Umang</given-names></name>
+        <name><surname>Adel</surname><given-names>Tameem</given-names></name>
+        <name><surname>Weller</surname><given-names>Adrian</given-names></name>
+        <name><surname>Hernández-Lobato</surname><given-names>José Miguel</given-names></name>
+      </person-group>
+      <article-title>Getting a {CLUE}: A method for explaining uncertainty estimates</article-title>
+      <source>International conference on learning representations</source>
+      <year iso-8601-date="2021">2021</year>
+      <uri>https://openreview.net/forum?id=XSLF1XFq5h</uri>
+    </element-citation>
+  </ref>
+  <ref id="ref-laugel2017inverse">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Laugel</surname><given-names>Thibault</given-names></name>
+        <name><surname>Lesot</surname><given-names>Marie-Jeanne</given-names></name>
+        <name><surname>Marsala</surname><given-names>Christophe</given-names></name>
+        <name><surname>Renard</surname><given-names>Xavier</given-names></name>
+        <name><surname>Detyniecki</surname><given-names>Marcin</given-names></name>
+      </person-group>
+      <article-title>Inverse classification for comparison-based interpretability in machine learning</article-title>
+      <source>arXiv preprint arXiv:1712.08443</source>
+      <year iso-8601-date="2017">2017</year>
     </element-citation>
   </ref>
   <ref id="ref-vo2023feature">

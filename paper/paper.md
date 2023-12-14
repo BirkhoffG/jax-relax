@@ -63,23 +63,41 @@ Consequently, this severe runtime overhead hinders the large-scale analysis of r
 ![\label{fig:speed}Runtime comparison of the *adult* dataset between `ReLax` and three open-source recourse librarires (CARLA [@pawelczyk2021carla], DiCE [@mothilal2020explaining], and alibi [@klaise2021alibi].](./figs/speed-compare.pdf)
 
 
-To overcome this challenge, we present `ReLax` (**Re**course Explanation **L**ibrary using J**ax**), the *first* recourse explanation library in JAX [@jax2018github;@frostig2018jax]. `ReLax` is an *efficient and scalable benchmarking library* for recourse and counterfactual explanations; it runs order-of-magnitudes (up to 404,319.54X, as shown in Figure~\ref{fig:speed}) faster than the existing libraries. Furthermore, we demonstrate that `ReLax` can benchmark real-world datasets of up to 10M data points with a reasonable amount of computational cost.
+In this work, we present `ReLax` (**Re**course Explanation **L**ibrary using J**ax**), the *first* recourse explanation library in JAX [@jax2018github;@frostig2018jax]. Our contributions are three-fold:
+
+* (Fast and Scalable System) `ReLax` is an *efficient and scalable benchmarking library* for recourse and counterfactual explanations.
+* (Comprehensive set of Methods) `ReLax` implements 9 recourse explanation methods. In addition, `ReLax` include 14 medium-sized datasets, and one large-scale dataset.
+* (Extensive Experiments) We perform comprehensive experiments on both medium-sized and large-sized datasets, which showcases the usability and scalability of the library.
 
 
-In addition, `ReLax` supports a diverse set of recourse methods and datasets. Notably, we implement 9 recourse explanation methods in JAX ranging from non-parametric, semi-parametric, and parametric recourse explanation methods. In addition, we include 14 medium-sized datasets, and one large-scale dataset. Finally, we perform comprehensive experiments on both medium-sized and large-sized datasets. 
-We have made `ReLax` fully open-sourced. This enables the reproduction of our experiments and supports efficient and scalable benchmarking for newly proposed recourse methods.
+## Efficiency and Scalability in `ReLax`
 
 
-# Benchmarking Details
+`ReLax` supports three recourse generation strategies: *sequential*, *vectorized*, and *parallelized* strategy. In particular, the *sequential* generation strategy is inefficient, albeit being adopted in most existing libraries. On the other hand, the *vectorized* and *parallelized* strategies play a vital role in equipping `ReLax` to benchmark large-scale datasets with a practical computational cost. In addition to these, `ReLax` further enhances its performance by fusing inner recourse generation steps via the Just-In-Time (JIT) compilation. Together, `ReLax` ensures efficient and scalable performance across diverse data scales and complexities.
 
 
-![\label{fig:comparison}Comparison of recourse method performance across 14 medium-sized datasets. It is desirable to achieve high validity, low proximity, and low runtime.](./figs/results.pdf)
+## Recourse Methods & Datasets
 
 
+`ReLax` implements nine recourse methods using JAX including (i) three non-parametric methods (VanillaCF [@wachter2017counterfactual], DiverseCF [@mothilal2020explaining], GrowingSphere [@laugel2017inverse]); (ii) three semi-parametric methods (ProtoCF [@van2019interpretable], C-CHVAE [@pawelczyk2020learning], CLUE [@antoran2021clue]); and (iii) three parametric methods (VAE-CF [@mahajan2019preserving], CounterNet [@guo2021counternet], L2C [@vo2023feature]).
 
-# Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+Furthermore, we gather 14 medium-sized binary-classification tabular datasets. We also benchmark over the forktable dataset [@ding2021retiring] for predicting individuals' annual income. This US censuring dataset contains $\sim 10$ million data points.
+To our knowledge, this is the first attempt to benchmark a dataset at the scale of 10 million data points in the recourse explanation community.
+
+
+![\label{fig:comparison}Comparison of recourse method performance across 14 medium-sized datasets. It is desirable to achieve *high* validity, *low* proximity, and *low* runtime.](./figs/results.pdf)
+
+![\label{fig:strategy_runtime}Runtime comparison of different recourse generation strategies on the forktable dataset.](./figs/strategy_compare.pdf)
+
+## Experimental Results
+
+\autoref{fig:comparison} compares the validity, proximity, and runtime achieved by nine recourse methods averaged on 14 medium-sized datasets. In particular, validity and proximity measure the quality of the generated counterfactual explanations. We observe that CounterNet and Growing Sphere achieve the best validity score, and C-CHVAE achieves the best proximity score. 
+In terms of runtime, all recourse methods complete the entire recourse generation process within 10 seconds, while CounterNet and VAECF outperform others by completing under 2 seconds.  
+
+
+\autoref{fig:strategy_runtime} compares the runtime for each recourse explanation method in adopting the vectorized and parallelized strategies on the forktable dataset (with 10M data points). First, `ReLax` is highly efficient in benchmarking the large-scale dataset, with the maximum runtime being under 30 minutes. 
+On the other hand, by estimation, existing libraries should take at least one week to complete recourse generation on datasets at this scale.
+In addition, the parallelized strategy cuts the runtime by roughly 4X, which demonstrates that `ReLax`'s potential in benchmarking even larger datasets.
 
 # References
