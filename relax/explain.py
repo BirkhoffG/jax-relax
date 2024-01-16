@@ -11,6 +11,7 @@ from .ml_model import *
 from .utils import get_config, save_pytree, load_pytree
 import einops
 from sklearn.datasets import make_classification
+from copy import deepcopy
 
 # %% auto 0
 __all__ = ['Explanation', 'fake_explanation', 'prepare_pred_fn', 'prepare_cf_module', 'prepare_rng_keys',
@@ -98,6 +99,18 @@ class Explanation(DataModule):
     @property
     def features_and_indices(self):
         return self.features.features_and_indices
+    
+    def copy(self):
+        """Return a deep copy of the explanation. Warning: this method will not create a deepcopy of `pred_fn`."""
+
+        dm = DataModule(self.features, self.label, self.config, self.data)
+        return Explanation(
+            cfs=self.cfs.copy(),
+            pred_fn=self.pred_fn,
+            data_module=dm,
+            total_time=self.total_time,
+            cf_name=self.cf_name,
+        )
         
     def save(self, path: str):
         """Save the explanation to a directory."""
@@ -147,7 +160,7 @@ def fake_explanation(n_cfs: int=1):
         data_module=dm, cfs=cfs, pred_fn=ml_model.pred_fn, total_time=0.0, cf_name='dummy_method'
     )
 
-# %% ../nbs/03_explain.ipynb 9
+# %% ../nbs/03_explain.ipynb 10
 def prepare_pred_fn(
     cf_module: CFModule,
     data: DataModule,
@@ -207,7 +220,7 @@ def prepare_rng_keys(
     return rng_keys
 
 
-# %% ../nbs/03_explain.ipynb 10
+# %% ../nbs/03_explain.ipynb 11
 def generate_cf_explanations(
     cf_module: CFModule, # CF Explanation Module
     data: DataModule, # Data Module
