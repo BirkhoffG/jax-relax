@@ -101,7 +101,10 @@ class Explanation(DataModule):
         return self.features.features_and_indices
     
     def copy(self):
-        """Return a deep copy of the explanation. Warning: this method will not create a deepcopy of `pred_fn`."""
+        """Return a deep copy of the explanation. 
+        
+        Warning: this method will not create a deepcopy of `pred_fn`.
+        """
 
         dm = DataModule(self.features, self.label, self.config, self.data)
         return Explanation(
@@ -143,6 +146,9 @@ class Explanation(DataModule):
             **explanations
         )
 
+    __ALL__ = [
+        'copy', 'save', 'load_from_path'
+    ]
 
 # %% ../nbs/03_explain.ipynb 5
 def fake_explanation(n_cfs: int=1):
