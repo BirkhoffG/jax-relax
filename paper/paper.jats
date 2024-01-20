@@ -19,7 +19,7 @@
 <article-id pub-id-type="doi">N/A</article-id>
 <title-group>
 <article-title>ReLax: Efficient and Scalable Recourse Explanation
-Benchmark using JAX</article-title>
+Benchmarking using JAX</article-title>
 </title-group>
 <contrib-group>
 <contrib contrib-type="author" corresp="yes">
@@ -100,16 +100,28 @@ a Creative Commons Attribution 4.0 International License (CC BY
 <body>
 <sec id="summary">
   <title>Summary</title>
-  <p>Counterfactual explanation<xref ref-type="fn" rid="fn1">1</xref>
-  techniques provide contrast cases to individuals adversely affected by
-  ML preictions. For instance, recourse methods can provide suggestions
-  for loan applicants who have been rejected by a bank’s ML algorithm,
-  or give practical advice to teachers handling students at risk of
-  dropping out. Numerous recourse explanation methods have been recently
-  proposed. Yet, current research practice focuses on medium-sized
-  datasets (typically around ~50k data points). This limitation impedes
-  the progress in algorithmic recourse and raises concerns about the
-  scalability of existing approaches.</p>
+  <p>From healthcare to criminal justice, machine learning (ML) models
+  have permeated to support domain experts in making decisions. Given
+  the nature of high consequences of the decision outcomes in some
+  areas, concerns over the ML models’ trustworthiness raise increasing
+  attention. These concerns spurred surging research interests in
+  explainable artificial intelligence (XAI), whose mission is to equip
+  end-users to understand and assess machine decisions on when to reply
+  on the ML models and when exercise caution.</p>
+  <p>Within the XAI domain, counterfactual
+  explanation<xref ref-type="fn" rid="fn1">1</xref> emerges as a notable
+  technique, which provides alternative scenarios to individuals
+  adversely affected by ML predictions, thereby elucidating the
+  underlying decision-making mechanisms to end users. For instance,
+  recourse methods can provide suggestions for loan applicants who have
+  been rejected by a bank’s ML algorithm, or give practical advice to
+  teachers handling students at risk of dropping out. Numerous recourse
+  explanation methods have been recently proposed. Yet, the substantial
+  runtime overhead imposed by many recourse explanation methods compels
+  current research to limit evaluations on medium-sized datasets (i.e.,
+  ~50k data points). This limitation impedes the progress in algorithmic
+  recourse and raises concerns about the scalability of existing
+  approaches.</p>
   <p>To address this challenge, we propose <monospace>ReLax</monospace>,
   a JAX-based benchmarking library, designed for efficient and scalable
   recourse explanations. <monospace>ReLax</monospace> supports various
@@ -169,7 +181,8 @@ a Creative Commons Attribution 4.0 International License (CC BY
   adult dataset containing <inline-formula><alternatives>
   <tex-math><![CDATA[\sim32,000]]></tex-math>
   <mml:math display="inline" xmlns:mml="http://www.w3.org/1998/Math/MathML"><mml:mrow><mml:mo>∼</mml:mo><mml:mn>32</mml:mn><mml:mo>,</mml:mo><mml:mn>000</mml:mn></mml:mrow></mml:math></alternatives></inline-formula>
-  data points. At this speed, it would take CARLA approximately 15 hours
+  data points. At this speed, because the runtime scales linearly with
+  the number of data points, it would take CARLA approximately 15 hours
   to benchmark a dataset with 1 million samples, and nearly one week to
   benchmark a 10-million dataset. Consequently, this severe runtime
   overhead hinders the large-scale analysis of recourse explanations and
@@ -203,9 +216,9 @@ a Creative Commons Attribution 4.0 International License (CC BY
     </list-item>
     <list-item>
       <p>(Comprehensive set of Methods) <monospace>ReLax</monospace>
-      implements 9 recourse explanation methods. In addition,
-      <monospace>ReLax</monospace> include 14 medium-sized datasets, and
-      one large-scale dataset.</p>
+      implements 9 widely-used and popular recourse explanation methods.
+      In addition, <monospace>ReLax</monospace> include 14 medium-sized
+      publicly available datasets, and one large-scale dataset.</p>
     </list-item>
     <list-item>
       <p>(Extensive Experiments) We perform comprehensive experiments on
@@ -220,16 +233,32 @@ a Creative Commons Attribution 4.0 International License (CC BY
     strategies: <italic>sequential</italic>,
     <italic>vectorized</italic>, and <italic>parallelized</italic>
     strategy. In particular, the <italic>sequential</italic> generation
-    strategy is inefficient, albeit being adopted in most existing
-    libraries. On the other hand, the <italic>vectorized</italic> and
+    strategy involves generating recourse explanations one after
+    another. Unfortunately, while widely used in existing recourse
+    libraries
+    (<xref alt="Klaise et al., 2021" rid="ref-klaise2021alibi" ref-type="bibr">Klaise
+    et al., 2021</xref>;
+    <xref alt="Mothilal et al., 2020" rid="ref-mothilal2020explaining" ref-type="bibr">Mothilal
+    et al., 2020</xref>;
+    <xref alt="Pawelczyk et al., 2021" rid="ref-pawelczyk2021carla" ref-type="bibr">Pawelczyk
+    et al., 2021</xref>), this strategy is inefficient when benchmarking
+    large datasets.</p>
+    <p>On the other hand, the <italic>vectorized</italic> and
     <italic>parallelized</italic> strategies play a vital role in
     equipping <monospace>ReLax</monospace> to benchmark large-scale
-    datasets with a practical computational cost. In addition to these,
+    datasets with a practical computational cost. The
+    <italic>vectorized</italic> strategy takes advantage of modern
+    hardware by applying the recourse generation operations to the
+    entire dataset <italic>at once</italic>. This strategy considerably
+    accelerates recourse generation by performing Single Instruction on
+    Multiple Data (SIMD). Additionally, the
+    <italic>parallelized</italic> strategy enables the usage of multiple
+    computing devices (e.g., multiple GPUs/TPUs). Furthermore,
     <monospace>ReLax</monospace> further enhances its performance by
     fusing inner recourse generation steps via the Just-In-Time (JIT)
-    compilation. Together, <monospace>ReLax</monospace> ensures
-    efficient and scalable performance across diverse data scales and
-    complexities.</p>
+    compilation provided by <monospace>jax</monospace>. Together,
+    <monospace>ReLax</monospace> ensures efficient and scalable
+    performance across diverse data scales and complexities.</p>
   </sec>
   <sec id="recourse-methods-datasets">
     <title>Recourse Methods &amp; Datasets</title>

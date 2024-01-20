@@ -1,5 +1,5 @@
 ---
-title: 'ReLax: Efficient and Scalable Recourse Explanation Benchmark using JAX'
+title: 'ReLax: Efficient and Scalable Recourse Explanation Benchmarking using JAX'
 tags:
   - Python
   - JAX
@@ -35,10 +35,12 @@ bibliography: paper.bib
 
 # Summary
 
-Counterfactual explanation[^1] techniques provide contrast cases to individuals adversely affected by ML preictions.
+From healthcare to criminal justice, machine learning (ML) models have permeated to support domain experts in making decisions. Given the nature of high consequences of the decision outcomes in some areas, concerns over the ML models' trustworthiness raise increasing attention. These concerns spurred surging research interests in explainable artificial intelligence (XAI), whose mission is to equip end-users to understand and assess machine decisions on when to reply on the ML models and when exercise caution. 
+
+Within the XAI domain, counterfactual explanation[^1] emerges as a notable technique, which provides alternative scenarios to individuals adversely affected by ML predictions, thereby elucidating the underlying decision-making mechanisms to end users.
 For instance, recourse methods can provide suggestions for loan applicants who have been rejected by a bank's ML algorithm, or give practical advice to teachers handling students at risk of dropping out.
 Numerous recourse explanation methods have been recently proposed.
-Yet, current research practice focuses on medium-sized datasets (typically around ~50k data points).
+Yet, the substantial runtime overhead imposed by many recourse explanation methods compels current research to limit evaluations on medium-sized datasets (i.e., ~50k data points).
 This limitation impedes the progress in algorithmic recourse and raises concerns about the scalability of existing approaches. 
 
 [^1]: Counterfactual explanation [@wachter2017counterfactual] and algorithmic recourse [@ustun2019actionable] share close connections [@verma2020counterfactual;@stepin2021survey], which leads us to use these terms interchangeably
@@ -57,7 +59,8 @@ Recourse and counterfactual explanation methods concentrate on the generation of
 
 Despite progress made in counterfactual explanation research [@wachter2017counterfactual;@mothilal2020explaining;@ustun2019actionable;@upadhyay2021towards;@vo2023feature;@guo2021counternet;@guo2023rocoursenet], current research practices often restrict the evaluation of recourse explanation methods on medium-sized datasets (with under 50k data points). 
 This constraint primarily stems from the excessive runtime overhead of recourse generation by the existing open-source recourse libraries [@pawelczyk2021carla;@mothilal2020explaining;@klaise2021alibi].
-For instance, as shown in \autoref{fig:speed}, the CARLA library [@pawelczyk2021carla] requires roughly 30 minutes to benchmark the adult dataset containing $\sim32,000$ data points. At this speed, it would take CARLA approximately 15 hours to benchmark a dataset with 1 million samples, and nearly one week to benchmark a 10-million dataset.
+For instance, as shown in \autoref{fig:speed}, the CARLA library [@pawelczyk2021carla] requires roughly 30 minutes to benchmark the adult dataset containing $\sim32,000$ data points. 
+At this speed, because the runtime scales linearly with the number of data points, it would take CARLA approximately 15 hours to benchmark a dataset with 1 million samples, and nearly one week to benchmark a 10-million dataset.
 Consequently, this severe runtime overhead hinders the large-scale analysis of recourse explanations and the research development of new recourse methods.
 
 ![\label{fig:speed}Runtime comparison of the *adult* dataset between `ReLax` and three open-source recourse librarires (CARLA [@pawelczyk2021carla], DiCE [@mothilal2020explaining], and alibi [@klaise2021alibi].](./figs/speed-compare.pdf)
@@ -66,14 +69,19 @@ Consequently, this severe runtime overhead hinders the large-scale analysis of r
 In this work, we present `ReLax` (**Re**course Explanation **L**ibrary using J**ax**), the *first* recourse explanation library in JAX [@jax2018github;@frostig2018jax]. Our contributions are three-fold:
 
 * (Fast and Scalable System) `ReLax` is an *efficient and scalable benchmarking library* for recourse and counterfactual explanations.
-* (Comprehensive set of Methods) `ReLax` implements 9 recourse explanation methods. In addition, `ReLax` include 14 medium-sized datasets, and one large-scale dataset.
+* (Comprehensive set of Methods) `ReLax` implements 9 widely-used and popular recourse explanation methods. In addition, `ReLax` include 14 medium-sized publicly available datasets, and one large-scale dataset.
 * (Extensive Experiments) We perform comprehensive experiments on both medium-sized and large-sized datasets, which showcases the usability and scalability of the library.
 
 
 ## Efficiency and Scalability in `ReLax`
 
 
-`ReLax` supports three recourse generation strategies: *sequential*, *vectorized*, and *parallelized* strategy. In particular, the *sequential* generation strategy is inefficient, albeit being adopted in most existing libraries. On the other hand, the *vectorized* and *parallelized* strategies play a vital role in equipping `ReLax` to benchmark large-scale datasets with a practical computational cost. In addition to these, `ReLax` further enhances its performance by fusing inner recourse generation steps via the Just-In-Time (JIT) compilation. Together, `ReLax` ensures efficient and scalable performance across diverse data scales and complexities.
+`ReLax` supports three recourse generation strategies: *sequential*, *vectorized*, and *parallelized* strategy. 
+In particular, the *sequential* generation strategy involves generating recourse explanations one after another. Unfortunately, while widely used in existing recourse libraries [@pawelczyk2021carla;@mothilal2020explaining;@klaise2021alibi], this strategy is inefficient when benchmarking large datasets.
+
+
+On the other hand, the *vectorized* and *parallelized* strategies play a vital role in equipping `ReLax` to benchmark large-scale datasets with a practical computational cost. The *vectorized* strategy takes advantage of modern hardware by applying the recourse generation operations to the entire dataset *at once*. This strategy considerably accelerates recourse generation by performing  Single Instruction on Multiple Data (SIMD). Additionally, the *parallelized* strategy enables the usage of multiple computing devices (e.g., multiple GPUs/TPUs). Furthermore, `ReLax` further enhances its performance by fusing inner recourse generation steps via the Just-In-Time (JIT) compilation provided by `jax`. Together, `ReLax` ensures efficient and scalable performance across diverse data scales and complexities.
+
 
 
 ## Recourse Methods & Datasets
