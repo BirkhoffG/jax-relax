@@ -97,7 +97,7 @@ def train_model_with_states(
         training_module.logger.on_epoch_started()
         # for step, batch in epoch_iterator.enumerate_epoch('np'):
         with tqdm(
-            epoch_iterator.enumerate_epoch('np'), 
+            epoch_iterator.enumerate_epoch(), 
             unit="batch", 
             leave=epoch == t_configs.n_epochs - 1,
             total=epoch_iterator.num_batches
@@ -110,7 +110,7 @@ def train_model_with_states(
                 t_loader.set_postfix(**logs)
         
         # validation
-        for step, batch in val_epoch_iterator.enumerate_epoch('np'):
+        for step, batch in val_epoch_iterator.enumerate_epoch():
             x, y = batch[0]
             logs = training_module.validation_step(params, next(keys), (x, y))
             # logger.log(logs)
