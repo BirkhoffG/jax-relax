@@ -60,7 +60,7 @@ def load_pytree(saved_dir):
         ]
     return jax.tree_util.tree_unflatten(treedef, flat_state)
 
-# %% ../nbs/00_utils.ipynb 25
+# %% ../nbs/00_utils.ipynb 24
 def _reshape_x(x: Array):
     x_size = x.shape
     if len(x_size) > 1 and x_size[0] != 1:
@@ -72,7 +72,7 @@ but got `x.shape` = {x.shape}. This method expects a single input instance."""
         x = x.reshape(1, -1)
     return x, x_size
 
-# %% ../nbs/00_utils.ipynb 26
+# %% ../nbs/00_utils.ipynb 25
 def auto_reshaping(
     reshape_argname: str, # The name of the argument to be reshaped.
     reshape_output: bool = True, # Whether to reshape the output. Useful to set `False` when returning multiple cfs.
@@ -107,7 +107,7 @@ def auto_reshaping(
         return wrapper
     return decorator
 
-# %% ../nbs/00_utils.ipynb 31
+# %% ../nbs/00_utils.ipynb 30
 def grad_update(
     grads, # A pytree of gradients.
     params, # A pytree of parameters.
@@ -118,13 +118,13 @@ def grad_update(
     upt_params = optax.apply_updates(params, updates)
     return upt_params, opt_state
 
-# %% ../nbs/00_utils.ipynb 33
+# %% ../nbs/00_utils.ipynb 32
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 35
+# %% ../nbs/00_utils.ipynb 34
 @dataclass
 class Config:
     rng_reserve_size: int
@@ -136,11 +136,11 @@ class Config:
 
 main_config = Config.default()
 
-# %% ../nbs/00_utils.ipynb 36
+# %% ../nbs/00_utils.ipynb 35
 def get_config() -> Config: 
     return main_config
 
-# %% ../nbs/00_utils.ipynb 37
+# %% ../nbs/00_utils.ipynb 36
 def set_config(
     *,
     rng_reserve_size: int = None, # The number of random number generators to reserve.
