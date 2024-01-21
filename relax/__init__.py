@@ -1,4 +1,4 @@
-__version__ = "0.2.4"
+__version__ = "0.2.5"
 
 from .data_module import DataModule, DataModuleConfig, load_data
 from .data_utils import(
