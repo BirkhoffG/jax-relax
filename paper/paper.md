@@ -59,11 +59,11 @@ Recourse and counterfactual explanation methods concentrate on the generation of
 
 Despite progress made in counterfactual explanation research [@wachter2017counterfactual;@mothilal2020explaining;@ustun2019actionable;@upadhyay2021towards;@vo2023feature;@guo2021counternet;@guo2023rocoursenet], current research practices often restrict the evaluation of recourse explanation methods on medium-sized datasets (with under 50k data points). 
 This constraint primarily stems from the excessive runtime overhead of recourse generation by existing open-source recourse libraries [@pawelczyk2021carla;@mothilal2020explaining;@klaise2021alibi].
-For instance, as shown in \autoref{fig:speed}, the CARLA library [@pawelczyk2021carla] requires roughly 30 minutes to benchmark the adult dataset containing $\sim32,000$ data points. 
+For instance, as shown in \autoref{fig:speed}, the CARLA library [@pawelczyk2021carla] requires roughly 30 minutes to benchmark the adult dataset [@kohavi1996uci] containing $\sim32,000$ data points. 
 At this speed, because the runtime scales linearly with the number of data points, it would take CARLA approximately 15 hours to benchmark a dataset with 1 million samples, and nearly one week to benchmark a 10-million sized dataset.
 Consequently, this severe runtime overhead hinders the large-scale analysis of recourse explanations and the research development of new recourse methods.
 
-![\label{fig:speed}Runtime comparison of the *adult* dataset between `ReLax` and three open-source recourse librarires (CARLA [@pawelczyk2021carla], DiCE [@mothilal2020explaining], and alibi [@klaise2021alibi].](./figs/speed-compare.pdf)
+![\label{fig:speed}Runtime comparison of the *adult* dataset [@kohavi1996uci] between `ReLax` and three open-source recourse librarires (CARLA [@pawelczyk2021carla], DiCE [@mothilal2020explaining], and alibi [@klaise2021alibi].](./figs/speed-compare.pdf)
 
 
 In this work, we present `ReLax` (**Re**course Explanation **L**ibrary using J**ax**), the *first* recourse explanation library in JAX [@jax2018github;@frostig2018jax]. Our contributions are three-fold:
@@ -96,7 +96,7 @@ To our knowledge, this is the first attempt to benchmark a dataset at the scale 
 
 ![\label{fig:comparison}Comparison of recourse method performance across 14 medium-sized datasets. It is desirable to achieve *high* validity, *low* proximity, and *low* runtime.](./figs/results.pdf)
 
-![\label{fig:strategy_runtime}Runtime comparison of different recourse generation strategies on the forktable dataset.](./figs/strategy_compare.pdf)
+![\label{fig:strategy_runtime}Runtime comparison of different recourse generation strategies on the forktable dataset [@ding2021retiring].](./figs/strategy_compare.pdf)
 
 ## Experimental Results
 
