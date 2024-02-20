@@ -181,7 +181,14 @@ class Transformation:
     def inverse_transform(self, xs):
         return self.transformer.inverse_transform(xs)
 
-    def apply_constraints(self, xs, cfs, hard: bool = False):
+    def apply_constraints(
+        self, 
+        xs: jax.Array, 
+        cfs: jax.Array, 
+        hard: bool = False, 
+        rng_key: jax.random.PRNGKey = None, 
+        **kwargs
+    ):
         return cfs
     
     def compute_reg_loss(self, xs, cfs, hard: bool = False):
@@ -200,7 +207,7 @@ class MinMaxTransformation(Transformation):
     def __init__(self):
         super().__init__("minmax", MinMaxScaler())
 
-    def apply_constraints(self, xs, cfs, hard: bool = False):
+    def apply_constraints(self, xs, cfs, **kwargs):
         return jnp.clip(cfs, 0., 1.)
 
 # %% ../nbs/01_data.utils.ipynb 22
@@ -212,7 +219,7 @@ class OneHotTransformation(Transformation):
     def num_categories(self) -> int:
         return len(self.transformer.categories_)
 
-    def apply_constraints(self, xs, cfs, hard: bool = False):
+    def apply_constraints(self, xs, cfs, hard: bool = False, **kwargs):
         return jax.lax.cond(
             hard,
             true_fun=lambda x: jax.nn.one_hot(jnp.argmax(x, axis=-1), self.num_categories),
@@ -246,7 +253,7 @@ class IdentityTransformation(Transformation):
     def fit_transform(self, xs, y=None):
         return xs
 
-    def apply_constraints(self, xs, cfs, hard: bool = False):
+    def apply_constraints(self, xs, cfs, **kwargs):
         return cfs
     
     def to_dict(self):
@@ -395,11 +402,11 @@ class Feature:
     def inverse_transform(self, xs):
         return self.transformation.inverse_transform(xs)
     
-    def apply_constraints(self, xs, cfs, hard: bool = False):
+    def apply_constraints(self, xs, cfs, hard: bool = False, rng_key=None, **kwargs):
         return jax.lax.cond(
             self.is_immutable,
             true_fun=lambda xs: jnp.broadcast_to(xs, cfs.shape),
-            false_fun=lambda _: self.transformation.apply_constraints(xs, cfs, hard),
+            false_fun=lambda _: self.transformation.apply_constraints(xs, cfs, hard=hard, rng_key=rng_key, **kwargs),
             operand=xs,
         )
     
@@ -548,9 +555,10 @@ class FeaturesList:
             orignial_data[feat.name] = feat.inverse_transform(xs[:, start:end])
         return orignial_data
 
-    def apply_constraints(self, xs, cfs, hard: bool = False):
+    def apply_constraints(self, xs, cfs, hard: bool = False, rng_key=None, **kwargs):
         return jnp.concatenate(
-            [feat.apply_constraints(xs[:, start:end], cfs[:, start:end], hard) for feat, (start, end) in self.features_and_indices], axis=-1)
+            [feat.apply_constraints(xs[:, start:end], cfs[:, start:end], 
+                                    hard=hard, rng_key=rng_key, **kwargs) for feat, (start, end) in self.features_and_indices], axis=-1)
     
     def compute_reg_loss(self, xs, cfs, hard: bool = False):
         reg_loss = 0.
