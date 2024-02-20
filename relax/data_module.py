@@ -364,10 +364,12 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
         self, 
         xs: Array, # Input data
         cfs: Array, # Counterfactuals to be constrained
-        hard: bool = False # Whether to apply hard constraints or not
+        hard: bool = False, # Whether to apply hard constraints or not
+        rng_key: jrand.PRNGKey = None, # Random key
+        **kwargs
     ) -> Array: # Constrained counterfactuals
         """Apply constraints to counterfactuals."""
-        return self._features.apply_constraints(xs, cfs, hard)
+        return self._features.apply_constraints(xs, cfs, hard=hard, rng_key=rng_key, **kwargs)
     
     def compute_reg_loss(
         self, 
