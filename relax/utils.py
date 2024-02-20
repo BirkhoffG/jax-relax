@@ -11,8 +11,8 @@ from fastcore.test import *
 from jax.core import InconclusiveDimensionOperation
 
 # %% auto 0
-__all__ = ['validate_configs', 'save_pytree', 'load_pytree', 'auto_reshaping', 'grad_update', 'load_json', 'get_config',
-           'set_config']
+__all__ = ['validate_configs', 'save_pytree', 'load_pytree', 'auto_reshaping', 'grad_update', 'gumbel_softmax', 'load_json',
+           'get_config', 'set_config']
 
 # %% ../nbs/00_utils.ipynb 5
 def validate_configs(
@@ -119,12 +119,25 @@ def grad_update(
     return upt_params, opt_state
 
 # %% ../nbs/00_utils.ipynb 32
+def gumbel_softmax(
+    key: jrand.PRNGKey, # Random key
+    logits: Array, # Logits for each class. Shape (batch_size, num_classes)
+    tau: float, # Temperature for the Gumbel softmax
+    axis: int | tuple[int, ...] = -1, # The axis or axes along which the gumbel softmax should be computed
+):
+    """The Gumbel softmax function."""
+
+    gumbel_noise = jrand.gumbel(key, shape=logits.shape)
+    y = logits + gumbel_noise
+    return jax.nn.softmax(y / tau, axis=axis)
+
+# %% ../nbs/00_utils.ipynb 34
 def load_json(f_name: str) -> Dict[str, Any]:  # file name
     with open(f_name) as f:
         return json.load(f)
 
 
-# %% ../nbs/00_utils.ipynb 34
+# %% ../nbs/00_utils.ipynb 36
 @dataclass
 class Config:
     rng_reserve_size: int
@@ -136,11 +149,11 @@ class Config:
 
 main_config = Config.default()
 
-# %% ../nbs/00_utils.ipynb 35
+# %% ../nbs/00_utils.ipynb 37
 def get_config() -> Config: 
     return main_config
 
-# %% ../nbs/00_utils.ipynb 36
+# %% ../nbs/00_utils.ipynb 38
 def set_config(
     *,
     rng_reserve_size: int = None, # The number of random number generators to reserve.
