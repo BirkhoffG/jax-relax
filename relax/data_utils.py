@@ -215,8 +215,8 @@ class MinMaxTransformation(Transformation):
 
 # %% ../nbs/01_data.utils.ipynb 23
 class _OneHotTransformation(Transformation):
-    def __init__(self):
-        super().__init__("ohe", OneHotEncoder())
+    def __init__(self, name: str = None):
+        super().__init__(name, OneHotEncoder())
 
     @property
     def num_categories(self) -> int:
@@ -243,6 +243,9 @@ class _OneHotTransformation(Transformation):
 
 # %% ../nbs/01_data.utils.ipynb 24
 class SoftmaxTransformation(_OneHotTransformation):
+    def __init__(self): 
+        super().__init__("ohe")
+
     def soft_constraints(self, operand: tuple[jax.Array, jax.random.PRNGKey, dict]):
         x, rng_key, kwargs = operand
         return jax.nn.softmax(x, axis=-1)
@@ -251,7 +254,7 @@ class GumbelSoftmaxTransformation(_OneHotTransformation):
     """Apply Gumbel softmax tricks for categorical transformation."""
 
     def __init__(self, tau: float = 1.):
-        super().__init__()
+        super().__init__("gumbel")
         self.tau = tau
     
     def soft_constraints(self, operand: tuple[jax.Array, jax.random.PRNGKey, dict]):
