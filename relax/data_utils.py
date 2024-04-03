@@ -253,7 +253,7 @@ class SoftmaxTransformation(_OneHotTransformation):
 class GumbelSoftmaxTransformation(_OneHotTransformation):
     """Apply Gumbel softmax tricks for categorical transformation."""
 
-    def __init__(self, tau: float = 1.):
+    def __init__(self, tau: float = .1):
         super().__init__("gumbel")
         self.tau = tau
     
@@ -266,6 +266,9 @@ class GumbelSoftmaxTransformation(_OneHotTransformation):
     def apply_constraints(self, xs, cfs, hard: bool = False, rng_key=None, **kwargs):
         """Apply constraints to the counterfactuals. If `rng_key` is None, no randomness is used."""
         return super().apply_constraints(xs, cfs, hard, rng_key, **kwargs)
+    
+    def to_dict(self) -> dict:
+        return super().to_dict() | {"tau": self.tau}
     
 def OneHotTransformation():
     warnings.warn("OneHotTransformation is deprecated since v0.2.5. "
