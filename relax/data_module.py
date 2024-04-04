@@ -300,7 +300,7 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
     
     def set_transformations(
         self, 
-        feature_names_to_transformation: Dict[str, Union[str, Dict, Transformation]], # Dict[feature_name, Transformation]
+        feature_names_to_transformation: Dict[str, Union[str, Dict, BaseTransformation]], # Dict[feature_name, Transformation]
     ) -> DataModule:
         """Reset transformations for features."""
 
