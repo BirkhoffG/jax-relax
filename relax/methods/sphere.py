@@ -287,7 +287,7 @@ class GrowingSphere(CFModule):
                     num_categories=num_categories,
                     cat_perturb_fn=perturb_fn
                 )
-                self.apply_constraints = default_apply_constraints_fn
+                # self.apply_constraints = default_apply_constraints_fn
             else:
                 self.perturb_fn = default_perturb_function
         
