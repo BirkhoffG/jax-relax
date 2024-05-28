@@ -20,7 +20,7 @@ from pandas.testing import assert_frame_equal
 
 # %% auto 0
 __all__ = ['BaseDataModule', 'DataModuleConfig', 'features2config', 'features2pandas', 'dataframe2features', 'dataframe2labels',
-           'DataModule', 'TabularDataModuleConfigs', 'TabularDataModule', 'download_data_module_files', 'load_data']
+           'DataModule', 'download_data_module_files', 'load_data']
 
 # %% ../nbs/01_data.ipynb 6
 class BaseDataModule(BaseModule):
@@ -409,24 +409,6 @@ def dm_equals(dm1: DataModule, dm2: DataModule):
     )
 
 # %% ../nbs/01_data.ipynb 30
-class TabularDataModuleConfigs(DataModuleConfig):
-    """!!!Deprecated!!! - Configurator of `TabularDataModule`."""
-    def __ini__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        warnings.warn("TabularDataModuleConfigs is deprecated since v0.2, please use DataModuleConfig instead.", 
-                      DeprecationWarning)
-
-# %% ../nbs/01_data.ipynb 31
-class TabularDataModule(DataModule):
-    """!!!Deprecated!!! - DataModule for tabular data."""
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        warnings.warn("TabularDataModule is deprecated since v0.2, please use DataModule instead.", 
-                      DeprecationWarning)
-        
-    __ALL__ = []
-
-# %% ../nbs/01_data.ipynb 33
 DEFAULT_DATA = [
     'adult',
     'heloc',
@@ -451,13 +433,13 @@ DEFAULT_DATA_CONFIGS = {
     } for data in DEFAULT_DATA
 }
 
-# %% ../nbs/01_data.ipynb 38
+# %% ../nbs/01_data.ipynb 35
 def _validate_dataname(data_name: str):
     if data_name not in DEFAULT_DATA:
         raise ValueError(f'`data_name` must be one of {DEFAULT_DATA}, '
             f'but got data_name={data_name}.')
 
-# %% ../nbs/01_data.ipynb 39
+# %% ../nbs/01_data.ipynb 36
 def download_data_module_files(
     data_name: str, # The name of data
     data_parent_dir: Path, # The directory to save data.

@@ -69,8 +69,8 @@ def partition_trainable_params(params: hk.Params, trainable_name: str):
 
 
 # %% ../../nbs/methods/04_counternet.ipynb 8
-class CounterNetTrainingModule(BaseTrainingModule):
-    def __init__(self, config: CounterNetConfig | dict):
+class CounterNetTrainingModule(BaseTrainingModule):    
+    def __init__(self, config: "CounterNetConfig" | dict):
         self.save_hyperparameters(config.dict())
         self.configs = validate_configs(config, CounterNetConfig)
         self.net = make_hk_module(
