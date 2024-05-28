@@ -92,7 +92,7 @@ class MinMaxTransformation(_DefaultTransformation):
         super().__init__("minmax", MinMaxScaler())
 
     def apply_constraints(self, xs, cfs, **kwargs):
-        return np.clip(cfs, 0., 1.)
+        return jnp.clip(cfs, 0., 1.)
 
 # %% ../../nbs/data_utils/transform.ipynb 9
 class _OneHotTransformation(_DefaultTransformation):
