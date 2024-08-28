@@ -96,12 +96,21 @@ To our knowledge, this is the first attempt to benchmark a dataset at the scale 
 
 ![\label{fig:comparison}Comparison of recourse method performance across 14 medium-sized datasets. It is desirable to achieve *high* validity, *low* proximity, and *low* runtime.](./figs/results.pdf)
 
+![\label{fig:tradeoff}Illustration of the cost-invalidity trade-off across 14 medium-sized datasets (left) and the forktable dataset (right) for each recourse method. Methods positioned at the bottom left are better.](./figs/tradeoffs.pdf)
+
 ![\label{fig:strategy_runtime}Runtime comparison of different recourse generation strategies on the forktable dataset [@ding2021retiring].](./figs/strategy_compare.pdf)
+
 
 ## Experimental Results
 
 \autoref{fig:comparison} compares the validity, proximity, and runtime achieved by nine recourse methods averaged on 14 medium-sized datasets. In particular, validity and proximity measure the quality of the generated counterfactual explanations. We observe that CounterNet and Growing Sphere achieve the best validity score, and C-CHVAE achieves the best proximity score. 
 In terms of runtime, all recourse methods complete the entire recourse generation process within 10 seconds, while CounterNet and VAECF outperform others by finishing execution under 2 seconds.  
+
+
+We further analyze the validity and proximity through the lens of the cost-invalidity tradeoff on medium-sized datasets and forktable dataset in \autoref{fig:tradeoff}.
+It is vital to ensure that the recourse explanation balances the trade-off between the cost of change (i.e., proximity) and the invalidation percentage (or invalidity, which is computed as 1 - *validity*).
+We observe that there is no definitive winner in optimally balancing this cost-invalidity trade-off, as none of the recourse methods are positioned at the bottom left of the figure. 
+This analysis underscores the importance of considering both proximity and invalidity in recourse explanations, and presents an open challenge to the research community to devise methods that optimally balance this trade-off.
 
 
 \autoref{fig:strategy_runtime} compares the runtime for each recourse explanation method in adopting the vectorized and parallelized strategies on the forktable dataset (with 10M data points). First, `ReLax` is highly efficient in benchmarking the large-scale dataset, with the maximum runtime being under 30 minutes. 
