@@ -13,10 +13,9 @@ website:
         - 00_base.ipynb
         - 00_utils.ipynb
         - 00_docs.ipynb
-        - section: Data
-          contents:
-          - 01_data.ipynb
-          - 01_data.utils.ipynb
+        - 01_data.ipynb
+        - section: Data Utils
+          contents: data_utils/*
         - 02_ml_model.ipynb
         - 03_explain.strategy.ipynb
         - 03_explain.ipynb
