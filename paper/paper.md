@@ -20,9 +20,9 @@ authors:
     orcid: 0009-0005-4638-9140
     affiliation: 1
 affiliations:
- - name: Penn State University, USA
+ - name: Penn State University, University Park, PA, USA
    index: 1
- - name: Duke University, USA
+ - name: Duke University, Durham, NC, USA
    index: 2
 date: 10 December 2023
 bibliography: paper.bib
