@@ -397,18 +397,18 @@ class DataModule(BaseDataModule, DataModuleInfoMixin):
     ]
 
 # %% ../nbs/01_data.ipynb 22
-def dm_equals(dm1: DataModule, dm2: DataModule):
+def dm_equals(dm1: DataModule, dm2: DataModule, indices_equals: bool = True) -> bool:
     # data_equals = np.allclose(dm1.data.to_numpy(), dm2.data.to_numpy())
     assert_frame_equal(dm1.data, dm2.data)
     xs_equals = np.allclose(dm1.xs, dm2.xs)
     ys_equals = np.allclose(dm1.ys, dm2.ys)
     train_indices_equals = np.array_equal(dm1.train_indices, dm2.train_indices)
     test_indices_equals = np.array_equal(dm1.test_indices, dm2.test_indices)
-    # print(f"data_equals: {data_equals}, xs_equals: {xs_equals}, ys_equals: {ys_equals}, train_indices_equals: {train_indices_equals}, test_indices_equals: {test_indices_equals}")
-    return (
-        xs_equals and ys_equals and 
-        train_indices_equals and test_indices_equals
-    )
+    if not (xs_equals and ys_equals):
+        return False
+    if indices_equals: 
+        return train_indices_equals and test_indices_equals
+    return True
 
 # %% ../nbs/01_data.ipynb 30
 DEFAULT_DATA = [
