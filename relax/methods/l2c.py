@@ -23,6 +23,7 @@ def gumbel_softmax(
 ):
     """The Gumbel softmax function."""
 
+    key, _ = jrand.split(key)
     gumbel_noise = jrand.gumbel(key, shape=logits.shape)
     y = logits + gumbel_noise
     return jax.nn.softmax(y / tau, axis=-1)
@@ -37,7 +38,7 @@ def sample_categorical(
     """Sample from a categorical distribution."""
 
     def sample_cat(key, logits):
-        cat = jrand.categorical(key, logits=logits, axis=-1)
+        cat = logits.argmax(axis=-1)
         return jax.nn.one_hot(cat, logits.shape[-1])
 
     return lax.cond(
