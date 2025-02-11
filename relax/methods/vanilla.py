@@ -5,7 +5,7 @@ from __future__ import annotations
 from ..import_essentials import *
 from .base import CFModule
 from ..base import BaseConfig
-from ..utils import auto_reshaping, grad_update, validate_configs
+from ..utils import auto_reshaping, grad_update, validate_configs, get_config
 
 # %% auto 0
 __all__ = ['VanillaCFConfig', 'VanillaCF']
@@ -21,7 +21,8 @@ def _vanilla_cf(
     lambda_: float,  #  loss = validity_loss + lambda_params * cost
     validity_fn: Callable,
     cost_fn: Callable,
-    apply_constraints_fn: Callable
+    apply_constraints_fn: Callable, 
+    rng_key: jnp.ndarray, # rng_key for initializing `cf`
 ) -> jnp.DeviceArray:  # return `cf` shape: (k,)
     @jit
     def loss_fn_1(y_true: Array, y_pred: Array):
@@ -51,6 +52,8 @@ def _vanilla_cf(
         return cf, opt_state
 
     cf = jnp.array(x, copy=True)
+    # Add noise to `cf` to avoid gradient=0; see https://github.com/BirkhoffG/jax-relax/issues/46
+    cf = jrand.uniform(rng_key, cf.shape, minval=-0.1, maxval=0.1) + cf
     opt = optax.rmsprop(lr)
     opt_state = opt.init(cf)
     cf, opt_state = lax.fori_loop(0, n_steps, gen_cf_step, (cf, opt_state))
@@ -93,6 +96,7 @@ class VanillaCF(CFModule):
         x: Array,  # `x` shape: (k,), where `k` is the number of features
         pred_fn: Callable[[Array], Array],
         y_target: Array = None,
+        rng_key: jrand.PRNGKey = None,
         **kwargs,
     ) -> jnp.DeviceArray:
         # TODO: Currently assumes binary classification.
@@ -100,6 +104,8 @@ class VanillaCF(CFModule):
             y_target = 1 - pred_fn(x)
         else:
             y_target = jnp.array(y_target, copy=True)
+        if rng_key is None:
+            rng_key = jrand.PRNGKey(get_config().global_seed)
 
         return _vanilla_cf(
             x=x,  # `x` shape: (k,), where `k` is the number of features
@@ -111,5 +117,6 @@ class VanillaCF(CFModule):
             validity_fn=keras.losses.get({'class_name': self.config.validity_fn, 'config': {'reduction': None}}),
             cost_fn=keras.losses.get({'class_name': 'MeanSquaredError', 'config': {'reduction': None}}),
             apply_constraints_fn=self.apply_constraints,
+            rng_key=rng_key,
         )
 
